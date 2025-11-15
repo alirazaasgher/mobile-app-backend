@@ -1,0 +1,337 @@
+<?php
+namespace App\Services;
+
+use App\Models\Phone;
+use App\Models\PhoneSearchIndex;
+use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
+
+class PhoneService
+{
+    /**
+     * Get filtered phones with pagination
+     */
+    public function getFilteredPhones(array $filters): array
+    {
+        $cacheKey = 'phones_filtered_' . md5(serialize($filters));
+        
+        return Cache::remember($cacheKey, 300, function () use ($filters) {
+            $query = Phone::query()->with(['colors:id,phone_id,name,hex_code', 'storageOptions:id,phone_id,size,price']);
+            
+            // Apply filters using search index for performance
+            $query->whereHas('searchIndex', function ($q) use ($filters) {
+                $this->applySearchIndexFilters($q, $filters);
+            });
+            
+            // Apply direct filters
+            $this->applyDirectFilters($query, $filters);
+            
+            // Apply sorting
+            $this->applySorting($query, $filters);
+            
+            // Paginate
+            $perPage = $filters['per_page'] ?? 20;
+            $results = $query->paginate($perPage);
+            
+            return [
+                'data' => $results->items(),
+                'meta' => [
+                    'current_page' => $results->currentPage(),
+                    'total' => $results->total(),
+                    'per_page' => $results->perPage(),
+                    'last_page' => $results->lastPage(),
+                    'from' => $results->firstItem(),
+                    'to' => $results->lastItem(),
+                ]
+            ];
+        });
+    }
+
+    /**
+     * Get single phone with complete details
+     */
+    public function getPhoneDetails(int $id): array
+    {
+        $cacheKey = "phone_details_{$id}";
+        
+        return Cache::remember($cacheKey, 600, function () use ($id) {
+            $phone = Phone::with([
+                'colors.images',
+                'storageOptions',
+                'variants.color',
+                'variants.storage'
+            ])->findOrFail($id);
+            
+            // Get specifications by category
+            $specifications = $this->getPhoneSpecifications($id);
+            
+            return [
+                'id' => $phone->id,
+                'name' => $phone->name,
+                'brand' => $phone->brand,
+                'model' => $phone->model,
+                'tagline' => $phone->tagline,
+                'slug' => $phone->slug,
+                'primary_image' => $phone->primary_image,
+                'status' => $phone->status,
+                'announced_date' => $phone->announced_date,
+                'release_date' => $phone->release_date,
+                'popularity_score' => $phone->popularity_score,
+                'colors' => $phone->colors->map(function ($color) {
+                    return [
+                        'id' => $color->id,
+                        'name' => $color->name,
+                        'slug' => $color->slug,
+                        'hex' => $color->hex_code,
+                        'price' => $color->price,
+                        'images' => $color->images->pluck('image_url')->toArray()
+                    ];
+                }),
+                'storage_options' => $phone->storageOptions->map(function ($storage) {
+                    return [
+                        'id' => $storage->id,
+                        'size' => $storage->size,
+                        'size_gb' => $storage->size_gb,
+                        'price' => $storage->price
+                    ];
+                }),
+                'variants' => $phone->variants->where('is_available', true)->map(function ($variant) {
+                    return [
+                        'id' => $variant->id,
+                        'sku' => $variant->sku,
+                        'color_name' => $variant->color->name,
+                        'color_hex' => $variant->color->hex_code,
+                        'storage_size' => $variant->storage->size,
+                        'final_price' => $variant->final_price,
+                        'stock_quantity' => $variant->stock_quantity
+                    ];
+                }),
+                'specifications' => $specifications
+            ];
+        });
+    }
+
+    /**
+     * Get phone specifications by category
+     */
+    public function getPhoneSpecifications(int $phoneId): array
+    {
+        $cacheKey = "phone_specs_{$phoneId}";
+        
+        return Cache::remember($cacheKey, 900, function () use ($phoneId) {
+            $specs = DB::table('phone_specifications')
+                ->where('phone_id', $phoneId)
+                ->get()
+                ->groupBy('category');
+            
+            $formattedSpecs = [];
+            foreach ($specs as $category => $categorySpecs) {
+                $formattedSpecs[$category] = [];
+                foreach ($categorySpecs as $spec) {
+                    $specData = json_decode($spec->spec_data, true);
+                    $formattedSpecs[$category] = array_merge($formattedSpecs[$category], $specData);
+                }
+            }
+            
+            return $formattedSpecs;
+        });
+    }
+
+    /**
+     * Get phone variants
+     */
+    public function getPhoneVariants(int $phoneId): array
+    {
+        return Phone::findOrFail($phoneId)
+            ->variants()
+            ->with(['color.images', 'storage'])
+            ->where('is_available', true)
+            ->orderBy('final_price')
+            ->get()
+            ->toArray();
+    }
+
+    /**
+     * Get popular phones
+     */
+    public function getPopularPhones(int $limit = 20): array
+    {
+        return Cache::remember("popular_phones_{$limit}", 1800, function () use ($limit) {
+            return Phone::with(['colors:id,phone_id,name,hex_code', 'storageOptions:id,phone_id,size,price'])
+                ->orderBy('popularity_score', 'desc')
+                ->limit($limit)
+                ->get()
+                ->toArray();
+        });
+    }
+
+    /**
+     * Get featured phones
+     */
+    public function getFeaturedPhones(int $limit = 10): array
+    {
+        return Cache::remember("featured_phones_{$limit}", 3600, function () use ($limit) {
+            return Phone::with(['colors:id,phone_id,name,hex_code'])
+                ->where('is_featured', true)
+                ->orderBy('featured_order')
+                ->limit($limit)
+                ->get()
+                ->toArray();
+        });
+    }
+
+    /**
+     * Get latest phones
+     */
+    public function getLatestPhones(int $limit = 15): array
+    {
+        return Cache::remember("latest_phones_{$limit}", 1800, function () use ($limit) {
+            return Phone::with(['colors:id,phone_id,name,hex_code'])
+                ->whereNotNull('release_date')
+                ->orderBy('release_date', 'desc')
+                ->limit($limit)
+                ->get()
+                ->toArray();
+        });
+    }
+
+    /**
+     * Compare multiple phones
+     */
+    public function comparePhones(array $phoneIds): array
+    {
+        $phones = [];
+        foreach ($phoneIds as $id) {
+            $phones[] = $this->getPhoneDetails($id);
+        }
+        
+        return [
+            'phones' => $phones,
+            'comparison_matrix' => $this->buildComparisonMatrix($phones)
+        ];
+    }
+
+    /**
+     * Apply search index filters for performance
+     */
+    private function applySearchIndexFilters($query, array $filters): void
+    {
+        if (!empty($filters['min_price'])) {
+            $query->where('min_price', '>=', $filters['min_price']);
+        }
+        
+        if (!empty($filters['max_price'])) {
+            $query->where('max_price', '<=', $filters['max_price']);
+        }
+        
+        if (!empty($filters['ram'])) {
+            $query->whereIn('ram_gb', (array) $filters['ram']);
+        }
+        
+        if (!empty($filters['storage'])) {
+            $query->where(function ($q) use ($filters) {
+                foreach ((array) $filters['storage'] as $storage) {
+                    $q->orWhere('min_storage_gb', '<=', $storage)
+                      ->where('max_storage_gb', '>=', $storage);
+                }
+            });
+        }
+        
+        if (!empty($filters['screen_size'])) {
+            $query->whereIn('screen_size', (array) $filters['screen_size']);
+        }
+        
+        if (!empty($filters['battery_min'])) {
+            $query->where('battery_capacity', '>=', $filters['battery_min']);
+        }
+        
+        if (!empty($filters['has_5g'])) {
+            $query->where('has_5g', true);
+        }
+        
+        if (!empty($filters['has_nfc'])) {
+            $query->where('has_nfc', true);
+        }
+        
+        if (!empty($filters['has_wireless_charging'])) {
+            $query->where('has_wireless_charging', true);
+        }
+        
+        if (!empty($filters['camera_mp_min'])) {
+            $query->where('main_camera_mp', '>=', $filters['camera_mp_min']);
+        }
+    }
+
+    /**
+     * Apply direct filters on phones table
+     */
+    private function applyDirectFilters($query, array $filters): void
+    {
+        if (!empty($filters['brand'])) {
+            $query->where('brand', $filters['brand']);
+        }
+        
+        if (!empty($filters['search'])) {
+            $query->where(function ($q) use ($filters) {
+                $q->where('name', 'LIKE', "%{$filters['search']}%")
+                  ->orWhere('brand', 'LIKE', "%{$filters['search']}%")
+                  ->orWhere('model', 'LIKE', "%{$filters['search']}%");
+            });
+        }
+        
+        if (!empty($filters['status'])) {
+            $query->where('status', $filters['status']);
+        } else {
+            $query->where('status', 'active'); // Default to active phones
+        }
+        
+        if (!empty($filters['year'])) {
+            $query->whereYear('release_date', $filters['year']);
+        }
+    }
+
+    /**
+     * Apply sorting
+     */
+    private function applySorting($query, array $filters): void
+    {
+        $sortBy = $filters['sort_by'] ?? 'popularity';
+        $sortDirection = $filters['sort_direction'] ?? 'desc';
+        
+        switch ($sortBy) {
+            case 'price':
+                $query->join('phone_search_index', 'phones.id', '=', 'phone_search_index.phone_id')
+                      ->orderBy('phone_search_index.min_price', $sortDirection);
+                break;
+            case 'popularity':
+                $query->orderBy('popularity_score', $sortDirection);
+                break;
+            case 'rating':
+                $query->join('phone_search_index', 'phones.id', '=', 'phone_search_index.phone_id')
+                      ->orderBy('phone_search_index.avg_rating', $sortDirection);
+                break;
+            case 'release_date':
+                $query->orderBy('release_date', $sortDirection);
+                break;
+            case 'name':
+                $query->orderBy('name', $sortDirection);
+                break;
+            case 'brand':
+                $query->orderBy('brand', $sortDirection)->orderBy('name', 'asc');
+                break;
+            default:
+                $query->orderBy('popularity_score', 'desc');
+        }
+    }
+
+    /**
+     * Build comparison matrix for phone comparison
+     */
+    private function buildComparisonMatrix(array $phones): array
+    {
+        // Implementation for comparison matrix
+        // This would highlight differences and similarities between phones
+        return [];
+    }
+}
