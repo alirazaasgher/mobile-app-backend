@@ -30,9 +30,8 @@ class PhoneApiController extends Controller
         $usedPhoneIds = [];
         // Latest mobiles 
         $latestMobiles = Phone::query()
-            ->select('id', 'name', 'slug', 'release_date', 'primary_image', 'brand_id') // include brand_id for eager load
+            ->select('id', 'name', 'slug', 'release_date', 'primary_image') // include brand_id for eager load
             ->with([
-                'brand:id,name', // fetch only id & name from brand
                 'searchIndex' // only necessary columns
             ])
             ->active() // your scope
@@ -187,7 +186,7 @@ class PhoneApiController extends Controller
             'os' => 'array',
             'os.*' => 'string',
             'search' => 'string|max:255',
-            'sort_by' => Rule::in(['name', 'price', 'brands', 'created_at']),
+            'sort' => Rule::in(['name', 'price', 'brands', 'created_at']),
             'sort_order' => Rule::in(['asc', 'desc']),
             'per_page' => 'integer|min:1|max:50',
         ]);
@@ -281,7 +280,42 @@ class PhoneApiController extends Controller
 
     public function getPhoneBySlug(Request $request)
     {
-        $slugs = Phone::select('slug')->where('slug', request('slug'))->first();
-        return response()->json(["data" => $slugs]);
+        $slugs = Phone::pluck('slug'); // pluck returns array of values
+    return response()->json(["data" => $slugs]);
     }
+
+    public function getStaticFilters()
+{
+    // Static data
+    $brands = ['samsung', 'xiaomi', 'iphone'];
+    $rams = ['4gb', '8gb', '12gb'];
+    $storages = ['64gb', '128gb', '256gb'];
+
+    $params = [];
+
+    // Case 1: RAM + Storage only (no brand)
+    foreach ($rams as $ram) {
+        foreach ($storages as $storage) {
+            $params[] = [
+                'filters' => ["{$ram}-{$storage}"]
+            ];
+        }
+    }
+
+    // Case 2: Brand + RAM + Storage
+    foreach ($brands as $brand) {
+        foreach ($rams as $ram) {
+            foreach ($storages as $storage) {
+                $params[] = [
+                    'filters' => [$brand, "{$ram}-{$storage}"]
+                ];
+            }
+        }
+    }
+
+    return response()->json([
+        'data' => $params
+    ]);
+}
+
 }

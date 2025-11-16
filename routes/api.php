@@ -4,6 +4,7 @@ use App\Http\Controllers\Api\BrandApiController;
 use Illuminate\Support\Facades\Route;
 Route::get('/homepage', [PhoneApiController::class, 'index']);
 Route::get('/getPhoneBySlug', [PhoneApiController::class, 'getPhoneBySlug']);
+Route::get('/getStaticFilters', [PhoneApiController::class, 'getStaticFilters']);
 Route::post('/phones', [PhoneApiController::class, 'phones']);
 Route::get('/phones/filters', [PhoneApiController::class, 'getFilterOptions']);
 Route::get('/phones/{slug}', [PhoneApiController::class, 'show']);
