@@ -96,6 +96,7 @@ class PhoneApiController extends Controller
         $cacheKey = "phone_details_{$slug}";
         DB::enableQueryLog();
         $phone = Phone::with([
+            'brand:id,name',
             'specifications',
             'searchIndex',
             'colors',
