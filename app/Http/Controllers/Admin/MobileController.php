@@ -43,13 +43,13 @@ class MobileController extends Controller
                 'max_visible' => 4,
                 'items' => [
                     ['key' => 'type', 'label' => 'Type', 'type' => 'text', 'placeholder' => 'AMOLED, HDR10+'],
-                    ['key' => 'size', 'label' => 'Screen Size','type' => 'text', 'placeholder' => '6.83 inches'],
-                    ['key' => 'resolution', 'label' => 'Resolution','type' => 'text', 'placeholder' => '2772 x 1280 (~447ppi)'],
-                    ['key' => 'refresh_rate', 'label' => 'Refresh Rate','type' => 'text', 'placeholder' => '120Hz'],
-                    ['key' => 'brightness', 'label' => 'Brightness', 'type' => 'text','placeholder' => 'Peak 3200 nits'],
-                    ['key' => 'protection', 'label' => 'Protection', 'type' => 'text','placeholder' => 'Gorilla Glass 7i'],
-                    ['key' => 'touch_sampling_rate', 'label' => 'Touch Sampling Rate','type' => 'text', 'placeholder' => '480Hz'],
-                    ['key' => 'features', 'label' => 'Display Features', 'type' => 'text','placeholder' => 'Always-on display, Dolby Vision, HDR10+'],
+                    ['key' => 'size', 'label' => 'Screen Size', 'type' => 'text', 'placeholder' => '6.83 inches'],
+                    ['key' => 'resolution', 'label' => 'Resolution', 'type' => 'text', 'placeholder' => '2772 x 1280 (~447ppi)'],
+                    ['key' => 'refresh_rate', 'label' => 'Refresh Rate', 'type' => 'text', 'placeholder' => '120Hz'],
+                    ['key' => 'brightness', 'label' => 'Brightness', 'type' => 'text', 'placeholder' => 'Peak 3200 nits'],
+                    ['key' => 'protection', 'label' => 'Protection', 'type' => 'text', 'placeholder' => 'Gorilla Glass 7i'],
+                    ['key' => 'touch_sampling_rate', 'label' => 'Touch Sampling Rate', 'type' => 'text', 'placeholder' => '480Hz'],
+                    ['key' => 'features', 'label' => 'Display Features', 'type' => 'text', 'placeholder' => 'Always-on display, Dolby Vision, HDR10+'],
                 ]
             ],
 
@@ -188,10 +188,11 @@ class MobileController extends Controller
 
     public function store(Request $request)
     {
-
+        // echo "<pre>";
+        // print_r($request->all());
+        // exit;
 
         $validated = $request->validate([
-            // Phone info
             'brand' => 'required|string',
             'name' => 'required|string|max:255',
             'tagline' => 'nullable|string',
@@ -199,110 +200,137 @@ class MobileController extends Controller
             'variants' => 'required|array|min:1',
             'specifications' => 'required|array|min:1',
         ]);
-        $primary_image = $request->file('primary_image');
-        if ($primary_image && $primary_image->isValid()) {
-            $fileName = $primary_image->store('primary_images', 'public');
+
+        // Handle Primary Image
+        $fileName = null;
+        if ($request->hasFile('primary_image') && $request->file('primary_image')->isValid()) {
+            $fileName = $request->file('primary_image')->store('primary_images', 'public');
         }
 
         $status = $request->input('action') === 'draft' ? 'draft' : 'published';
-        // 1️⃣ Save Phone
+
+        // 1️⃣ Create Phone
         $phone = Phone::create([
             'brand_id' => $validated['brand'],
             'name' => $validated['name'],
             'slug' => Str::slug($validated['name']),
             'tagline' => $validated['tagline'] ?? null,
-            'primary_image' => $fileName ?? null,
+            'primary_image' => $fileName,
             'release_date' => $validated['release_date'] ?? null,
-            'announced_date' => $request->input('announced_date') ?? null,
+            'announced_date' => $request->input('announced_date'),
             'status' => $status,
         ]);
-        $ram_type = $request->input('ram_type');          // e.g. LPDDR5X
-        $storage_type = $request->input('storage_type');  // e.g. UFS 4.0
-        $sd_card = $request->input('sd_card');            // e.g. No
 
-        $ram_list = [];
-        $storage_list = [];
+        // Variant Helpers
+        $ram_list = $storage_list = $price_list = [];
+        $available_colors = [];
+        $mergedSpecs = [];
+
         // 2️⃣ Save Variants
-        foreach ($validated['variants']['specs'] as $variants) {
-            $ram_and_storage = explode("/", $variants);
-            $price = $validated['variants']['price_modifier'][$variants];
-            $ram = $ram_and_storage[0];
-            $storage = $ram_and_storage[1];
+        if (!empty($validated['variants']['specs'])) {
+            foreach ($validated['variants']['specs'] as $variant) {
 
-            $ram_list[] = $ram;
-            $storage_list[] = $storage;
+                [$ram, $storage] = explode("/", $variant);
+                $price = $validated['variants']['price_modifier'][$variant];
 
-            Variant::create([
-                'phone_id' => $phone->id,
-                'storage' => $storage,
-                'ram' => $ram,
-                'price' => $price
-            ]);
-        }
+                $ram_list[] = $ram;
+                $storage_list[] = $storage;
+                $price_list[] = $price;
 
-        // foreach ($validated['variants']['colors'] ?? [] as $value) {
-        //     $colorName = $validated['variants']['color_names'][$value];
-        //     $colorHex = $validated['variants']['color_hex'][$value];
-        //     $variantColor = PhoneColor::create([
-        //         'phone_id' => $phone->id,
-        //         'name' => $colorName,
-        //         'hex_code' => $colorHex,
-        //         'slug' => strtolower(str_replace(' ', '_', $colorName)),
-        //     ]);
-
-        //     foreach ($validated['variants']['color_image'][$value] ?? [] as $file) {
-        //         if ($file->isValid()) {
-        //             $fileName = $file->store('colors', 'public');
-        //             PhoneImage::create([
-        //                 'phone_color_id' => $variantColor->id,
-        //                 'image_url' => $fileName,
-        //             ]);
-        //         }
-        //     }
-        // }
-        $memorySpecficaion['Memory'] = [
-            'RAM' => implode(' / ', array_unique($ram_list)) . ' ' . $ram_type,
-            'Storage' => implode(' / ', array_unique($storage_list)) .
-                (!empty($storage_type) ? ' (' . $storage_type . ')' : ''),
-            'Card Slot' => $sd_card
-        ];
-
-        $specs = $validated['specifications']; // your main array
-
-        $newSectionKey = 'memory';
-        $newSectionValue = $memorySpecficaion['Memory']; // your formatted memory data
-
-        $updatedSpecs = [];
-        foreach ($specs as $key => $value) {
-            // copy the current key/value
-            $updatedSpecs[$key] = $value;
-
-            // insert new section right after 'performance'
-            if ($key === 'performance') {
-                $updatedSpecs[$newSectionKey] = $newSectionValue;
+                Variant::create([
+                    'phone_id' => $phone->id,
+                    'storage' => $storage,
+                    'ram' => $ram,
+                    'price' => $price
+                ]);
             }
         }
 
-        // replace original array
-        $validated['specifications'] = $updatedSpecs;
 
-        // 3️⃣ Save Specifications
-        foreach ($validated['specifications'] as $category => $specs) {
+        // 3️⃣ Store Colors & Images
+        foreach ($validated['variants']['colors'] ?? [] as $value) {
 
-            if (empty(array_filter($specs, fn($v) => !empty($v)))) {
+            $colorName = trim($validated['variants']['color_names'][$value] ?? '');
+            $colorHex = $validated['variants']['color_hex'][$value] ?? null;
+
+            // Skip if empty or hex missing
+            if (empty($colorName) || empty($colorHex)) {
                 continue;
             }
-            PhoneSpecification::create([
-                'phone_id'        => $phone->id,
-                'category'        => $category,
-                'specifications'  => json_encode($specs),
-                'searchable_text' => $request->input("searchable_text-$category"),
+
+            $available_colors[] = compact('colorName', 'colorHex');
+
+            $variantColor = PhoneColor::create([
+                'phone_id' => $phone->id,
+                'name' => $colorName,
+                'hex_code' => $colorHex,
+                'slug' => strtolower(str_replace(' ', '_', $colorName)),
             ]);
+
+            foreach ($validated['variants']['color_image'][$value] ?? [] as $file) {
+                if ($file->isValid()) {
+                    PhoneImage::create([
+                        'phone_color_id' => $variantColor->id,
+                        'image_url' => $file->store('colors', 'public'),
+                    ]);
+                }
+            }
         }
 
-        if ($status === 'published') {
-            //update_phone_search_index($phone, $validated);
+
+        // 4️⃣ Insert Memory block
+        $specs = $validated['specifications'];
+        $ram_type = $request->input('ram_type');
+        $storage_type = $request->input('storage_type');
+        $sd_card = $request->input('sd_card');
+
+        $updatedSpecs = [];
+
+        $memorySpec = [
+            'RAM' => implode(' / ', array_unique($ram_list)) . ' ' . $ram_type,
+            'Storage' => implode(' / ', array_unique($storage_list)) . ($storage_type ? " ($storage_type)" : ''),
+            'Card Slot' => $sd_card,
+        ];
+
+        foreach ($specs as $key => $value) {
+            $updatedSpecs[$key] = $value;
+            if ($key === 'performance') {
+                $updatedSpecs['memory'] = $memorySpec;
+            }
         }
+
+        // 5️⃣ Create phone specifications & merged specs
+        foreach ($updatedSpecs as $category => $categorySpecs) {
+            if (!array_filter($categorySpecs))
+                continue;
+
+            PhoneSpecification::create([
+                'phone_id' => $phone->id,
+                'category' => $category,
+                'specifications' => json_encode($categorySpecs),
+                'searchable_text' => $request->input("searchable_text-$category"),
+            ]);
+
+            foreach ($categorySpecs as $k => $v) {
+                if (!in_array($k, ['expandable', 'max_visible'])) {
+                    $mergedSpecs[$k] = $v;
+                }
+            }
+        }
+
+        // 6️⃣ Update search index only if published
+        if ($status === 'published') {
+            update_phone_search_index(
+                $ram_list,
+                $storage_list,
+                $price_list,
+                $available_colors,
+                $mergedSpecs,
+                $validated,
+                $phone->id
+            );
+        }
+
 
 
         $message = $status === 'draft' ? 'Phone saved as draft!' : 'Phone published successfully!';
@@ -322,7 +350,7 @@ class MobileController extends Controller
 
     public function update(Request $request, $id)
     {
-       
+
         $validated = $request->validate([
             // Phone info
             'brand' => 'required|string',
@@ -368,8 +396,9 @@ class MobileController extends Controller
         $storage_type = $request->input('storage_type');  // e.g. UFS 4.0
         $sd_card = $request->input('sd_card');            // e.g. No
 
-        $ram_list = [];
-        $storage_list = [];
+        $ram_list = $storage_list = $price_list = [];
+        $available_colors = [];
+        $mergedSpecs = [];
         foreach ($validated['variants']['specs'] as $variants) {
             $ram_and_storage = explode("/", $variants);
             $price = $validated['variants']['price_modifier'][$variants];
@@ -379,7 +408,7 @@ class MobileController extends Controller
             $storage = trim($ram_and_storage[1]);
             $ram_list[] = $ram;
             $storage_list[] = $storage;
-
+            $price_list[] = $price;
             Variant::create([
                 'phone_id' => $phone->id,
                 'storage' => $storage,
@@ -411,35 +440,33 @@ class MobileController extends Controller
             }
         }
 
-        // replace original array
-        $validated['specifications'] = $updatedSpecs;
         foreach ($validated['variants']['colors'] ?? [] as $value) {
-    $colorName = $validated['variants']['color_names'][$value];
-    $colorHex = $validated['variants']['color_hex'][$value];
-    $slug = strtolower(str_replace(' ', '_', $colorName));
+            $colorName = $validated['variants']['color_names'][$value];
+            $colorHex = $validated['variants']['color_hex'][$value];
+            $slug = strtolower(str_replace(' ', '_', $colorName));
 
-    // Find or create color
-    $variantColor = PhoneColor::updateOrCreate(
-        ['phone_id' => $phone->id, 'slug' => $slug],
-        ['name' => $colorName, 'hex_code' => $colorHex]
-    );
+            // Find or create color
+            $variantColor = PhoneColor::updateOrCreate(
+                ['phone_id' => $phone->id, 'slug' => $slug],
+                ['name' => $colorName, 'hex_code' => $colorHex]
+            );
 
-    $deleteImageIds = $validated['variants']['delete_images'] ?? [];
+            $deleteImageIds = $validated['variants']['delete_images'] ?? [];
 
-if (!empty($deleteImageIds)) {
-    $images = PhoneImage::whereIn('id', $deleteImageIds)->get();
+            if (!empty($deleteImageIds)) {
+                $images = PhoneImage::whereIn('id', $deleteImageIds)->get();
 
-    foreach ($images as $image) {
-        // Delete file from storage
-        Storage::disk('public')->delete($image->image_url);
-        
-        // Delete DB record
-        $image->delete();
-    }
-}
+                foreach ($images as $image) {
+                    // Delete file from storage
+                    Storage::disk('public')->delete($image->image_url);
 
-    // Add new images (don’t delete old ones)
-     foreach ($validated['variants']['color_image'][$value] ?? [] as $file) {
+                    // Delete DB record
+                    $image->delete();
+                }
+            }
+
+            // Add new images (don’t delete old ones)
+            foreach ($validated['variants']['color_image'][$value] ?? [] as $file) {
                 if ($file->isValid()) {
                     $fileName = $file->store('colors', 'public');
                     PhoneImage::create([
@@ -450,22 +477,18 @@ if (!empty($deleteImageIds)) {
             }
         }
 
-        // 3️⃣ Update Specifications
-        foreach ($validated['specifications'] as $category => $specs) {
-            // ensure $specs is an array
-            if (!is_array($specs)) continue;
-
+        foreach ($updatedSpecs as $category => $categorySpecs) {
+            if (!array_filter($categorySpecs))
+                continue;
             // if category has no non-empty values, delete existing row and skip
-            if (!hasNonEmptyValue($specs)) {
+            if (!hasNonEmptyValue(arr: $categorySpecs)) {
                 PhoneSpecification::where('phone_id', $phone->id)
                     ->where('category', $category)
                     ->delete();
                 // debug: \Log::debug("Skipped empty category: $category", $specs);
                 continue;
             }
-
-            // keep only meaningful keys/values to store
-            $filteredSpecs = filterSpecs($specs);
+            $filteredSpecs = filterSpecs($categorySpecs);
             unset($filteredSpecs['expandable']);
             unset($filteredSpecs['max_visible']);
             PhoneSpecification::updateOrCreate(
@@ -478,11 +501,27 @@ if (!empty($deleteImageIds)) {
                     'searchable_text' => $request->input("searchable_text-$category"),
                 ]
             );
+
+            foreach ($categorySpecs as $k => $v) {
+                if (!in_array($k, ['expandable', 'max_visible'])) {
+                    $mergedSpecs[$k] = $v;
+                }
+            }
         }
 
         // 4️⃣ Update Search Index if published
         if ($status === 'published') {
-            //update_phone_search_index($phone, $validated);
+            if ($status === 'published') {
+                update_phone_search_index(
+                    $ram_list,
+                    $storage_list,
+                    $price_list,
+                    $available_colors,
+                    $mergedSpecs,
+                    $validated,
+                    $phone->id
+                );
+            }
         }
 
         $message = $status === 'draft' ? 'Phone saved as draft!' : 'Phone updated successfully!';

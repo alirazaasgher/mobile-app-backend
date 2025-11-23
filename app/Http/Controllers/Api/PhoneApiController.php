@@ -28,7 +28,7 @@ class PhoneApiController extends Controller
     public function index(Request $request): JsonResponse
     {
         $usedPhoneIds = [];
-        // Latest mobiles 
+        // Latest mobiles
         $latestMobiles = Phone::query()
             ->select('id', 'name', 'slug', 'release_date', 'primary_image') // include brand_id for eager load
             ->with([
@@ -53,14 +53,14 @@ class PhoneApiController extends Controller
             $usedPhoneIds,
             $upcomingMobiles->pluck('id')->toArray()
         );
-        // Popular mobiles 
+        // Popular mobiles
         $popularMobiles = Phone::active()
             ->withListingData()
             ->orderBy('popularity_score', 'desc')
             ->whereNotIn('id', $usedPhoneIds)->take(10)
             ->get();
         $usedPhoneIds = array_merge($usedPhoneIds, $popularMobiles->pluck('id')->toArray());
-        // Price Ranges 
+        // Price Ranges
         $priceRanges = ['under_10000' => [0, 10000], '10000_to_20000' => [10000, 20000], '20000_to_30000' => [20000, 30000], 'above_30000' => [30000, null],];
         $mobilesByPriceRange = [];
         foreach ($priceRanges as $key => [$min, $max]) {
@@ -108,7 +108,7 @@ class PhoneApiController extends Controller
         $queries = DB::getQueryLog();
 
         // Print queries
-        //dd($phone);
+        // dd($phone);
         // $phone = Cache::remember($cacheKey, 600, function () use ($id) {
 
         // });
@@ -282,41 +282,41 @@ class PhoneApiController extends Controller
     public function getPhoneBySlug(Request $request)
     {
         $slugs = Phone::pluck('slug'); // pluck returns array of values
-    return response()->json(["data" => $slugs]);
+        return response()->json(["data" => $slugs]);
     }
 
     public function getStaticFilters()
-{
-    // Static data
-    $brands = ['samsung', 'xiaomi', 'iphone'];
-    $rams = ['4gb', '8gb', '12gb'];
-    $storages = ['64gb', '128gb', '256gb'];
+    {
+        // Static data
+        $brands = ['samsung', 'xiaomi', 'iphone'];
+        $rams = ['4gb', '8gb', '12gb'];
+        $storages = ['64gb', '128gb', '256gb'];
 
-    $params = [];
+        $params = [];
 
-    // Case 1: RAM + Storage only (no brand)
-    foreach ($rams as $ram) {
-        foreach ($storages as $storage) {
-            $params[] = [
-                'filters' => ["{$ram}-{$storage}"]
-            ];
-        }
-    }
-
-    // Case 2: Brand + RAM + Storage
-    foreach ($brands as $brand) {
+        // Case 1: RAM + Storage only (no brand)
         foreach ($rams as $ram) {
             foreach ($storages as $storage) {
                 $params[] = [
-                    'filters' => [$brand, "{$ram}-{$storage}"]
+                    'filters' => ["{$ram}-{$storage}"]
                 ];
             }
         }
-    }
 
-    return response()->json([
-        'data' => $params
-    ]);
-}
+        // Case 2: Brand + RAM + Storage
+        foreach ($brands as $brand) {
+            foreach ($rams as $ram) {
+                foreach ($storages as $storage) {
+                    $params[] = [
+                        'filters' => [$brand, "{$ram}-{$storage}"]
+                    ];
+                }
+            }
+        }
+
+        return response()->json([
+            'data' => $params
+        ]);
+    }
 
 }

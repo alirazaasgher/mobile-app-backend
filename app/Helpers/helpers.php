@@ -1,46 +1,20 @@
 <?php
 
 use Illuminate\Support\Facades\DB;
-use App\Models\Variant;
-use App\Models\PhoneColor;
-use App\Models\PhoneSpecification;
+function update_phone_search_index(
+    $ramOptions,
+    $storageOptions,
+    $priceList,
+    $availableColors,
+    $specMap,
+    $validated,
+    $phoneId
+) {
 
-function update_phone_search_index($phone, $validated)
-{
-    $ramOptions = [];
-    $storageOptions = [];
-    $priceList = [];
-    $availableColors = [];
-
-    // Collect variants data
-    $variants = Variant::where('phone_id', $phone->id)->get();
-    foreach ($variants as $v) {
-        $ramOptions[] = $v->ram;
-        $storageOptions[] = $v->storage;
-        $priceList[] = $v->price;
-    }
-
-    // Collect color data
-    $colors = PhoneColor::where('phone_id', $phone->id)->get();
-    foreach ($colors as $c) {
-        $availableColors[] = [
-            'name' => $c->name,
-            'hex' => $c->hex_code,
-        ];
-    }
 
     // Calculate price range
-    $minPrice = !empty($priceList) ? min($priceList) : 0;
+    $minPrice = !empty($priceList) ? min($priceList) : $priceList[0];
     $maxPrice = !empty($priceList) ? max($priceList) : 0;
-
-    // Extract key specifications for search/filter
-    $specs = PhoneSpecification::where('phone_id', $phone->id)->get();
-
-    $specMap = [];
-    foreach ($specs as $spec) {
-        $decoded = json_decode($spec->specifications, true);
-        $specMap = array_merge($specMap, $decoded);
-    }
 
     // Extract commonly used specs
     $screenSize = $specMap['size'] ?? null;
@@ -65,8 +39,7 @@ function update_phone_search_index($phone, $validated)
 
     // Search content
     $searchContent = implode(' ', [
-        $phone->name,
-        $phone->tagline,
+        $validated['name'],
         $chipset,
         $os,
         $sizeInInches,
@@ -77,12 +50,11 @@ function update_phone_search_index($phone, $validated)
 
     // ✅ Insert into phone_search_indices
     DB::table('phone_search_indices')->updateOrInsert(
-        ['phone_id' => $phone->id],
+        ['phone_id' => $phoneId],
         [
             'brand' => $validated['brand'],
             'model' => $validated['name'],
-            'name' => $phone->name,
-            'main_image' => $phone->primary_image,
+            'name' => $validated['name'],
             'min_price' => $minPrice,
             'max_price' => $maxPrice,
             'ram_options' => json_encode(array_unique($ramOptions)),
@@ -103,13 +75,16 @@ function update_phone_search_index($phone, $validated)
             'ip_rating' => $ipRating,
             'weight_grams' => $weightGs,
             'search_content' => $searchContent,
-            'tags' => json_encode(build_phone_tags($specMap)),
+            // 'tags' => json_encode(build_phone_tags($specMap)),
             'updated_at' => now(),
         ]
     );
 }
 function build_phone_tags(array $specMap): array
 {
+    echo "<pre>";
+    print_r($specMap);
+    exit;
     $tags = [];
 
     // 5G
@@ -119,7 +94,7 @@ function build_phone_tags(array $specMap): array
 
     // Chipset
     if (!empty($specMap['chipset'])) {
-        $tags[] = trim($specMap['Chipset']);
+        $tags[] = trim($specMap['chipset']);
     }
 
     // Display
@@ -170,7 +145,8 @@ function hasNonEmptyValue(array $arr): bool
 {
     foreach ($arr as $v) {
         if (is_array($v)) {
-            if (hasNonEmptyValue($v)) return true;
+            if (hasNonEmptyValue($v))
+                return true;
             continue;
         }
 
@@ -180,9 +156,11 @@ function hasNonEmptyValue(array $arr): bool
         // - if string: trimmed string is not empty
         // - otherwise: not null
         if (is_string($v)) {
-            if (trim($v) !== '') return true;
+            if (trim($v) !== '')
+                return true;
         } else {
-            if (!is_null($v)) return true;
+            if (!is_null($v))
+                return true;
         }
     }
     return false;
@@ -195,18 +173,21 @@ function filterSpecs(array $arr): array
     foreach ($arr as $k => $v) {
         if (is_array($v)) {
             $vFiltered = filterSpecs($v);
-            if (!empty($vFiltered)) $out[$k] = $vFiltered;
+            if (!empty($vFiltered))
+                $out[$k] = $vFiltered;
             continue;
         }
 
         if (is_string($v)) {
             $trim = trim($v);
-            if ($trim !== '') $out[$k] = $trim;
+            if ($trim !== '')
+                $out[$k] = $trim;
             continue;
         }
 
         // keep non-null non-string values (adjust if you want to drop false/0)
-        if (!is_null($v)) $out[$k] = $v;
+        if (!is_null($v))
+            $out[$k] = $v;
     }
     return $out;
 }
