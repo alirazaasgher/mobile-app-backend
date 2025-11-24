@@ -32,7 +32,7 @@
           <div>
             <label class="block font-medium">Brand</label>
             <select name="brand"
-              class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm 
+              class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm
                                                    focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
               <option value="">Select brand</option>
               @foreach ($brands as $brand)
@@ -88,7 +88,7 @@
           <div class="flex flex-wrap gap-1 border-b border-gray-200 mb-6" id="tabs" role="tablist">
             @foreach ($specificationTemplates as $index => $fields)
                <button type="button" data-tab="{{ $index }}" class="tab-btn px-4 py-2.5 text-sm font-medium border-b-2 transition-colors
-                         {{ $loop->first ? 'border-blue-600 text-blue-600 bg-blue-50' : 'border-transparent text-gray-600 hover:text-blue-600 hover:border-gray-300' }} 
+                         {{ $loop->first ? 'border-blue-600 text-blue-600 bg-blue-50' : 'border-transparent text-gray-600 hover:text-blue-600 hover:border-gray-300' }}
                          focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 rounded-t-md" role="tab"
                 aria-selected="{{ $loop->first ? 'true' : 'false' }}" aria-controls="tab-{{ $index }}">
                 {{ ucfirst($index) }}
@@ -134,7 +134,7 @@
 
                       <div class="lg:col-span-2">
                         @if ($field['type'] === 'select' && isset($field['options']))
-                          <select name="specifications[{{$fieldindex}}][{{ $field['key'] }}]" id="{{ $fieldId }}" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm 
+                          <select name="specifications[{{$fieldindex}}][{{ $field['key'] }}]" id="{{ $fieldId }}" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm
                                                    focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500
                                                    text-sm transition-colors"
                             onchange="updateSearchableText('{{ $fieldindex }}')">
@@ -148,7 +148,7 @@
                         @else
                           <input type="{{ $field['type'] }}" name="specifications[{{ $fieldindex }}][{{ $field['key'] }}]"
                             id="{{ $fieldId }}" value="{{ $specValue }}"
-                            placeholder="{{ $field['placeholder'] ?? 'Enter ' . strtolower($field['label']) }}" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm 
+                            placeholder="{{ $field['placeholder'] ?? 'Enter ' . strtolower($field['label']) }}" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm
                                                   focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500
                                                   text-sm transition-colors"
                             onchange="updateSearchableText('{{ $fieldindex }}')" />
@@ -215,7 +215,7 @@
             <div class="space-y-3">
   <div class="flex justify-between items-center">
     <h3 class="text-base font-semibold text-gray-900">Color Options</h3>
-    <button type="button" id="addColorBtn" 
+    <button type="button" id="addColorBtn"
             class="bg-blue-500 text-white px-3 py-1 text-sm rounded hover:bg-blue-600">
       + Add Color
     </button>
@@ -232,22 +232,22 @@
 
             <div class="color-option-row flex flex-col space-y-2 w-full border p-2 rounded" id="{{ $colorId }}">
                 <div class="flex items-center space-x-2">
-                    <input type="checkbox" name="variants[colors][]" 
+                    <input type="checkbox" name="variants[colors][]"
                         value="{{ $colorSlug }}" class="rounded flex-shrink-0" checked>
 
                     <div class="color-preview w-4 h-4 rounded-full border flex-shrink-0"
                         style="background-color: {{ $color['hex_code'] }}"></div>
 
-                    <input type="text" name="variants[color_names][{{ $colorSlug }}]" 
+                    <input type="text" name="variants[color_names][{{ $colorSlug }}]"
                         value="{{ $color['name'] }}" placeholder="Color Name"
                         class="color-name-input text-sm border rounded px-2 py-1 flex-1">
 
-                    <input type="text" name="variants[color_hex][{{ $colorSlug }}]" 
+                    <input type="text" name="variants[color_hex][{{ $colorSlug }}]"
                         value="{{ $color['hex_code'] }}"
                         class="color-hex-input text-xs border rounded px-2 py-1 flex-1"
                         oninput="updateColorCircle('{{ $colorId }}', this.value)">
 
-                    <input type="file" name="variants[color_image][{{ $colorSlug }}][]" 
+                    <input type="file" name="variants[color_image][{{ $colorSlug }}][]"
                         class="text-xs border rounded px-2 py-1 flex-1" accept="image/*" multiple>
 
                     <button type="button" class="remove-color bg-red-400 text-white px-2 py-1 rounded text-xs"
@@ -260,9 +260,9 @@
     @foreach($color->images as $img)
       <div class="relative group rounded-xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 bg-gray-50">
         {{-- Clickable image to view full size --}}
-        <img 
-          src="{{ asset('storage/' . $img->image_url) }}" 
-          class="w-full h-32 object-contain bg-white p-2 cursor-pointer group-hover:scale-105 transition-transform duration-300" 
+        <img
+          src="{{ asset('storage/' . $img->image_url) }}"
+          class="w-full h-32 object-contain bg-white p-2 cursor-pointer group-hover:scale-105 transition-transform duration-300"
           alt="Color Image"
           onclick="openImageModal('{{ asset('storage/' . $img->image_url) }}', {{ $img->id }})"
         >
@@ -271,10 +271,10 @@
         <label class="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-200 cursor-pointer flex items-end justify-center pb-2"
           onclick="event.stopPropagation()">
           <div class="flex items-center gap-2 bg-white/95 backdrop-blur-sm px-3 py-1.5 rounded-full shadow-lg">
-            <input 
-              type="checkbox" 
-              name="variants[delete_images][]" 
-              value="{{ $img->id }}" 
+            <input
+              type="checkbox"
+              name="variants[delete_images][]"
+              value="{{ $img->id }}"
               class="w-4 h-4 accent-red-500 cursor-pointer"
               onclick="event.stopPropagation()"
             >
@@ -313,7 +313,7 @@
                 class="color-hex-input text-xs border rounded px-2 py-1 flex-1"
                 oninput="updateColorCircle('color_0', this.value)">
 
-            <input type="file" name="variants[color_image][color_0][]" 
+            <input type="file" name="variants[color_image][color_0][]"
                 class="text-xs border rounded px-2 py-1 flex-1" accept="image/*" multiple>
 
             <button type="button" class="remove-color bg-red-400 text-white px-2 py-1 rounded text-xs"
@@ -545,7 +545,7 @@
                class="color-hex-input text-xs border rounded px-2 py-1 flex-1"
                oninput="updateColorCircle('${colorId}', this.value)">
 
-        <input type="file" name="variants[color_image][${colorSlug}][]" 
+        <input type="file" name="variants[color_image][${colorSlug}][]"
                class="text-xs border rounded px-2 py-1 flex-1" accept="image/*" multiple>
 
         <button type="button" class="remove-color bg-red-400 text-white px-2 py-1 rounded text-xs"
@@ -594,10 +594,10 @@
       // const container = document.getElementById(id);
       const customFieldHTML = `
                                                   <div class="grid grid-cols-1 md:grid-cols-3 gap-4 items-center mb-4 p-4 bg-blue-50 rounded-lg border border-blue-200" id="custom-field-${fieldCounter}">
-                                                      <input type="text" name="custom_keys[${tabName}][]" placeholder="Field name (e.g., special_feature)" 
+                                                      <input type="text" name="custom_keys[${tabName}][]" placeholder="Field name (e.g., special_feature)"
                                                              class="text-sm font-medium px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                                                       <div class="md:col-span-2 flex space-x-2">
-                                                          <input type="text" name="custom_values[${tabName}][]" placeholder="Field value" 
+                                                          <input type="text" name="custom_values[${tabName}][]" placeholder="Field value"
                                                                  class="flex-1 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                                                                  onchange="updateSearchableText()">
                                                           <button type="button" onclick="removeCustomField(${fieldCounter})"
@@ -673,20 +673,20 @@
         const html = `
                       <label class="flex items-center justify-between p-2 border rounded hover:bg-gray-50 cursor-pointer transition-colors">
                           <div class="flex items-center space-x-2">
-                              <input 
-                                  type="checkbox" 
-                                  name="variants[${variantIndex}][specs][]" 
-                                  value="${value}" 
+                              <input
+                                  type="checkbox"
+                                  name="variants[${variantIndex}][specs][]"
+                                  value="${value}"
                                   class="rounded text-blue-600"
                                   checked
                               >
                               <span class="text-sm font-medium">${label}</span>
                           </div>
-                          <input 
-                              type="number" 
-                              name="variants[${variantIndex}][price_modifier][${value}]" 
+                          <input
+                              type="number"
+                              name="variants[${variantIndex}][price_modifier][${value}]"
                               placeholder="Modifier"
-                              class="w-20 text-xs border rounded px-2 py-1" 
+                              class="w-20 text-xs border rounded px-2 py-1"
                               value="0"
                           >
                       </label>

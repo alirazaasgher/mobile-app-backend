@@ -254,7 +254,7 @@ class MobileController extends Controller
             });
 
             // search index
-            $this->phoneService->maybeUpdateSearchIndex($status, $ram_list, $storage_list, $price_list, $available_colors, $mergedSpecs, $validated, $phone->id);
+            update_phone_search_index($ram_list, $storage_list, $price_list, $available_colors, $mergedSpecs, $validated, $phone->id);
 
             DB::commit();
 
@@ -349,12 +349,13 @@ class MobileController extends Controller
                 }
             }
 
-            $mergedSpecs = $this->phoneService->saveSpecifications($phone, $updatedSpecs, function ($category) use ($request) {
-                return $request->input("searchable_text-$category");
-            });
+            // $this->phoneService->saveSpecifications($phone, $updatedSpecs, function ($category) use ($request) {
+            //     return $request->input("searchable_text-$category");
+            // });
 
+
+            update_phone_search_index($ram_list, $storage_list, $price_list, $available_colors, $updatedSpecs, $validated, $id);
             // search index (if published)
-            $this->phoneService->maybeUpdateSearchIndex($status, $ram_list, $storage_list, $price_list, $available_colors, $mergedSpecs, $validated, $phone->id);
 
             DB::commit();
 

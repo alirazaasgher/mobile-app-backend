@@ -17,27 +17,38 @@ function update_phone_search_index(
     $minPrice = !empty($priceList) ? min($priceList) : $priceList[0];
     $maxPrice = !empty($priceList) ? max($priceList) : 0;
 
-    // Extract commonly used specs
-    $screenSize = $specMap['size'] ?? null;
+    $displayType = $specMap['display']['type'] ?? null;
+    $screenSize = $specMap['display']['size'] ?? null;
     preg_match('/([\d.]+)\s*inches?/i', $screenSize, $matches);
     $sizeInInches = $matches[1] ?? null;
+
+    $os = $specMap['performance']['os'] ?? null;
+    $chipset = $specMap['performance']['chipset'] ?? null;
+
+    // Refresh rate
+    $refreshRate = $specMap['display']['refresh_rate'] ?? '60Hz';
+    preg_match('/([\d.]+)/', $refreshRate, $matches);
+    $refreshRateHz = $matches[1] ?? 60;
+
+    // IP rating / durability
+    $ipRating = $specMap['design']['durability'] ?? null;
+
+    // Weight
+    $weight = $specMap['design']['weight'] ?? null;
+    preg_match('/([\d.]+)\s*g/i', $weight, $matches);
+    $weightGs = $matches[1] ?? null;
+
+    // Boolean features
+    $has5G = isset($specMap['network']['technology']) && str_contains(strtolower($specMap['network']['technology']), '5g') ? 1 : 0;
+    $hasNfc = isset($specMap['connectivity']['nfc']) && strtolower($specMap['connectivity']['nfc']) === 'yes' ? 1 : 0;
+    $hasFastCharging = isset($specMap['battery']['charging_speed']) && preg_match('/\d+\s*W/i', $specMap['battery']['charging_speed']) ? 1 : 0;
+    $hasWirelessCharging = isset($specMap['battery']['wireless']) && strtolower($specMap['battery']['wireless']) === 'yes' ? 1 : 0;
+
+    // Extract commonly used specs
+
     $battery = $specMap['Battery Capacity (mAh)'] ?? null;
     $mainCam = $specMap['Main Camera (MP)'] ?? null;
     $selfieCam = $specMap['Selfie Camera (MP)'] ?? null;
-    $os = $specMap['os'] ?? null;
-    $chipset = $specMap['chipset'] ?? null;
-    $refreshRate = $specMap['Refresh Rate (Hz)'] ?? 60;
-    $displayType = $specMap['type'] ?? null;
-    $ipRating = $specMap['IP Rating'] ?? null;
-    $weight = $specMap['weight'] ?? null;
-    preg_match('/([\d.]+)\s*g?/i', $weight, $matches);
-    $weightGs = $matches[1] ?? null;
-    // Boolean features
-    $has5G = isset($specMap['5G']) && strtolower($specMap['5G']) === 'yes' ? 1 : 0;
-    $hasNfc = isset($specMap['NFC']) && strtolower($specMap['NFC']) === 'yes' ? 1 : 0;
-    $hasFastCharging = isset($specMap['Fast Charging']) && strtolower($specMap['Fast Charging']) === 'yes' ? 1 : 0;
-    $hasWirelessCharging = isset($specMap['Wireless Charging']) && strtolower($specMap['Wireless Charging']) === 'yes' ? 1 : 0;
-
     // Search content
     $searchContent = implode(' ', [
         $validated['name'],
@@ -223,11 +234,32 @@ function build_top_specs($validated, $weightGs, $os, $chipset)
 
 function build_specs_grid($sizeInInches, $specMap, $mainCam, $battery)
 {
+
+
+    $resolution = $specMap['display']['resolution'] ?? null;
+    $refreshRate = $specMap['display']['refresh_rate'] ?? null;
+    $brightness = $specMap['display']['brightness'] ?? null; // "Peak 1900 nits"
+    preg_match('/(\d+\s*nits)/i', $brightness, $matches);
+    $brightnessValue = $matches[1] ?? null;
+    $displaySubvalue = implode(' • ', array_filter([$resolution, $refreshRate, $brightnessValue]));
+
+    if (preg_match('/^\d+W/', $specMap['charging_speed'], $matches)) {
+        $fastCharging = $matches[0]; // e.g., "45W"
+    }
+
+    if (preg_match('/^\d+W/', $specMap['battery']['wireless'], $matches)) {
+        $wirlessCharging = $matches[0]; // e.g., "45W"
+    }
+
+    if (preg_match('/^\d+W/', $specMap['battery']['reverse'], $matches)) {
+        $reverseCharging = $matches[0]; // e.g., "45W"
+    }
+
     return [
         [
             "key" => "display",
-            "value" => $sizeInInches . "\"",
-            "subvalue" => $specMap['resolution'] ?? null
+            "value" => $sizeInInches . '" ' . ($specMap['display']['type'] ?? ''),
+            "subvalue" => $displaySubvalue ?? null
         ],
         [
             "key" => "main_camera",
@@ -236,8 +268,8 @@ function build_specs_grid($sizeInInches, $specMap, $mainCam, $battery)
         ],
         [
             "key" => "battery",
-            "value" => $battery . "mAh",
-            "subvalue" => $specMap['Fast Charging (W)'] ?? "Fast Charging"
+            "value" => $battery,
+            "subvalue" => $fastCharging ?? "N\A"
         ],
     ];
 }

@@ -493,7 +493,7 @@ class PhoneService
      *
      * Returns mergedSpecs array used for search indexing.
      */
-    public function saveSpecifications($phone, array $specs, callable $searchableTextGetter): array
+    public function saveSpecifications($phone, array $specs, callable $searchableTextGetter): Bool
     {
         $mergedSpecs = [];
 
@@ -522,14 +522,15 @@ class PhoneService
                 ]
             );
 
-            foreach ($categorySpecs as $k => $v) {
-                if (!in_array($k, ['expandable', 'max_visible'])) {
-                    $mergedSpecs[$k] = $v;
-                }
-            }
+            // foreach ($categorySpecs as $k => $v) {
+            //     if (!in_array($k, ['expandable', 'max_visible'])) {
+            //         $mergedSpecs[$k] = $v;
+            //     }
+            // }
         }
+        return true;
 
-        return $mergedSpecs;
+        // return $mergedSpecs;
     }
 
     /**
@@ -541,29 +542,13 @@ class PhoneService
         foreach ($specs as $k => $v) {
             if (is_array($v)) {
                 $filtered = array_filter($v);
-                if ($filtered) $out[$k] = $filtered;
+                if ($filtered)
+                    $out[$k] = $filtered;
             } else {
-                if ($v !== null && $v !== '') $out[$k] = $v;
+                if ($v !== null && $v !== '')
+                    $out[$k] = $v;
             }
         }
         return $out;
-    }
-
-    /**
-     * Wrapper to call your index update function (kept here for single responsibility).
-     */
-    public function maybeUpdateSearchIndex(string $status, array $ram_list, array $storage_list, array $price_list, array $available_colors, array $mergedSpecs, array $validated, int $phoneId)
-    {
-        if ($status === 'published') {
-            update_phone_search_index(
-                $ram_list,
-                $storage_list,
-                $price_list,
-                $available_colors,
-                $mergedSpecs,
-                $validated,
-                $phoneId
-            );
-        }
     }
 }
