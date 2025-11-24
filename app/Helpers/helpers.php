@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\DB;
+
 function update_phone_search_index(
     $ramOptions,
     $storageOptions,
@@ -48,6 +49,10 @@ function update_phone_search_index(
         $selfieCam,
     ]);
 
+    $topSpecs = build_top_specs($validated, $weightGs, $os, $chipset);
+    $specsGrid = build_specs_grid($sizeInInches, $specMap, $mainCam, $battery);
+
+
     // ✅ Insert into phone_search_indices
     DB::table('phone_search_indices')->updateOrInsert(
         ['phone_id' => $phoneId],
@@ -75,16 +80,14 @@ function update_phone_search_index(
             'ip_rating' => $ipRating,
             'weight_grams' => $weightGs,
             'search_content' => $searchContent,
-            // 'tags' => json_encode(build_phone_tags($specMap)),
+            'top_specs' => json_encode($topSpecs),
+            'specs_grid' => json_encode($specsGrid),
             'updated_at' => now(),
         ]
     );
 }
 function build_phone_tags(array $specMap): array
 {
-    echo "<pre>";
-    print_r($specMap);
-    exit;
     $tags = [];
 
     // 5G
@@ -190,4 +193,51 @@ function filterSpecs(array $arr): array
             $out[$k] = $v;
     }
     return $out;
+}
+
+function build_top_specs($validated, $weightGs, $os, $chipset)
+{
+    return [
+        [
+            "key" => "release_date",
+            "text" => $validated['release_date'] ?? "N/A",
+            "subText" => "Official launch date"
+        ],
+        [
+            "key" => "body",
+            "text" => "{$weightGs}g, 8mm thickness",
+            "subText" => "Weight & Thickness"
+        ],
+        [
+            "key" => "os",
+            "text" => $os,
+            "subText" => "OS Version"
+        ],
+        [
+            "key" => "chipset",
+            "text" => $chipset,
+            "subText" => "Processor"
+        ],
+    ];
+}
+
+function build_specs_grid($sizeInInches, $specMap, $mainCam, $battery)
+{
+    return [
+        [
+            "key" => "display",
+            "value" => $sizeInInches . "\"",
+            "subvalue" => $specMap['resolution'] ?? null
+        ],
+        [
+            "key" => "main_camera",
+            "value" => $mainCam . "MP",
+            "subvalue" => "4320p"
+        ],
+        [
+            "key" => "battery",
+            "value" => $battery . "mAh",
+            "subvalue" => $specMap['Fast Charging (W)'] ?? "Fast Charging"
+        ],
+    ];
 }
