@@ -92,7 +92,7 @@ function update_phone_search_index(
             'has_wireless_charging' => $hasWirelessCharging,
             'refresh_rate_max' => $refreshRateHz,
             'display_type' => $displayType,
-            'ip_rating' => $onlyIp,
+            'ip_rating' => $onlyIp ?? "",
             'weight_grams' => $weightGs,
             'search_content' => $searchContent,
             'top_specs' => json_encode($topSpecs),
