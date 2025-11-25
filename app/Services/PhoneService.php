@@ -493,11 +493,11 @@ class PhoneService
      *
      * Returns mergedSpecs array used for search indexing.
      */
-    public function saveSpecifications($phone, array $specs, callable $searchableTextGetter): Bool
+    public function saveSpecifications($phone, array $specs, callable $searchableTextGetter): bool
     {
-        $mergedSpecs = [];
 
         foreach ($specs as $category => $categorySpecs) {
+
             // skip if all values empty
             if (!array_filter($categorySpecs)) {
                 // delete existing row if any
@@ -513,7 +513,6 @@ class PhoneService
             // remove UI-specific keys if present
             unset($filteredSpecs['expandable']);
             unset($filteredSpecs['max_visible']);
-
             PhoneSpecification::updateOrCreate(
                 ['phone_id' => $phone->id, 'category' => $category],
                 [
@@ -522,6 +521,9 @@ class PhoneService
                 ]
             );
 
+            // echo "<pre>";
+            // print_r();
+            // exit;
             // foreach ($categorySpecs as $k => $v) {
             //     if (!in_array($k, ['expandable', 'max_visible'])) {
             //         $mergedSpecs[$k] = $v;

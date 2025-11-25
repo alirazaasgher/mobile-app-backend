@@ -33,6 +33,10 @@ function update_phone_search_index(
     // IP rating / durability
     $ipRating = $specMap['design']['durability'] ?? null;
 
+    if ($ipRating) {
+        preg_match('/IP\d{2}/i', $ipRating, $matches);
+        $onlyIp = $matches[0] ?? null;
+    }
     // Weight
     $weight = $specMap['design']['weight'] ?? null;
     preg_match('/([\d.]+)\s*g/i', $weight, $matches);
@@ -60,7 +64,7 @@ function update_phone_search_index(
         $selfieCam,
     ]);
 
-    $topSpecs = build_top_specs($validated, $weightGs, $os, $chipset);
+    $topSpecs = build_top_specs($specMap, $weightGs, $os, $chipset);
     $specsGrid = build_specs_grid($sizeInInches, $specMap, $mainCam, $battery);
 
 
@@ -86,9 +90,9 @@ function update_phone_search_index(
             'has_nfc' => $hasNfc,
             'has_fast_charging' => $hasFastCharging,
             'has_wireless_charging' => $hasWirelessCharging,
-            'refresh_rate_max' => $refreshRate,
+            'refresh_rate_max' => $refreshRateHz,
             'display_type' => $displayType,
-            'ip_rating' => $ipRating,
+            'ip_rating' => $onlyIp,
             'weight_grams' => $weightGs,
             'search_content' => $searchContent,
             'top_specs' => json_encode($topSpecs),
@@ -206,8 +210,33 @@ function filterSpecs(array $arr): array
     return $out;
 }
 
-function build_top_specs($validated, $weightGs, $os, $chipset)
+function build_top_specs($specMap, $weightGs, $os, $chipset)
 {
+
+    $cpu = $specMap['performance']['cpu'] ?? null;
+    if ($cpu) {
+        $parts = explode(' ', $cpu);
+        $coreType = $parts[0] . (isset($parts[1]) && strpos($parts[1], '-') !== false ? ' ' . $parts[1] : '');
+    }
+
+    $chipset = $specMap['performance']['chipset'] ?? "";
+    $shortChipset = null;
+
+    if ($chipset) {
+        // Match Snapdragon / MediaTek / Exynos / Apple / etc. and the version
+        if (preg_match('/(Snapdragon|MediaTek|Exynos|Apple\s\w+)\s[\w\s]+/i', $chipset, $matches)) {
+            $shortChipset = trim($matches[0]);
+        }
+    }
+
+    $updates = $specMap['security']['software_updates'] ?? "";
+
+    if ($updates) {
+        $shortUpdates = str_ireplace('updates', '', $updates);
+        $shortUpdates = trim($shortUpdates);
+    }
+
+
     return [
         [
             "key" => "release_date",
@@ -222,19 +251,18 @@ function build_top_specs($validated, $weightGs, $os, $chipset)
         [
             "key" => "os",
             "text" => $os,
-            "subText" => "OS Version"
+            "subText" => $shortUpdates
         ],
         [
             "key" => "chipset",
-            "text" => $chipset,
-            "subText" => "Processor"
+            "text" => $shortChipset,
+            "subText" => $coreType
         ],
     ];
 }
 
 function build_specs_grid($sizeInInches, $specMap, $mainCam, $battery)
 {
-
 
     $resolution = $specMap['display']['resolution'] ?? null;
     $refreshRate = $specMap['display']['refresh_rate'] ?? null;
@@ -243,7 +271,7 @@ function build_specs_grid($sizeInInches, $specMap, $mainCam, $battery)
     $brightnessValue = $matches[1] ?? null;
     $displaySubvalue = implode(' • ', array_filter([$resolution, $refreshRate, $brightnessValue]));
 
-    if (preg_match('/^\d+W/', $specMap['charging_speed'], $matches)) {
+    if (preg_match('/^\d+W/', $specMap['battery']['charging_speed'], $matches)) {
         $fastCharging = $matches[0]; // e.g., "45W"
     }
 
@@ -268,7 +296,7 @@ function build_specs_grid($sizeInInches, $specMap, $mainCam, $battery)
         ],
         [
             "key" => "battery",
-            "value" => $battery,
+            "value" => $specMap['battery']['capacity'] ?? "N\A",
             "subvalue" => $fastCharging ?? "N\A"
         ],
     ];

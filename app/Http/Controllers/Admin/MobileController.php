@@ -149,6 +149,12 @@ class MobileController extends Controller
                     ['key' => 'fingerprint', 'label' => 'Fingerprint Sensor', 'type' => 'text', 'placeholder' => 'Under display, ultrasonic'],
                     ['key' => 'face_unlock', 'label' => 'Face Unlock', 'type' => 'text', 'placeholder' => '2D / 3D facial recognition'],
                     ['key' => 'extras', 'label' => 'Other Security', 'type' => 'text', 'placeholder' => 'Knox, Secure Folder, Privacy Dashboard'],
+                    [
+                        'key' => 'software_updates',
+                        'label' => 'Software & Updates',
+                        'type' => 'text',
+                        'placeholder' => 'Android 14, 4 years major + 5 years security updates'
+                    ],
                 ]
             ],
 
@@ -291,22 +297,16 @@ class MobileController extends Controller
         ]);
 
         $phone = Phone::findOrFail($id);
+
         $status = $request->input('action') === 'draft' ? 'draft' : 'published';
 
         DB::beginTransaction();
         try {
-            // primary image (optional)
-            if ($request->hasFile('primary_image')) {
-                $path = $this->phoneService->handlePrimaryImage($request->file('primary_image'));
-                if ($path) {
-                    $phone->primary_image = $path;
-                }
-            }
-
+            $primaryPath = $this->phoneService->handlePrimaryImage($request->file('primary_image'));
             $phone->update([
                 'brand_id' => $validated['brand'],
-                'name' => $validated['name'],
                 'tagline' => $validated['tagline'] ?? null,
+                'primary_image' => $primaryPath,
                 'release_date' => $validated['release_date'] ?? null,
                 'announced_date' => $request->input('announced_date') ?? null,
                 'status' => $status,
@@ -349,9 +349,9 @@ class MobileController extends Controller
                 }
             }
 
-            // $this->phoneService->saveSpecifications($phone, $updatedSpecs, function ($category) use ($request) {
-            //     return $request->input("searchable_text-$category");
-            // });
+            $this->phoneService->saveSpecifications($phone, $updatedSpecs, function ($category) use ($request) {
+                return $request->input("searchable_text-$category");
+            });
 
 
             update_phone_search_index($ram_list, $storage_list, $price_list, $available_colors, $updatedSpecs, $validated, $id);
@@ -364,6 +364,7 @@ class MobileController extends Controller
         } catch (\Throwable $e) {
             DB::rollBack();
             Log::error('Phone update failed: ' . $e->getMessage(), ['trace' => $e->getTraceAsString()]);
+            dd($e->getMessage(), $e->getLine(), $e->getFile());
             return back()->withInput()->withErrors(['error' => 'Failed to update phone.']);
         }
     }

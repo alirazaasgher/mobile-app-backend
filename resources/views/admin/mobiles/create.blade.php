@@ -16,6 +16,12 @@
       </div>
     @endif
 
+    @if (session('success'))
+      <div class="bg-green-100 text-green-700 p-3 rounded mb-4">
+        {{ session('success') }}
+      </div>
+    @endif
+
     <h1 class="text-2xl font-bold mb-4">Add Phone</h1>
 
     <form action="{{ isset($mobile) ? route('mobiles.update', $mobile->id) : route('mobiles.store') }}" method="POST"

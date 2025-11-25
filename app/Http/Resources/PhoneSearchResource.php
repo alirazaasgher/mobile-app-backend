@@ -7,14 +7,21 @@ class PhoneSearchResource extends JsonResource
 {
     public function toArray($request)
     {
-          $ramOptions = json_decode($this->ram_options, true) ?: [];
-    $storageOptions = json_decode($this->storage_options, true) ?: [];
-        return [
-          
-            // 'available_colors' => $this->available_colors,
-             'ram' => min($ramOptions),           // minimum RAM
-        'storage' => min($storageOptions), 
+        $ramOptions = json_decode($this->ram_options, true) ?: [];
+        $storageOptions = json_decode($this->storage_options, true) ?: [];
+
+        $data = [
+            'ram' => min($ramOptions),           // minimum RAM
+            'storage' => min($storageOptions),
             'min_price' => number_format($this->min_price, 0, '.', ','),
         ];
+
+        // Only include top_specs and specs_grid if request has details page flag
+        if ($request->query('details') || $request->routeIs('phones.show')) {
+            $data['top_specs'] = json_decode($this->top_specs, true);
+            $data['specs_grid'] = json_decode($this->specs_grid, true);
+        }
+
+        return $data;
     }
 }
