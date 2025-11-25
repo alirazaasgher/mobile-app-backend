@@ -251,7 +251,7 @@ function build_top_specs($specMap, $weightGs, $os, $chipset)
         [
             "key" => "os",
             "text" => $os,
-            "subText" => $shortUpdates
+            "subText" => $shortUpdates ?? ""
         ],
         [
             "key" => "chipset",
