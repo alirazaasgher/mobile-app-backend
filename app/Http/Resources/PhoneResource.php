@@ -15,9 +15,9 @@ class PhoneResource extends JsonResource
             'brand' => $this->brand,
             'slug' => $this->slug,
             'tagline' => $this->tagline,
-            'primary_image' => $this->primary_image  ? $baseUrl . '/storage/' . ltrim($this->primary_image, '/')
+            'primary_image' => $this->primary_image ? $baseUrl . '/storage/' . ltrim($this->primary_image, '/')
                 : null,
-            'popularity_score' => $this->popularity_score,
+            'is_popular' => $this->is_popular,
             'variants' => PhoneVariantResource::collection($this->whenLoaded('variants')),
             'colors' => ColorResource::collection($this->whenLoaded('colors')),
             'specifications' => PhoneSpecificationResource::collection($this->whenLoaded('specifications')),

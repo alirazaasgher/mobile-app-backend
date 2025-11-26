@@ -73,10 +73,10 @@ class PhoneApiController extends Controller
          * Price Ranges
          */
         $priceRanges = [
-            'under_10000'      => [0, 10000],
-            '10000_to_20000'   => [10000, 20000],
-            '20000_to_30000'   => [20000, 30000],
-            'above_30000'      => [30000, null],
+            'under_10000' => [0, 10000],
+            '10000_to_20000' => [10000, 20000],
+            '20000_to_30000' => [20000, 30000],
+            'above_30000' => [30000, null],
         ];
 
         $mobilesByPriceRange = [];
@@ -86,8 +86,10 @@ class PhoneApiController extends Controller
                 ->where('is_popular', 0)
                 ->whereNotIn('id', $usedPhoneIds)
                 ->whereHas('searchIndex', function ($q) use ($min, $max) {
-                    if ($min !== null) $q->where('min_price', '>=', $min);
-                    if ($max !== null) $q->where('max_price', '<=', $max);
+                    if ($min !== null)
+                        $q->where('min_price', '>=', $min);
+                    if ($max !== null)
+                        $q->where('max_price', '<=', $max);
                 })
                 ->take(10)
                 ->get();
@@ -193,7 +195,6 @@ class PhoneApiController extends Controller
     {
 
         $validated = $request->validate([
-            'filters' => 'required',
             'filters.brands' => 'nullable|array',
             'filters.ram' => 'nullable|array',
             'filters.storage' => 'nullable|array',
@@ -292,17 +293,21 @@ class PhoneApiController extends Controller
             return $query->paginate($perPage, ['phones.*'], 'page', $page);
         });
 
-        // Return response
-        return response()->json($phones);
-
         return response()->json([
             'success' => true,
-            'data' => PhoneResource::collection($phones->items()),
+            'data' => PhoneResource::collection($phones),
             'pagination' => [
                 'current_page' => $phones->currentPage(),
+                'from' => $phones->firstItem(),
                 'last_page' => $phones->lastPage(),
                 'per_page' => $phones->perPage(),
+                'to' => $phones->lastItem(),
                 'total' => $phones->total(),
+                'first_page_url' => $phones->url(1),
+                'last_page_url' => $phones->url($phones->lastPage()),
+                'next_page_url' => $phones->nextPageUrl(),
+                'prev_page_url' => $phones->previousPageUrl(),
+                'path' => $phones->path(),
             ],
             'filters_applied' => array_filter($validated),
         ]);
