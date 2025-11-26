@@ -28,20 +28,19 @@ class PhoneApiController extends Controller
     public function index(Request $request): JsonResponse
     {
         $usedPhoneIds = [];
-        $baseQuery = Phone::active()->withListingData();
+        $baseQuery = Phone::with(['searchIndex', 'brand:id,name'])->active();
         $usedPhoneIds = [];
 
         /**
          * Latest Phones
          */
         $latestMobiles = (clone $baseQuery)
-            ->select('id', 'name', 'slug', 'release_date', 'primary_image')
+            ->select('id', 'name', 'slug', 'release_date', 'primary_image', 'brand_id')
             ->where('is_popular', 0)
             ->whereNotNull('release_date')
             ->orderByDesc('release_date')
             ->take(10)
             ->get();
-
         $usedPhoneIds = $latestMobiles->pluck('id')->toArray();
 
         /**
