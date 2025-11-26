@@ -28,55 +28,73 @@ class PhoneApiController extends Controller
     public function index(Request $request): JsonResponse
     {
         $usedPhoneIds = [];
-        // Latest mobiles
-        $latestMobiles = Phone::query()
-            ->select('id', 'name', 'slug', 'release_date', 'primary_image') // include brand_id for eager load
-            ->with([
-                'searchIndex' // only necessary columns
-            ])
-            ->active() // your scope
+        $baseQuery = Phone::active()->withListingData();
+        $usedPhoneIds = [];
+
+        /**
+         * Latest Phones
+         */
+        $latestMobiles = (clone $baseQuery)
+            ->select('id', 'name', 'slug', 'release_date', 'primary_image')
+            ->where('is_popular', 0)
             ->whereNotNull('release_date')
-            ->whereNotIn('id', $usedPhoneIds)
             ->orderByDesc('release_date')
             ->take(10)
             ->get();
 
-        $usedPhoneIds = array_merge($usedPhoneIds, $latestMobiles->pluck('id')->toArray());
-        // Upcoming mobiles
-        $upcomingMobiles = Phone::active()
-            ->withListingData()
+        $usedPhoneIds = $latestMobiles->pluck('id')->toArray();
+
+        /**
+         * Upcoming Phones
+         */
+        $upcomingMobiles = (clone $baseQuery)
             ->where('release_date', '>', now())
-            ->orderBy('release_date', 'asc')
             ->whereNotIn('id', $usedPhoneIds)
-            ->take(10)->get();
-        $usedPhoneIds = array_merge(
-            $usedPhoneIds,
-            $upcomingMobiles->pluck('id')->toArray()
-        );
-        // Popular mobiles
-        $popularMobiles = Phone::active()
-            ->withListingData()
-            ->orderBy('popularity_score', 'desc')
-            ->whereNotIn('id', $usedPhoneIds)->take(10)
+            ->orderBy('release_date', 'asc')
+            ->take(10)
             ->get();
+
+        $usedPhoneIds = array_merge($usedPhoneIds, $upcomingMobiles->pluck('id')->toArray());
+
+        /**
+         * Popular Phones
+         */
+        $popularMobiles = (clone $baseQuery)
+            ->where('is_popular', 1) // only popular
+            ->whereNotIn('id', $usedPhoneIds)
+            // ->orderByDesc('popularity_score')
+            ->take(10)
+            ->get();
+
         $usedPhoneIds = array_merge($usedPhoneIds, $popularMobiles->pluck('id')->toArray());
-        // Price Ranges
-        $priceRanges = ['under_10000' => [0, 10000], '10000_to_20000' => [10000, 20000], '20000_to_30000' => [20000, 30000], 'above_30000' => [30000, null],];
+
+
+        /**
+         * Price Ranges
+         */
+        $priceRanges = [
+            'under_10000'      => [0, 10000],
+            '10000_to_20000'   => [10000, 20000],
+            '20000_to_30000'   => [20000, 30000],
+            'above_30000'      => [30000, null],
+        ];
+
         $mobilesByPriceRange = [];
+
         foreach ($priceRanges as $key => [$min, $max]) {
-            $query = Phone::active()
-                ->withListingData()
+            $mobilesByPriceRange[$key] = (clone $baseQuery)
+                ->where('is_popular', 0)
+                ->whereNotIn('id', $usedPhoneIds)
                 ->whereHas('searchIndex', function ($q) use ($min, $max) {
-                    if (!is_null($min)) {
-                        $q->where('min_price', '>=', $min);
-                    }
-                    if (!is_null($max)) {
-                        $q->where('max_price', '<=', $max);
-                    }
-                })->whereNotIn('id', $usedPhoneIds)->take(10);
-            $mobilesByPriceRange[$key] = $query->get();
+                    if ($min !== null) $q->where('min_price', '>=', $min);
+                    if ($max !== null) $q->where('max_price', '<=', $max);
+                })
+                ->take(10)
+                ->get();
+
             $usedPhoneIds = array_merge($usedPhoneIds, $mobilesByPriceRange[$key]->pluck('id')->toArray());
         }
+
         return response()->json([
             'success' => true,
             'data' => [
@@ -175,96 +193,107 @@ class PhoneApiController extends Controller
     {
 
         $validated = $request->validate([
-            'brands' => 'array',
-            'brands.*' => 'string',
-            'price_min' => 'numeric|min:0',
-            'price_max' => 'numeric|min:0',
-            'ram' => 'array',
-            'ram.*' => 'integer',
-            'storage' => 'array',
-            'storage.*' => 'integer',
-            'has_5g' => 'boolean',
-            'os' => 'array',
-            'os.*' => 'string',
-            'search' => 'string|max:255',
-            'sort' => Rule::in(['name', 'price', 'brands', 'created_at']),
-            'sort_order' => Rule::in(['asc', 'desc']),
-            'per_page' => 'integer|min:1|max:50',
+            'filters' => 'required',
+            'filters.brands' => 'nullable|array',
+            'filters.ram' => 'nullable|array',
+            'filters.storage' => 'nullable|array',
+            'filters.os' => 'nullable|array',
+            'filters.os.*' => 'string',
+            'filters.has_5g' => 'nullable|boolean',
+            'filters.price_min' => 'nullable|numeric|min:0',
+            'filters.price_max' => 'nullable|numeric|min:0',
+            'sort' => ['nullable', Rule::in(['price_low_high', 'price_high_low', 'popular', 'newest'])],
         ]);
+
+        $filters = $validated['filters'] ?? [];
+        $sort = $validated['sort'] ?? 'newest';
+        $perPage = $validated['per_page'] ?? 20;
         $query = Phone::active()->with(['brand:id,name', 'searchIndex']);
+        $page = $validated['page'] ?? 1;
+        // Generate a unique cache key
+        $cacheKey = 'phones:' . md5(json_encode([
+            'filters' => $filters,
+            'sort' => $sort,
+            'page' => $page,
+            'per_page' => $perPage
+        ]));
 
-        // Brands
-        if (!empty($validated['brands'])) {
-            $brands = array_map('strtolower', $validated['brands']);
-            $query->whereHas('brand', fn($q) => $q->whereIn(\DB::raw('LOWER(name)'), $brands));
-        }
+        $phones = Cache::remember($cacheKey, 300, function () use ($filters, $sort, $perPage, $page) {
 
-        // Combined searchIndex filters
-        $query->whereHas('searchIndex', function ($q) use ($validated) {
+            $query = Phone::active()->with(['brand:id,name', 'searchIndex']);
 
-            // Price
-            if (isset($validated['price_min'])) {
-                $q->where('min_price', '>=', $validated['price_min']);
-            }
-            if (isset($validated['price_max'])) {
-                $q->where('max_price', '<=', $validated['price_max']);
-            }
-
-            // RAM
-            if (!empty($validated['ram'])) {
-                $ramValues = array_map('intval', $validated['ram']);
-                $q->whereRaw("JSON_OVERLAPS(ram_options, ?)", [json_encode($ramValues)]);
+            // Brands
+            if (!empty($filters['brands'])) {
+                $brands = array_map('strtolower', $filters['brands']);
+                $query->whereHas('brand', fn($q) => $q->whereIn(DB::raw('LOWER(name)'), $brands));
             }
 
-            // Storage
-            if (!empty($validated['storage'])) {
-                $q->where(function ($q2) use ($validated) {
-                    foreach ($validated['storage'] as $storage) {
-                        $q2->orWhereJsonContains('storage_options', $storage);
+            // Price Range
+            if (!empty($filters['priceRange'])) {
+                $query->whereHas('searchIndex', function ($q) use ($filters) {
+                    if (isset($filters['priceRange']['min'])) {
+                        $q->where('min_price', '>=', $filters['priceRange']['min']);
+                    }
+                    if (isset($filters['priceRange']['max'])) {
+                        $q->where('max_price', '<=', $filters['priceRange']['max']);
                     }
                 });
             }
 
-            // 5G
-            if (isset($validated['has_5g'])) {
-                $q->where('has_5g', $validated['has_5g']);
+            // RAM
+            if (!empty($filters['ram'])) {
+                $ramValues = array_map('intval', $filters['ram']);
+                $query->whereHas('searchIndex', fn($q) => $q->whereRaw("JSON_OVERLAPS(ram_options, ?)", [json_encode($ramValues)]));
             }
 
-            // OS
-            if (!empty($validated['os'])) {
-                $q->whereIn('os', $validated['os']);
+            // Storage
+            if (!empty($filters['storage'])) {
+                $storageValues = array_map('intval', $filters['storage']);
+                $query->whereHas('searchIndex', fn($q) => $q->whereRaw("JSON_OVERLAPS(storage_options, ?)", [json_encode($storageValues)]));
             }
 
-            // Full-text search
-            if (!empty($validated['search'])) {
-                $q->whereRaw(
-                    "MATCH(brand, model, name, search_content) AGAINST (? IN NATURAL LANGUAGE MODE)",
-                    [$validated['search']]
-                );
+            // Features
+            if (!empty($filters['features'])) {
+                foreach ($filters['features'] as $feature) {
+                    if ($feature === '5g') {
+                        $query->whereHas('searchIndex', fn($q) => $q->where('has_5g', 1));
+                    }
+                }
             }
+
+            // If no filters, return mixed phones
+            if (empty(array_filter($filters))) {
+                return $query->select('id', 'name', 'slug', 'release_date', 'primary_image')
+                    ->inRandomOrder()
+                    ->take(20)
+                    ->get();
+            }
+
+            // Sorting
+            switch ($sort) {
+                case 'price_low_high':
+                    $query->join('phone_search_index as searchIndex', 'phones.id', '=', 'searchIndex.phone_id')
+                        ->orderBy('searchIndex.min_price', 'asc');
+                    break;
+                case 'price_high_low':
+                    $query->join('phone_search_index as searchIndex', 'phones.id', '=', 'searchIndex.phone_id')
+                        ->orderBy('searchIndex.max_price', 'desc');
+                    break;
+                case 'popular':
+                    $query->orderByDesc('is_popular')->orderByDesc('release_date');
+                    break;
+                case 'newest':
+                default:
+                    $query->orderByDesc('release_date');
+                    break;
+            }
+
+            // Paginate
+            return $query->paginate($perPage, ['phones.*'], 'page', $page);
         });
 
-
-
-        // ✅ Case 1: No filters → return mixed mobiles
-        if (empty(array_filter($validated))) {
-            $phones = Phone::select('id', 'name', 'slug', 'release_date', 'primary_image')->active()
-                ->with('searchIndex')
-                ->inRandomOrder() // shuffle brands
-                ->take(20) // fetch e.g. 30 mixed phones
-                ->get();
-
-            return response()->json([
-                'success' => true,
-                'data' => PhoneResource::collection($phones),
-            ]);
-        }
-        //dd($query->toSql(), $query->getBindings());
-
-        // ✅ Case 2: Filters applied → return paginated results
-        $phones = $query
-            ->orderBy($validated['sort_by'] ?? 'created_at', $validated['sort_order'] ?? 'desc')
-            ->paginate($validated['per_page'] ?? 20);
+        // Return response
+        return response()->json($phones);
 
         return response()->json([
             'success' => true,
@@ -318,5 +347,4 @@ class PhoneApiController extends Controller
             'data' => $params
         ]);
     }
-
 }

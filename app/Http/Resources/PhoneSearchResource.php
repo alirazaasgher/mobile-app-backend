@@ -1,4 +1,5 @@
 <?php
+
 namespace App\Http\Resources;
 
 use Illuminate\Http\Resources\Json\JsonResource;
@@ -11,8 +12,8 @@ class PhoneSearchResource extends JsonResource
         $storageOptions = json_decode($this->storage_options, true) ?: [];
 
         $data = [
-            'ram' => min($ramOptions),           // minimum RAM
-            'storage' => min($storageOptions),
+            'ram' => !empty($ramOptions) ? min($ramOptions) : null,
+            'storage' => !empty($storageOptions) ? min($storageOptions) : null,
             'min_price' => number_format($this->min_price, 0, '.', ','),
         ];
 
