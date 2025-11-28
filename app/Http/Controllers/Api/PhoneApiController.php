@@ -200,15 +200,17 @@ class PhoneApiController extends Controller
             'filters.os' => 'nullable|array',
             'filters.os.*' => 'string',
             'filters.has_5g' => 'nullable|boolean',
-            'filters.price_min' => 'nullable|numeric|min:0',
-            'filters.price_max' => 'nullable|numeric|min:0',
+            'filters.priceRange' => 'nullable|array|max:2',
+            'filters.priceRange.*' => 'nullable|numeric|min:0',
+            'filters.screenSizes' => 'nullable|array',
+            'filters.batteryCapacity' => 'nullable|array',
             'sort' => ['nullable', Rule::in(['price_low_high', 'price_high_low', 'popular', 'newest'])],
         ]);
 
         $filters = $validated['filters'] ?? [];
         $sort = $validated['sort'] ?? 'newest';
         $perPage = $validated['per_page'] ?? 20;
-        $query = Phone::active()->with(['brand:id,name', 'searchIndex']);
+        // $query = Phone::active()->with(['brand:id,name', 'searchIndex']);
         $page = $validated['page'] ?? 1;
         // Generate a unique cache key
         $cacheKey = 'phones:' . md5(json_encode([
@@ -218,7 +220,7 @@ class PhoneApiController extends Controller
             'per_page' => $perPage
         ]));
 
-        $phones = Cache::remember($cacheKey, 300, function () use ($filters, $sort, $perPage, $page) {
+        $phones = Cache::remember($cacheKey, 50, function () use ($filters, $sort, $perPage, $page) {
 
             $query = Phone::active()->with(['brand:id,name', 'searchIndex']);
 
@@ -227,15 +229,17 @@ class PhoneApiController extends Controller
                 $brands = array_map('strtolower', $filters['brands']);
                 $query->whereHas('brand', fn($q) => $q->whereIn(DB::raw('LOWER(name)'), $brands));
             }
-
             // Price Range
             if (!empty($filters['priceRange'])) {
                 $query->whereHas('searchIndex', function ($q) use ($filters) {
-                    if (isset($filters['priceRange']['min'])) {
-                        $q->where('min_price', '>=', $filters['priceRange']['min']);
+                    $min = $filters['priceRange'][0] ?? null;
+                    $max = $filters['priceRange'][1] ?? null;
+
+                    if (!is_null($min)) {
+                        $q->where('min_price', '>=', $min);
                     }
-                    if (isset($filters['priceRange']['max'])) {
-                        $q->where('max_price', '<=', $filters['priceRange']['max']);
+                    if (!is_null($max)) {
+                        $q->where('max_price', '<=', $max);
                     }
                 });
             }
@@ -251,6 +255,54 @@ class PhoneApiController extends Controller
                 $storageValues = array_map('intval', $filters['storage']);
                 $query->whereHas('searchIndex', fn($q) => $q->whereRaw("JSON_OVERLAPS(storage_options, ?)", [json_encode($storageValues)]));
             }
+
+            // Features
+            if (!empty($filters['screenSizes'])) {
+                $query->whereHas('searchIndex', function ($q) use ($filters) {
+                    $q->whereColumn('phones.id', 'phone_search_indices.phone_id'); // ensures the join condition
+                    $q->where(function ($q2) use ($filters) {
+                        foreach ($filters['screenSizes'] as $range) {
+                            if (preg_match('/^(\d+(\.\d+)?)to(\d+(\.\d+)?)$/', $range, $matches)) {
+                                $min = floatval($matches[1]);
+                                $max = floatval($matches[3]);
+                                $q2->orWhereBetween('screen_size_inches', [$min, $max]);
+                            }
+                        }
+                    });
+                });
+            }
+
+            if (!empty($filters['batteryCapacity'])) {
+                $query->whereHas('searchIndex', function ($q) use ($filters) {
+                    $q->where(function ($q2) use ($filters) {
+                        foreach ($filters['batteryCapacity'] as $value) {
+                            $value = urldecode($value); // decode %26 to &
+
+                            // Range: "5000-5999mAh"
+                            if (preg_match('/^(\d+)-(\d+)/', $value, $matches)) {
+                                $q2->orWhereBetween('battery_capacity_mah', [
+                                    intval($matches[1]),
+                                    intval($matches[2])
+                                ]);
+                                continue;
+                            }
+
+                            // "6000 & Above" or "6000&Above"
+                            if (preg_match('/^(\d+)\s*&?\s*Above$/i', $value, $matches)) {
+                                $q2->orWhere('battery_capacity_mah', '>=', intval($matches[1]));
+                                continue;
+                            }
+
+                            // Exact value: "3000mAh"
+                            if (preg_match('/^(\d+)/', $value, $matches)) {
+                                $q2->orWhere('battery_capacity_mah', intval($matches[1]));
+                            }
+                        }
+                    });
+                });
+            }
+
+
 
             // Features
             if (!empty($filters['features'])) {
@@ -285,6 +337,7 @@ class PhoneApiController extends Controller
                     $query->orderByDesc('release_date');
                     break;
             }
+            //dd($query->toSql(),$query->getBindings());
 
             // Paginate
             return $query->paginate($perPage, ['phones.*'], 'page', $page);
