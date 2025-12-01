@@ -394,6 +394,7 @@ class PhoneService
             $key = strtolower(trim($ev->ram) . '/' . trim($ev->storage));
             $existingMap[$key] = $ev;
         }
+
         // Update or delete existing
         foreach ($existingMap as $key => $ev) {
             if (isset($incomingMap[$key])) {
