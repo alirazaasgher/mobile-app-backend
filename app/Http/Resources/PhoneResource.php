@@ -14,6 +14,7 @@ class PhoneResource extends JsonResource
             'name' => $this->name,
             'brand' => $this->brand,
             'slug' => $this->slug,
+            'release_date' => $this->release_date,
             'tagline' => $this->tagline,
             'primary_image' => $this->primary_image ? $baseUrl . '/storage/' . ltrim($this->primary_image, '/')
                 : null,
