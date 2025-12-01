@@ -121,7 +121,7 @@ class PhoneApiController extends Controller
             'colors',
             'colors.images',
             'variants' => function ($query) {
-                $query->orderBy('storage')->orderBy('price_modifier_pkr');
+                $query->orderBy('storage')->orderBy('pkr_price');
             },
         ])->where('slug', $slug)->firstOrFail();
         $queries = DB::getQueryLog();
