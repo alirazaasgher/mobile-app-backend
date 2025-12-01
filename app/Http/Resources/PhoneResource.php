@@ -3,6 +3,7 @@
 namespace App\Http\Resources;
 
 use Illuminate\Http\Resources\Json\JsonResource;
+use Illuminate\Support\Carbon;
 
 class PhoneResource extends JsonResource
 {
@@ -14,7 +15,9 @@ class PhoneResource extends JsonResource
             'name' => $this->name,
             'brand' => $this->brand,
             'slug' => $this->slug,
-            'release_date' => $this->release_date,
+            'release_date' => $this->release_date
+                ? Carbon::parse($this->release_date)->format('Y-m-d')
+                : null,
             'tagline' => $this->tagline,
             'primary_image' => $this->primary_image ? $baseUrl . '/storage/' . ltrim($this->primary_image, '/')
                 : null,
