@@ -13,9 +13,23 @@ function update_phone_search_index(
 ) {
 
 
+
     // Calculate price range
-    $minPrice = !empty($priceList) ? min($priceList) : $priceList[0];
-    $maxPrice = !empty($priceList) ? max($priceList) : 0;
+    foreach ($priceList as $price) {
+        if (isset($price['pkr']) && is_numeric($price['pkr'])) {
+            $pkrValues[] = $price['pkr'];
+        }
+        if (isset($price['usd']) && is_numeric($price['usd'])) {
+            $usdValues[] = $price['usd'];
+        }
+    }
+
+    // Get min and max
+    $minPricePKR = !empty($pkrValues) ? min($pkrValues) : 0;
+    $maxPricePKR = !empty($pkrValues) ? max($pkrValues) : 0;
+
+    $minPriceUSD = !empty($usdValues) ? min($usdValues) : 0;
+    $maxPriceUSD = !empty($usdValues) ? max($usdValues) : 0;
 
     $displayType = $specMap['display']['type'] ?? null;
     $screenSize = $specMap['display']['size'] ?? null;
@@ -65,7 +79,8 @@ function update_phone_search_index(
     ]);
 
     $topSpecs = build_top_specs($specMap, $weightGs, $os, $chipset);
-    $specsGrid = build_specs_grid($sizeInInches, $specMap, $mainCam, $battery);
+
+    $specsGrid = build_specs_grid($sizeInInches, $specMap, $mainCam);
 
 
     // ✅ Insert into phone_search_indices
@@ -75,9 +90,11 @@ function update_phone_search_index(
             'brand' => $validated['brand'],
             'model' => $validated['name'],
             'name' => $validated['name'],
-            'min_price' => $minPrice,
-            'max_price' => $maxPrice,
-            'ram_options' => json_encode(array_unique($ramOptions)),
+            'min_price_pkr' => $minPricePKR,
+            'max_price_pkr' => $maxPricePKR,
+            'min_price_usd' => $minPriceUSD,
+            'max_price_usd' => $maxPriceUSD,
+            'ram_options' => json_encode($ramOptions),
             'storage_options' => json_encode(array_unique($storageOptions)),
             'available_colors' => json_encode($availableColors),
             'screen_size_inches' => $sizeInInches,
@@ -256,48 +273,78 @@ function build_top_specs($specMap, $weightGs, $os, $chipset)
         [
             "key" => "chipset",
             "text" => $shortChipset,
-            "subText" => $coreType
+            "subText" => $coreType ?? ""
         ],
     ];
 }
 
-function build_specs_grid($sizeInInches, $specMap, $mainCam, $battery)
+function build_specs_grid($sizeInInches, $specMap, $mainCam)
 {
-
-    $resolution = $specMap['display']['resolution'] ?? null;
+    // echo "<pre>";
+    // print_r($specMap);
+    // exit;
+    $resolutionFull = $specMap['display']['resolution'] ?? null;
     $refreshRate = $specMap['display']['refresh_rate'] ?? null;
-    $brightness = $specMap['display']['brightness'] ?? null; // "Peak 1900 nits"
-    preg_match('/(\d+\s*nits)/i', $brightness, $matches);
-    $brightnessValue = $matches[1] ?? null;
-    $displaySubvalue = implode(' • ', array_filter([$resolution, $refreshRate, $brightnessValue]));
+    $brightness = $specMap['display']['brightness'] ?? null;
 
-    if (preg_match('/^\d+W/', $specMap['battery']['charging_speed'], $matches)) {
-        $fastCharging = $matches[0]; // e.g., "45W"
+    // Extract nits (only number)
+    preg_match('/(\d+)\s*nits/i', $brightness, $matches);
+    $brightnessShort = $matches[1] ?? null;
+    $displayTypeShort = $specMap['display']['type'];
+    // Short display type
+    $replacements = [
+        '/LTPO.*(AMOLED|OLED)/i'           => 'LTPO OLED',
+        '/Dynamic.*AMOLED/i'                => 'AMOLED',
+        '/Super.*AMOLED/i'                  => 'AMOLED',
+        '/AMOLED/i'                         => 'AMOLED',
+        '/OLED/i'                           => 'OLED',
+        '/Foldable.*AMOLED/i'               => 'Foldable AMOLED',
+        '/(IPS|TFT|PLS|LTPS|IGZO).*LCD/i'  => 'LCD',
+        '/Mini[- ]?LED/i'                   => 'Mini LED',
+        '/Micro[- ]?LED/i'                  => 'Micro LED',
+    ];
+
+    foreach ($replacements as $pattern => $replacement) {
+        if (preg_match($pattern, $displayTypeShort)) {
+            $displayTypeShort = preg_replace($pattern, $replacement, $displayTypeShort);
+            break; // 🔥 stop after first valid replacement
+        }
     }
 
-    if (preg_match('/^\d+W/', $specMap['battery']['wireless'], $matches)) {
-        $wirlessCharging = $matches[0]; // e.g., "45W"
+    $resolution = null;
+
+    if ($resolutionFull) {
+        // Match "number x number" at the start
+        if (preg_match('/\d+\s*x\s*\d+/', $resolutionFull, $matches)) {
+            $resolution = $matches[0]; // remove spaces → "2868x1320"
+        }
     }
 
-    if (preg_match('/^\d+W/', $specMap['battery']['reverse'], $matches)) {
-        $reverseCharging = $matches[0]; // e.g., "45W"
-    }
+    $subvalueParts = [
+        $resolution,
+        $refreshRate,
+        $brightnessShort ? $brightnessShort . " nits" : null
+    ];
+
+    // Charging speeds short form
+    preg_match('/(\d+)W/i', $specMap['battery']['charging_speed'] ?? '', $fast);
+    $fastCharging = isset($fast[1]) ? "Fast {$fast[1]}W" : null;
 
     return [
         [
             "key" => "display",
-            "value" => $sizeInInches . '" ' . ($specMap['display']['type'] ?? ''),
-            "subvalue" => $displaySubvalue ?? null
+            "value" => $sizeInInches . '" ' . $displayTypeShort,
+            "subvalue" => implode(' • ', array_filter($subvalueParts))
         ],
         [
             "key" => "main_camera",
             "value" => $mainCam . "MP",
-            "subvalue" => "4320p"
+            "subvalue" => "8K" // auto convert logic later
         ],
         [
             "key" => "battery",
-            "value" => $specMap['battery']['capacity'] ?? "N\A",
-            "subvalue" => $fastCharging ?? "N\A"
+            "value" => ($specMap['battery']['capacity'] ?? "N/A"),
+            "subvalue" => $fastCharging ?? "N/A"
         ],
     ];
 }

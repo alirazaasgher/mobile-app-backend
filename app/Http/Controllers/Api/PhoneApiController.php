@@ -86,9 +86,9 @@ class PhoneApiController extends Controller
                 ->whereNotIn('id', $usedPhoneIds)
                 ->whereHas('searchIndex', function ($q) use ($min, $max) {
                     if ($min !== null)
-                        $q->where('min_price', '>=', $min);
+                        $q->where('min_price_pkr', '>=', $min);
                     if ($max !== null)
-                        $q->where('max_price', '<=', $max);
+                        $q->where('max_price_pkr', '<=', $max);
                 })
                 ->take(10)
                 ->get();
@@ -121,13 +121,13 @@ class PhoneApiController extends Controller
             'colors',
             'colors.images',
             'variants' => function ($query) {
-                $query->orderBy('storage')->orderBy('price');
+                $query->orderBy('storage')->orderBy('price_modifier_pkr');
             },
         ])->where('slug', $slug)->firstOrFail();
         $queries = DB::getQueryLog();
 
         // Print queries
-        // dd($phone);
+        // dd($phone->toArray());
         // $phone = Cache::remember($cacheKey, 600, function () use ($id) {
 
         // });
@@ -316,6 +316,7 @@ class PhoneApiController extends Controller
             // If no filters, return mixed phones
             if (empty(array_filter($filters))) {
                 $query->select('id', 'name', 'slug', 'release_date', 'primary_image')
+                    ->orderBy('release_date', 'desc')
                     ->inRandomOrder();
             }
 

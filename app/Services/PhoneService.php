@@ -14,6 +14,7 @@ use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Http\UploadedFile;
+
 class PhoneService
 {
     /**
@@ -360,24 +361,31 @@ class PhoneService
      *
      * Returns arrays: [ram_list, storage_list, price_list]
      */
-    public function syncVariants($phone, array $incomingSpecs, array $priceModifiers): array
+    public function syncVariants($phone, array $incomingSpecs, array $priceModifiersPKR, array $priceModifiersUSD): array
     {
         $ram_list = $storage_list = $price_list = [];
-
+        
         // Normalize incoming as map: key => ['ram'=>..., 'storage'=>..., 'price'=>...]
         $incomingMap = [];
-        foreach ($incomingSpecs as $spec) {
+        foreach ($incomingSpecs as $index => $spec) {
             $parts = array_map('trim', explode('/', $spec));
+          
             $ram = $parts[0] ?? '';
             $storage = $parts[1] ?? '';
-            $price = $priceModifiers[$spec] ?? null;
+          
+            $pricePKRArray   = $priceModifiersPKR[$spec] ??  [];
+            $priceUSDArray  = $priceModifiersUSD[$spec]  ?? [];
+             
             $key = strtolower($ram . '/' . $storage);
-            $incomingMap[$key] = ['ram' => $ram, 'storage' => $storage, 'price' => $price, 'raw' => $spec];
-
+            $incomingMap[$key] = ['ram' => $ram, 'storage' => $storage, 'priceModifiersPKR' => $pricePKRArray , 'priceModifiersUSD' => $priceUSDArray, 'raw' => $spec];
             $ram_list[] = $ram;
             $storage_list[] = $storage;
-            $price_list[] = $price;
+            $price_list[] = [
+                'pkr' => $pricePKRArray  ?? null,
+                'usd' => $priceUSDArray ?? null
+            ]; 
         }
+
 
         // Existing variants keyed by ram/storage
         $existing = $phone->variants()->get();
@@ -386,21 +394,24 @@ class PhoneService
             $key = strtolower(trim($ev->ram) . '/' . trim($ev->storage));
             $existingMap[$key] = $ev;
         }
-
         // Update or delete existing
         foreach ($existingMap as $key => $ev) {
             if (isset($incomingMap[$key])) {
                 $incoming = $incomingMap[$key];
                 // if price changed or ram/storage changed (unlikely), update
-                $needsUpdate = ($ev->price != $incoming['price'])
-                    || (trim($ev->ram) !== $incoming['ram'])
-                    || (trim($ev->storage) !== $incoming['storage']);
+                $needsUpdate = 
+                    (trim($ev->ram) !== $incoming['ram']) ||
+                    (trim($ev->storage) !== $incoming['storage']) ||
+                    ($ev->price_modifier_pkr != $incoming['priceModifiersPKR']) ||
+                    ($ev->price_modifier_usd != $incoming['priceModifiersUSD']);
+
 
                 if ($needsUpdate) {
                     $ev->update([
                         'ram' => $incoming['ram'],
                         'storage' => $incoming['storage'],
-                        'price' => $incoming['price'],
+                        'price_modifier_pkr' => $incoming['priceModifiersPKR'],
+                        'price_modifier_usd' => $incoming['priceModifiersUSD'],
                     ]);
                 }
                 // remove from incomingMap so at the end only new items remain
@@ -410,6 +421,7 @@ class PhoneService
                 $ev->delete();
             }
         }
+        
 
         // Remaining incomingMap items are new -> insert
         foreach ($incomingMap as $key => $data) {
@@ -417,8 +429,10 @@ class PhoneService
                 'phone_id' => $phone->id,
                 'ram' => $data['ram'],
                 'storage' => $data['storage'],
-                'price' => $data['price'],
+                'price_modifier_pkr' => $data['priceModifiersPKR'],
+                'price_modifier_usd' => $data['priceModifiersUSD'],
             ]);
+          
         }
 
         // Ensure lists are unique and normalized for memory building
@@ -493,7 +507,7 @@ class PhoneService
      *
      * Returns mergedSpecs array used for search indexing.
      */
-    public function saveSpecifications($phone, array $specs, callable $searchableTextGetter): bool
+    public function saveSpecifications($phone, array $specs, callable $searchableTextGetter , $update = false): bool
     {
 
         foreach ($specs as $category => $categorySpecs) {
@@ -510,9 +524,12 @@ class PhoneService
             // Filter helpers (you may already have app helpers)
             $filteredSpecs = $this->filterSpecs($categorySpecs);
 
+            if(!$update){
+               unset($filteredSpecs['expandable']);
+                unset($filteredSpecs['max_visible']);
+            }
             // remove UI-specific keys if present
-            unset($filteredSpecs['expandable']);
-            unset($filteredSpecs['max_visible']);
+            
             PhoneSpecification::updateOrCreate(
                 ['phone_id' => $phone->id, 'category' => $category],
                 [

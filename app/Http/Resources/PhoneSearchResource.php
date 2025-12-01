@@ -10,11 +10,10 @@ class PhoneSearchResource extends JsonResource
     {
         $ramOptions = json_decode($this->ram_options, true) ?: [];
         $storageOptions = json_decode($this->storage_options, true) ?: [];
-
         $data = [
             'ram' => !empty($ramOptions) ? min($ramOptions) : null,
             'storage' => !empty($storageOptions) ? min($storageOptions) : null,
-            'min_price' => number_format($this->min_price, 0, '.', ','),
+            'min_price' => number_format($this->min_price_pkr, 0, '.', ','),
         ];
 
         // Only include top_specs and specs_grid if request has details page flag

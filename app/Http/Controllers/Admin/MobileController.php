@@ -56,19 +56,12 @@ class MobileController extends Controller
                     ['key' => 'os', 'label' => 'Operating System', 'type' => 'text', 'placeholder' => 'Android 14, One UI 6.1'],
                     ['key' => 'chipset', 'label' => 'Chipset', 'type' => 'text', 'placeholder' => 'Qualcomm Snapdragon 8 Gen 3 (4 nm)'],
                     ['key' => 'cpu', 'label' => 'CPU', 'type' => 'text', 'placeholder' => 'Octa-core (1x3.3 GHz X4)'],
-                    ['key' => 'gpu', 'label' => 'CPU', 'type' => 'text', 'placeholder' => 'Adreno 750'],
+                    ['key' => 'gpu', 'label' => 'GPU', 'type' => 'text', 'placeholder' => 'Adreno 750'],
                     ['key' => 'architecture', 'label' => 'CPU Architecture', 'type' => 'text', 'placeholder' => '64-bit, ARMv9'],
                     ['key' => 'cooling', 'label' => 'Cooling System', 'type' => 'text', 'placeholder' => 'Vapor chamber, AI thermal control'],
                     ['key' => 'benchmark', 'label' => 'Benchmark Scores', 'type' => 'text', 'placeholder' => 'AnTuTu: 1,250,000 / Geekbench: 2200 (S) • 7200 (M)'],
                 ]
             ],
-
-            // 'software' => [
-            //     ['key' => 'ui', 'label' => 'UI / Skin', 'type' => 'text', 'placeholder' => 'One UI 6.0 (Android 14)'],
-            //     ['key' => 'updates', 'label' => 'Software Support', 'type' => 'text', 'placeholder' => '4 years OS, 5 years security'],
-            //     ['key' => 'ai_features', 'label' => 'AI & Smart Features', 'type' => 'text', 'placeholder' => 'Circle to Search, Live Translate, AI Wallpaper'],
-            //     ['key' => 'special_features', 'label' => 'Exclusive Features', 'type' => 'text', 'placeholder' => 'Samsung DeX, Edge Panels'],
-            // ],
 
             'main_camera' => [
                 'expandable' => true,
@@ -132,7 +125,7 @@ class MobileController extends Controller
             ],
 
             'audio' => [
-                'expandable' => true,
+                'expandable' => false,
                 'max_visible' => 4,
                 'items' => [
                     ['key' => 'stereo', 'label' => 'Stereo Speakers', 'type' => 'select', 'options' => ['Yes', 'No']],
@@ -159,7 +152,7 @@ class MobileController extends Controller
             ],
 
             'Features' => [
-                'expandable' => true,
+                'expandable' => false,
                 'max_visible' => 4,
                 'items' => [
                     ['key' => 'sensors', 'label' => 'Available Sensors', 'type' => 'text', 'placeholder' => 'Fingerprint, accelerometer, gyro, proximity, compass, barometer'],
@@ -189,6 +182,8 @@ class MobileController extends Controller
 
     public function store(Request $request)
     {
+
+
         $validated = $request->validate([
             'brand' => 'required|string',
             'name' => 'required|string|max:255',
@@ -219,8 +214,9 @@ class MobileController extends Controller
 
             // variants
             $variantsSpecs = $validated['variants']['specs'] ?? [];
-            $priceModifiers = $validated['variants']['price_modifier'] ?? [];
-            [$ram_list, $storage_list, $price_list] = $this->phoneService->syncVariants($phone, $variantsSpecs, $priceModifiers);
+            $priceModifiersUSD = $validated['variants']['price_modifier_usd'] ?? [];
+            $priceModifiersPKR = $validated['variants']['price_modifier_pkr'] ?? [];
+            [$ram_list, $storage_list, $price_list] = $this->phoneService->syncVariants($phone, $variantsSpecs, $priceModifiersPKR, $priceModifiersUSD);
 
             // colors & images
             $variantsColors = $validated['variants']['colors'] ?? [];
@@ -255,20 +251,23 @@ class MobileController extends Controller
                 }
             }
 
-            $mergedSpecs = $this->phoneService->saveSpecifications($phone, $updatedSpecs, function ($category) use ($request) {
+            $this->phoneService->saveSpecifications($phone, $updatedSpecs, function ($category) use ($request) {
                 return $request->input("searchable_text-$category");
             });
 
+
             // search index
-            update_phone_search_index($ram_list, $storage_list, $price_list, $available_colors, $mergedSpecs, $validated, $phone->id);
+            update_phone_search_index($ram_list, $storage_list, $price_list, $available_colors, $updatedSpecs, $validated, $phone->id);
 
             DB::commit();
-
             $message = $status === 'draft' ? 'Phone saved as draft!' : 'Phone published successfully!';
             return redirect()->route('mobiles.create')->with('success', $message);
         } catch (\Throwable $e) {
             DB::rollBack();
             Log::error('Phone store failed: ' . $e->getMessage(), ['trace' => $e->getTraceAsString()]);
+            echo "<pre>";
+            print_r($e->getMessage());
+            exit;
             return back()->withInput()->withErrors(['error' => 'Failed to save phone.']);
         }
     }
@@ -286,6 +285,7 @@ class MobileController extends Controller
 
     public function update(Request $request, $id)
     {
+
         $validated = $request->validate([
             'brand' => 'required|string',
             'name' => 'required|string|max:255',
@@ -314,8 +314,9 @@ class MobileController extends Controller
 
             // variants - smart sync (diff)
             $variantsSpecs = $validated['variants']['specs'] ?? [];
-            $priceModifiers = $validated['variants']['price_modifier'] ?? [];
-            [$ram_list, $storage_list, $price_list] = $this->phoneService->syncVariants($phone, $variantsSpecs, $priceModifiers);
+            $priceModifiersUSD = $validated['variants']['price_modifier_usd'] ?? null;
+            $priceModifiersPKR = $validated['variants']['price_modifier_pkr'] ?? null;
+            [$ram_list, $storage_list, $price_list] = $this->phoneService->syncVariants($phone, $variantsSpecs, $priceModifiersPKR, $priceModifiersUSD);
 
             // colors & images (preserve old unless deleted)
             $variantsColors = $validated['variants']['colors'] ?? [];
@@ -351,7 +352,7 @@ class MobileController extends Controller
 
             $this->phoneService->saveSpecifications($phone, $updatedSpecs, function ($category) use ($request) {
                 return $request->input("searchable_text-$category");
-            });
+            }, true);
 
 
             update_phone_search_index($ram_list, $storage_list, $price_list, $available_colors, $updatedSpecs, $validated, $id);
