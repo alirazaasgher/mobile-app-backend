@@ -303,14 +303,19 @@ class MobileController extends Controller
         DB::beginTransaction();
         try {
             $primaryPath = $this->phoneService->handlePrimaryImage($request->file('primary_image'));
-            $phone->update([
+            $updateData = [
                 'brand_id' => $validated['brand'],
                 'tagline' => $validated['tagline'] ?? null,
-                'primary_image' => $primaryPath,
                 'release_date' => $validated['release_date'] ?? null,
                 'announced_date' => $request->input('announced_date') ?? null,
                 'status' => $status,
-            ]);
+            ];
+
+            if ($primaryPath) {
+                $updateData['primary_image'] = $primaryPath;
+            }
+
+            $phone->update($updateData);
 
             // variants - smart sync (diff)
             $variantsSpecs = $validated['variants']['specs'] ?? [];
@@ -340,6 +345,8 @@ class MobileController extends Controller
                 $request->input('storage_type'),
                 $request->input('sd_card')
             );
+
+
 
             $specs = $validated['specifications'];
             $updatedSpecs = [];
