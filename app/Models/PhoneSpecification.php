@@ -7,7 +7,12 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class PhoneSpecification extends Model
 {
     protected $fillable = [
-        'phone_id', 'category', 'specifications', 'searchable_text'
+        'phone_id',
+        'category',
+        'specifications',
+        'searchable_text',
+        'expandable',
+        'max_visible'
     ];
 
     protected $casts = [

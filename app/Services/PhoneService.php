@@ -512,7 +512,7 @@ class PhoneService
     {
 
         foreach ($specs as $category => $categorySpecs) {
-
+            echo $category;
             // skip if all values empty
             if (!array_filter($categorySpecs)) {
                 // delete existing row if any
@@ -524,18 +524,20 @@ class PhoneService
 
             // Filter helpers (you may already have app helpers)
             $filteredSpecs = $this->filterSpecs($categorySpecs);
+            $expandable = $filteredSpecs['expandable'] ?? 0;
+            $max_visible = $filteredSpecs['max_visible'] ?? null;
+            unset($filteredSpecs['expandable']);
+            unset($filteredSpecs['max_visible']);
 
-            if (!$update) {
-                unset($filteredSpecs['expandable']);
-                unset($filteredSpecs['max_visible']);
-            }
             // remove UI-specific keys if present
 
             PhoneSpecification::updateOrCreate(
                 ['phone_id' => $phone->id, 'category' => $category],
                 [
                     'specifications' => json_encode($filteredSpecs),
-                    'searchable_text' => $searchableTextGetter($category)
+                    'searchable_text' => $searchableTextGetter($category),
+                    'expandable' => $expandable,
+                    'max_visible' => $max_visible
                 ]
             );
 
