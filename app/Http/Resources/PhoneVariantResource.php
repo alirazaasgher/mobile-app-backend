@@ -9,8 +9,8 @@ class PhoneVariantResource extends JsonResource
     {
         return [
             'id' => $this->id,
-            'price_modifier_pkr' => number_format($this->price_modifier_pkr, 0, '.', ','),
-            'price_modifier_usd' => number_format($this->price_modifier_usd, 0, '.', ','),
+            'pkr_price' => number_format($this->price_modifier_pkr, 0, '.', ','),
+            'price_usd' => number_format($this->price_modifier_usd, 0, '.', ','),
             'storage' => $this->storage,
             'ram' => $this->ram
         ];
