@@ -69,7 +69,7 @@ class MobileController extends Controller
                 'items' => [
                     ['key' => 'setup', 'label' => 'Setup', 'type' => 'text', 'placeholder' => 'Triple (50 MP + 10 MP + 12 MP)'],
                     ['key' => 'main_sensor', 'label' => 'Main Sensor', 'type' => 'text', 'placeholder' => '50 MP, f/1.8, (wide), OIS, PDAF'],
-                    ['key' => 'other_lnses', 'label' => 'Other Lenses', 'type' => 'text', 'placeholder' => '10 MP (telephoto 3x), 12 MP (ultrawide 120°)'],
+                    ['key' => 'other_sensors', 'label' => 'Other Lenses', 'type' => 'text', 'placeholder' => '10 MP (telephoto 3x), 12 MP (ultrawide 120°)'],
                     ['key' => 'features', 'label' => 'Features', 'type' => 'text', 'placeholder' => 'LED flash, HDR, panorama'],
                     ['key' => 'video', 'label' => 'Video', 'type' => 'text', 'placeholder' => '8K@30fps, 4K@60fps, 1080p@240fps'],
                 ]
@@ -106,8 +106,6 @@ class MobileController extends Controller
                     ['key' => 'technology', 'label' => 'Technology', 'type' => 'text', 'placeholder' => 'GSM / HSPA / LTE / 5G'],
                     ['key' => 'bands', 'label' => 'Supported Bands', 'type' => 'text', 'placeholder' => '2G / 3G / 4G / 5G bands'],
                     ['key' => 'speed', 'label' => 'Speed', 'type' => 'text', 'placeholder' => 'HSPA, LTE-A, 5G (SA/NSA)'],
-                    ['key' => 'sim', 'label' => 'SIM Type', 'type' => 'text', 'placeholder' => 'Nano-SIM / eSIM'],
-                    ['key' => 'sim_features', 'label' => 'SIM Features', 'type' => 'text', 'placeholder' => 'Dual 5G, Hybrid slot'],
                 ]
             ],
 
