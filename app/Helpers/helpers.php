@@ -78,9 +78,17 @@ function update_phone_search_index(
         $selfieCam,
     ]);
 
-    $topSpecs = build_top_specs($specMap, $weightGs, $os, $chipset);
+    $shortChipset = null;
 
-    $specsGrid = build_specs_grid($sizeInInches, $specMap, $mainCam);
+    if ($chipset) {
+        // Match Snapdragon / MediaTek / Exynos / Apple / etc. and the version
+        if (preg_match('/(Snapdragon|MediaTek|Exynos|Apple\s\w+)\s[\w\s]+/i', $chipset, $matches)) {
+            $shortChipset = trim($matches[0]);
+        }
+    }
+
+    $topSpecs = build_top_specs($specMap, $weightGs, $os, $shortChipset);
+    $specsGrid = build_specs_grid($sizeInInches, $specMap, $mainCam, $shortChipset);
 
 
     // ✅ Insert into phone_search_indices
@@ -227,7 +235,7 @@ function filterSpecs(array $arr): array
     return $out;
 }
 
-function build_top_specs($specMap, $weightGs, $os, $chipset)
+function build_top_specs($specMap, $weightGs, $os, $shortChipset)
 {
 
     $cpu = $specMap['performance']['cpu'] ?? null;
@@ -235,17 +243,6 @@ function build_top_specs($specMap, $weightGs, $os, $chipset)
         $parts = explode(' ', $cpu);
         $coreType = $parts[0] . (isset($parts[1]) && strpos($parts[1], '-') !== false ? ' ' . $parts[1] : '');
     }
-
-    $chipset = $specMap['performance']['chipset'] ?? "";
-    $shortChipset = null;
-
-    if ($chipset) {
-        // Match Snapdragon / MediaTek / Exynos / Apple / etc. and the version
-        if (preg_match('/(Snapdragon|MediaTek|Exynos|Apple\s\w+)\s[\w\s]+/i', $chipset, $matches)) {
-            $shortChipset = trim($matches[0]);
-        }
-    }
-
     $updates = $specMap['security']['software_updates'] ?? "";
 
     if ($updates) {
@@ -278,7 +275,7 @@ function build_top_specs($specMap, $weightGs, $os, $chipset)
     ];
 }
 
-function build_specs_grid($sizeInInches, $specMap, $mainCam)
+function build_specs_grid($sizeInInches, $specMap, $mainCam, $shortChipset)
 {
     // echo "<pre>";
     // print_r($specMap);
@@ -332,19 +329,25 @@ function build_specs_grid($sizeInInches, $specMap, $mainCam)
 
     return [
         [
-            "key" => "display",
-            "value" => $sizeInInches . '" ' . $displayTypeShort,
-            "subvalue" => implode(' • ', array_filter($subvalueParts))
-        ],
-        [
             "key" => "main_camera",
-            "value" => $mainCam . "MP",
+            "value" => $mainCam ?? "",
             "subvalue" => "8K" // auto convert logic later
         ],
         [
             "key" => "battery",
             "value" => ($specMap['battery']['capacity'] ?? "N/A"),
             "subvalue" => $fastCharging ?? "N/A"
+        ],
+        [
+            "key" => "chipset",
+            "value" => $shortChipset,
+            "subText" => $coreType ?? ""
+        ],
+
+        [
+            "key" => "display",
+            "value" => $sizeInInches . '" ' . $displayTypeShort,
+            "subvalue" => implode(' • ', array_filter($subvalueParts))
         ],
     ];
 }

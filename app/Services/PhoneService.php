@@ -514,7 +514,6 @@ class PhoneService
     {
 
         foreach ($specs as $category => $categorySpecs) {
-            echo $category;
             // skip if all values empty
             if (!array_filter($categorySpecs)) {
                 // delete existing row if any
