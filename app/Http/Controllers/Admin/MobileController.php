@@ -127,7 +127,7 @@ class MobileController extends Controller
                 'max_visible' => 4,
                 'items' => [
                     ['key' => 'stereo', 'label' => 'Stereo Speakers', 'type' => 'select', 'options' => ['Yes', 'No']],
-                    ['key' => 'jack', 'label' => '3.5mm Jack', 'type' => 'select', 'options' => ['Yes', 'No']],
+                    ['key' => '3.5mm_jack', 'label' => '3.5mm Jack', 'type' => 'select', 'options' => ['Yes', 'No']],
                     ['key' => 'quality', 'label' => 'Audio Quality', 'type' => 'text', 'placeholder' => '32-bit/384kHz, Dolby Atmos'],
                     ['key' => 'features', 'label' => 'Features', 'type' => 'text', 'placeholder' => 'Hi-Res Audio, AKG tuning, Noise cancellation'],
                 ]
