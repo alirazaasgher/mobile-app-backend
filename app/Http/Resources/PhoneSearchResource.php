@@ -10,9 +10,12 @@ class PhoneSearchResource extends JsonResource
     {
         $ramOptions = json_decode($this->ram_options, true) ?: [];
         $storageOptions = json_decode($this->storage_options, true) ?: [];
+        $numericValues = array_map(function ($value) {
+            return (int) filter_var($value, FILTER_SANITIZE_NUMBER_INT);
+        }, $storageOptions);
         $data = [
             'ram' => !empty($ramOptions) ? min($ramOptions) : null,
-            'storage' => !empty($storageOptions) ? min($storageOptions) : null,
+            'storage' => !empty($numericValues) ? min($numericValues) : null,
             'min_price' => number_format($this->min_price_pkr, 0, '.', ','),
             'specs_grid' => json_decode($this->specs_grid, true),
         ];
