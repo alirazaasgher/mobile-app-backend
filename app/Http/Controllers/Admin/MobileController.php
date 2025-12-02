@@ -340,7 +340,7 @@ class MobileController extends Controller
                 $ram_list,
                 $storage_list,
                 $request->input('ram_type'),
-                $request->input('storage_type'),
+                $storage_type,
                 $request->input('sd_card')
             );
 
@@ -360,7 +360,7 @@ class MobileController extends Controller
             }, true);
 
 
-            update_phone_search_index($storage_type,$ram_list, $storage_list, $price_list, $available_colors, $updatedSpecs, $validated, $id);
+            update_phone_search_index($storage_type, $ram_list, $storage_list, $price_list, $available_colors, $updatedSpecs, $validated, $id);
             // search index (if published)
 
             DB::commit();
