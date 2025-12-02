@@ -297,7 +297,7 @@ class MobileController extends Controller
         $phone = Phone::findOrFail($id);
 
         $status = $request->input('action') === 'draft' ? 'draft' : 'published';
-
+        $storage_type = $request->input('storage_type');
         DB::beginTransaction();
         try {
             $primaryPath = $this->phoneService->handlePrimaryImage($request->file('primary_image'));
@@ -360,7 +360,7 @@ class MobileController extends Controller
             }, true);
 
 
-            update_phone_search_index($ram_list, $storage_list, $price_list, $available_colors, $updatedSpecs, $validated, $id);
+            update_phone_search_index($storage_type,$ram_list, $storage_list, $price_list, $available_colors, $updatedSpecs, $validated, $id);
             // search index (if published)
 
             DB::commit();
