@@ -3,6 +3,7 @@
 use Illuminate\Support\Facades\DB;
 
 function update_phone_search_index(
+    $storage_type,
     $ramOptions,
     $storageOptions,
     $priceList,
@@ -290,15 +291,15 @@ function build_specs_grid($sizeInInches, $specMap, $mainCam, $shortChipset)
     $displayTypeShort = $specMap['display']['type'];
     // Short display type
     $replacements = [
-        '/LTPO.*(AMOLED|OLED)/i'           => 'LTPO OLED',
-        '/Dynamic.*AMOLED/i'                => 'AMOLED',
-        '/Super.*AMOLED/i'                  => 'AMOLED',
-        '/AMOLED/i'                         => 'AMOLED',
-        '/OLED/i'                           => 'OLED',
-        '/Foldable.*AMOLED/i'               => 'Foldable AMOLED',
-        '/(IPS|TFT|PLS|LTPS|IGZO).*LCD/i'  => 'LCD',
-        '/Mini[- ]?LED/i'                   => 'Mini LED',
-        '/Micro[- ]?LED/i'                  => 'Micro LED',
+        '/LTPO.*(AMOLED|OLED)/i' => 'LTPO OLED',
+        '/Dynamic.*AMOLED/i' => 'AMOLED',
+        '/Super.*AMOLED/i' => 'AMOLED',
+        '/AMOLED/i' => 'AMOLED',
+        '/OLED/i' => 'OLED',
+        '/Foldable.*AMOLED/i' => 'Foldable AMOLED',
+        '/(IPS|TFT|PLS|LTPS|IGZO).*LCD/i' => 'LCD',
+        '/Mini[- ]?LED/i' => 'Mini LED',
+        '/Micro[- ]?LED/i' => 'Micro LED',
     ];
 
     foreach ($replacements as $pattern => $replacement) {

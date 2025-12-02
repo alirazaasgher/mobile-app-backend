@@ -192,7 +192,7 @@ class MobileController extends Controller
         ]);
 
         $status = $request->input('action') === 'draft' ? 'draft' : 'published';
-
+        $storage_type = $request->input('storage_type');
         DB::beginTransaction();
         try {
             // primary image
@@ -255,7 +255,7 @@ class MobileController extends Controller
 
 
             // search index
-            update_phone_search_index($ram_list, $storage_list, $price_list, $available_colors, $updatedSpecs, $validated, $phone->id);
+            update_phone_search_index($storage_type, $ram_list, $storage_list, $price_list, $available_colors, $updatedSpecs, $validated, $phone->id);
 
             DB::commit();
             $message = $status === 'draft' ? 'Phone saved as draft!' : 'Phone published successfully!';

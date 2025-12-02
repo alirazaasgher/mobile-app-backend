@@ -499,6 +499,7 @@ class PhoneService
             'RAM' => implode(' / ', array_unique(array_filter($ram_list))) . ($ram_type ? ' ' . $ram_type : ''),
             'Storage' => implode(' / ', array_unique(array_filter($storage_list))) . ($storage_type ? " ($storage_type)" : ''),
             'Card Slot' => $sd_card,
+            'Storage type' => $storage_type,
             'expandable' => 0,
             'max_visible' => 4
         ];
