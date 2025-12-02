@@ -105,6 +105,7 @@ function update_phone_search_index(
             'max_price_usd' => $maxPriceUSD,
             'ram_options' => json_encode($ramOptions),
             'storage_options' => json_encode(array_unique($storageOptions)),
+            'storage_type' => $storage_type,
             'available_colors' => json_encode($availableColors),
             'screen_size_inches' => $sizeInInches,
             'battery_capacity_mah' => $battery,
