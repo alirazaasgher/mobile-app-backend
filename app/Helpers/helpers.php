@@ -404,7 +404,7 @@ function build_specs_grid($sizeInInches, $specMap, $shortChipset, $mainCam)
         [
             "key" => "main_camera",
             "value" => $mainCam ?? "",
-            "subvalue" => "8K" // auto convert logic later
+            "subvalue" => "" // auto convert logic later
         ],
         [
             "key" => "battery",
