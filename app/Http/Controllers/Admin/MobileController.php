@@ -6,6 +6,8 @@ use App\Http\Controllers\Controller;
 use App\Models\Brand;
 use Illuminate\Http\Request;
 use App\Models\Phone;
+use App\Models\RamType;
+use App\Models\StorageType;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\View;
 use App\Services\PhoneService;
@@ -19,6 +21,8 @@ class MobileController extends Controller
     {
         $this->phoneService = $phoneService;
         $brands = Brand::all();
+        $ram_type = RamType::all();
+        $storage_type = StorageType::all();
         $specificationTemplates = [
             'design' => [
                 'expandable' => true,
@@ -160,6 +164,8 @@ class MobileController extends Controller
 
         View::share([
             'brands' => $brands,
+            'ramTypes' => $ram_type,
+            'storageTypes' => $storage_type,
             'specificationTemplates' => $specificationTemplates,
         ]);
     }
@@ -180,7 +186,7 @@ class MobileController extends Controller
 
     public function store(Request $request)
     {
-
+       
 
         $validated = $request->validate([
             'brand' => 'required|string',
@@ -283,7 +289,6 @@ class MobileController extends Controller
 
     public function update(Request $request, $id)
     {
-
         $validated = $request->validate([
             'brand' => 'required|string',
             'name' => 'required|string|max:255',
@@ -295,7 +300,6 @@ class MobileController extends Controller
         ]);
 
         $phone = Phone::findOrFail($id);
-
         $status = $request->input('action') === 'draft' ? 'draft' : 'published';
         $storage_type = $request->input('storage_type');
         DB::beginTransaction();
@@ -319,7 +323,9 @@ class MobileController extends Controller
             $variantsSpecs = $validated['variants']['specs'] ?? [];
             $priceModifiersUSD = $validated['variants']['price_modifier_usd'] ?? null;
             $priceModifiersPKR = $validated['variants']['price_modifier_pkr'] ?? null;
-            [$ram_list, $storage_list, $price_list] = $this->phoneService->syncVariants($phone, $variantsSpecs, $priceModifiersPKR, $priceModifiersUSD);
+            $ramType = $validated['variants']['ram_type'] ?? null;
+            $storageType = $validated['variants']['storage_type'] ?? null;
+            [$ram_list, $storage_list, $price_list] = $this->phoneService->syncVariants($phone, $variantsSpecs, $priceModifiersPKR, $priceModifiersUSD, $ramType, $storageType);
 
             // colors & images (preserve old unless deleted)
             $variantsColors = $validated['variants']['colors'] ?? [];

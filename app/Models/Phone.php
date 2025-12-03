@@ -157,6 +157,8 @@ class Phone extends Model
         return $this->belongsTo(Brand::class);
     }
 
+
+
 }
 
    

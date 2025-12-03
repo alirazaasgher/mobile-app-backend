@@ -121,13 +121,15 @@ class PhoneApiController extends Controller
             'colors',
             'colors.images',
             'variants' => function ($query) {
-                $query->orderBy('storage')->orderBy('pkr_price');
-            },
+            $query->with(['ram_type:id,name', 'storage_type:id,name']) // eager load RAM & storage for each variant
+              ->orderBy('storage')
+              ->orderBy('pkr_price');
+    },
         ])->where('slug', $slug)->firstOrFail();
         $queries = DB::getQueryLog();
-
+    
         // Print queries
-        // dd($phone->toArray());
+        //dd($phone->toArray());
         // $phone = Cache::remember($cacheKey, 600, function () use ($id) {
 
         // });

@@ -66,8 +66,54 @@ function update_phone_search_index(
     // Extract commonly used specs
 
     $battery = $specMap['Battery Capacity (mAh)'] ?? null;
-    $mainCam = $specMap['Main Camera (MP)'] ?? null;
     $selfieCam = $specMap['Selfie Camera (MP)'] ?? null;
+    $camera = $specMap['main_camera']['setup'] ?? null;
+    if ($camera) {
+
+        $camera = strtolower($camera);
+        $parts = array_map('trim', explode(',', $camera));
+
+        $labelsPriority = [
+            'ultrawide'   => 'Ultra-Wide',
+            'ultra wide'  => 'Ultra-Wide',
+            'telephoto'   => 'Telephoto',
+            'macro'       => 'Macro',
+            'depth'       => 'Depth',
+            'periscope'   => 'Periscope Telephoto',
+        ];
+
+        $final = [];
+
+        // First camera → always the first MP
+        preg_match('/(\d+(\.\d+)?)\s*mp/i', $parts[0], $mpMatch);
+        $final[] = $mpMatch[1] . 'MP';
+
+        // Second camera → choose based on priority
+        $second = null;
+        foreach ($labelsPriority as $key => $labelName) {
+            foreach ($parts as $part) {
+                if (strpos($part, $key) !== false) {
+                    preg_match('/(\d+(\.\d+)?)\s*mp/i', $part, $mpMatch);
+                    if ($mpMatch) {
+                        $second = $mpMatch[1] . 'MP ' . $labelName;
+                        break 2;
+                    }
+                }
+            }
+        }
+
+        // If no priority label found, take second camera if exists
+        if (!$second && isset($parts[1])) {
+            preg_match('/(\d+(\.\d+)?)\s*mp/i', $parts[1], $mpMatch);
+            $second = $mpMatch ? $mpMatch[1] . 'MP' : null;
+        }
+
+        if ($second) {
+            $final[] = $second;
+        }
+
+        $mainCam = implode(' + ', $final);
+    }
     // Search content
     $searchContent = implode(' ', [
         $validated['name'],
@@ -75,8 +121,8 @@ function update_phone_search_index(
         $os,
         $sizeInInches,
         $battery,
-        $mainCam,
-        $selfieCam,
+        // $mainCam,
+        // $selfieCam,
     ]);
 
     $shortChipset = null;
@@ -89,7 +135,7 @@ function update_phone_search_index(
     }
 
     $topSpecs = build_top_specs($specMap, $weightGs, $os, $shortChipset);
-    $specsGrid = build_specs_grid($sizeInInches, $specMap, $mainCam, $shortChipset);
+    $specsGrid = build_specs_grid($sizeInInches, $specMap, $shortChipset, $mainCam);
 
 
     // ✅ Insert into phone_search_indices
@@ -277,15 +323,11 @@ function build_top_specs($specMap, $weightGs, $os, $shortChipset)
     ];
 }
 
-function build_specs_grid($sizeInInches, $specMap, $mainCam, $shortChipset)
+function build_specs_grid($sizeInInches, $specMap, $shortChipset, $mainCam)
 {
-    // echo "<pre>";
-    // print_r($specMap);
-    // exit;
     $resolutionFull = $specMap['display']['resolution'] ?? null;
     $refreshRate = $specMap['display']['refresh_rate'] ?? null;
     $brightness = $specMap['display']['brightness'] ?? null;
-
     // Extract nits (only number)
     preg_match('/(\d+)\s*nits/i', $brightness, $matches);
     $brightnessShort = $matches[1] ?? null;
@@ -343,7 +385,8 @@ function build_specs_grid($sizeInInches, $specMap, $mainCam, $shortChipset)
         [
             "key" => "chipset",
             "value" => $shortChipset,
-            "subText" => $coreType ?? ""
+            "subText" => $coreType ?? "",
+            "hide_on_details_page" => true
         ],
 
         [

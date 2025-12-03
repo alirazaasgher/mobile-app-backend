@@ -361,23 +361,26 @@ class PhoneService
      *
      * Returns arrays: [ram_list, storage_list, price_list]
      */
-    public function syncVariants($phone, array $incomingSpecs, array $pricePKR, array $priceUSD): array
+    public function syncVariants($phone, array $incomingSpecs, array $pricePKR, array $priceUSD,array $ramType, array $storageType): array
     {
+       
         $ram_list = $storage_list = $price_list = [];
 
         // Normalize incoming as map: key => ['ram'=>..., 'storage'=>..., 'price'=>...]
         $incomingMap = [];
-        foreach ($incomingSpecs as $index => $spec) {
+        foreach ($incomingSpecs as  $spec) {
             $parts = array_map('trim', explode('/', $spec));
 
             $ram = $parts[0] ?? '';
             $storage = $parts[1] ?? '';
 
-            $pricePKRArray = $pricePKR[$spec] ?? [];
-            $priceUSDArray = $priceUSD[$spec] ?? [];
-
+            $pricePKRArray = $pricePKR[$spec] ?? null;
+            $priceUSDArray = $priceUSD[$spec] ?? null;
+            $ramTypeArray = $ramType[$spec] ?? null;
+            $storageTypeArray = $storageType[$spec] ?? null;
             $key = strtolower($ram . '/' . $storage);
-            $incomingMap[$key] = ['ram' => $ram, 'storage' => $storage, 'pkr_price' => $pricePKRArray, 'usd_price' => $priceUSDArray, 'raw' => $spec];
+            $incomingMap[$key] = ['ram' => $ram, 'storage' => $storage, 'pkr_price' => $pricePKRArray,
+                                'usd_price' => $priceUSDArray,'ram_type_id ' => $ramTypeArray,'storage_type_id' => $storageTypeArray, 'raw' => $spec];
             $ram_list[] = $ram;
             $storage_list[] = $storage;
             $price_list[] = [
@@ -389,28 +392,31 @@ class PhoneService
 
         // Existing variants keyed by ram/storage
         $existing = $phone->variants()->get();
+       
         $existingMap = [];
         foreach ($existing as $ev) {
             $key = strtolower(trim($ev->ram) . '/' . trim($ev->storage));
             $existingMap[$key] = $ev;
         }
-
         // Update or delete existing
         foreach ($existingMap as $key => $ev) {
             if (isset($incomingMap[$key])) {
                 $incoming = $incomingMap[$key];
                 // if price changed or ram/storage changed (unlikely), update
-                $needsUpdate =
-                    (trim($ev->ram) !== $incoming['ram']) ||
-                    (trim($ev->storage) !== $incoming['storage']) ||
-                    ($ev->pkr_price != $incoming['pkr_price']) ||
-                    ($ev->usd_price != $incoming['usd_price']);
-
-
+                
+             $needsUpdate =
+    (trim($ev->ram) !== $incoming['ram']) ||
+    (trim($ev->storage) !== $incoming['storage']) ||
+    ($ev->pkr_price != $incoming['pkr_price']) ||
+    ($ev->usd_price != $incoming['usd_price']) ||
+    ($ev->ram_type_id != ($incoming['ram_type_id'] ?? null)) ||
+    ($ev->storage_type_id != ($incoming['storage_type_id'] ?? null));
                 if ($needsUpdate) {
                     $ev->update([
                         'ram' => $incoming['ram'],
                         'storage' => $incoming['storage'],
+                        'ram_type_id' => $incoming['ram_type_id'] ?? null,
+                        'storage_type_id' => $incoming['storage_type_id'] ?? null,
                         'pkr_price' => $incoming['pkr_price'],
                         'usd_price' => $incoming['usd_price'],
                     ]);
@@ -422,7 +428,7 @@ class PhoneService
                 $ev->delete();
             }
         }
-
+ 
 
         // Remaining incomingMap items are new -> insert
         foreach ($incomingMap as $key => $data) {
@@ -430,6 +436,8 @@ class PhoneService
                 'phone_id' => $phone->id,
                 'ram' => $data['ram'],
                 'storage' => $data['storage'],
+                'ram_type_id' => $incoming['ram_type_id'] ?? null,
+                        'storage_type_id' => $incoming['storage_type_id'] ?? null,
                 'pkr_price' => $data['pkr_price'],
                 'usd_price' => $data['usd_price'],
             ]);
