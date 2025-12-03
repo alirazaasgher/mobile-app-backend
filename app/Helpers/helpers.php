@@ -67,19 +67,19 @@ function update_phone_search_index(
 
     $battery = $specMap['Battery Capacity (mAh)'] ?? null;
     $selfieCam = $specMap['Selfie Camera (MP)'] ?? null;
-    $camera = $specMap['main_camera']['setup'] ?? null;
-    if ($camera) {
+    $mainCam = $specMap['main_camera']['setup'] ?? null;
+    if ($mainCam && strpos($mainCam, ',') !== false) {
 
-        $camera = strtolower($camera);
+        $camera = strtolower($mainCam);
         $parts = array_map('trim', explode(',', $camera));
 
         $labelsPriority = [
-            'ultrawide'   => 'Ultra-Wide',
-            'ultra wide'  => 'Ultra-Wide',
-            'telephoto'   => 'Telephoto',
-            'macro'       => 'Macro',
-            'depth'       => 'Depth',
-            'periscope'   => 'Periscope Telephoto',
+            'ultrawide' => 'Ultra-Wide',
+            'ultra wide' => 'Ultra-Wide',
+            'telephoto' => 'Telephoto',
+            'macro' => 'Macro',
+            'depth' => 'Depth',
+            'periscope' => 'Periscope Telephoto',
         ];
 
         $final = [];
@@ -136,8 +136,9 @@ function update_phone_search_index(
 
     $topSpecs = build_top_specs($specMap, $weightGs, $os, $shortChipset);
     $specsGrid = build_specs_grid($sizeInInches, $specMap, $shortChipset, $mainCam);
-
-
+    // echo "<pre>";
+    // print_r(json_encode($specsGrid, JSON_UNESCAPED_UNICODE));
+    // exit;
     // ✅ Insert into phone_search_indices
     DB::table('phone_search_indices')->updateOrInsert(
         ['phone_id' => $phoneId],
@@ -169,7 +170,7 @@ function update_phone_search_index(
             'weight_grams' => $weightGs,
             'search_content' => $searchContent,
             'top_specs' => json_encode($topSpecs),
-            'specs_grid' => json_encode($specsGrid),
+            'specs_grid' => json_encode($specsGrid, JSON_UNESCAPED_UNICODE),
             'updated_at' => now(),
         ]
     );
@@ -325,9 +326,11 @@ function build_top_specs($specMap, $weightGs, $os, $shortChipset)
 
 function build_specs_grid($sizeInInches, $specMap, $shortChipset, $mainCam)
 {
+
     $resolutionFull = $specMap['display']['resolution'] ?? null;
     $refreshRate = $specMap['display']['refresh_rate'] ?? null;
     $brightness = $specMap['display']['brightness'] ?? null;
+    $video = $specMap['main_camera']['video'];
     // Extract nits (only number)
     preg_match('/(\d+)\s*nits/i', $brightness, $matches);
     $brightnessShort = $matches[1] ?? null;
@@ -353,7 +356,6 @@ function build_specs_grid($sizeInInches, $specMap, $shortChipset, $mainCam)
     }
 
     $resolution = null;
-
     if ($resolutionFull) {
         // Match "number x number" at the start
         if (preg_match('/\d+\s*x\s*\d+/', $resolutionFull, $matches)) {
@@ -367,9 +369,36 @@ function build_specs_grid($sizeInInches, $specMap, $shortChipset, $mainCam)
         $brightnessShort ? $brightnessShort . " nits" : null
     ];
 
+
     // Charging speeds short form
-    preg_match('/(\d+)W/i', $specMap['battery']['charging_speed'] ?? '', $fast);
-    $fastCharging = isset($fast[1]) ? "Fast {$fast[1]}W" : null;
+    $chargingSpec = $specMap['battery']['charging_speed'] ?? '';
+    $wirlessCharging = $specMap['battery']['wireless'] ?? '';
+    $reverceCharging = $specMap['battery']['reverse'] ?? '';
+    $convertWirlessCharging = null;
+    $convertReverceCharging = null;
+
+    // 1. Try Android-style (digits + W)
+    if (preg_match('/(\d+)\s*W/i', $chargingSpec, $match)) {
+        $fastCharging = "$match[1]W";
+    }
+    // 2. Try iPhone-style (PD + AVS + time)
+    elseif (preg_match('/PD\s*([\d\.]+).*?\((\d+% in \d+ min)\)/i', $chargingSpec, $match)) {
+        $fastCharging = "PD{$match[1]}";
+    }
+
+    // Wireless charging
+    if (preg_match('/(\d+(\.\d+)?)\s*W\s*(wireless)?/i', $wirlessCharging, $match)) {
+        $convertWirlessCharging = "$match[1]W";
+    } elseif (preg_match('/(PD[\d\.]+|MagSafe|Qi2)/i', $wirlessCharging, $match)) {
+        $convertWirlessCharging = $match[0];
+    }
+
+    // Reverse charging
+    if (preg_match('/(\d+(\.\d+)?)\s*W\s*(reverse\s*wired)?/i', $reverceCharging, $match)) {
+        $convertReverceCharging = "$match[1]W";
+    } elseif (preg_match('/(PD[\d\.]+|MagSafe|Qi2)/i', $reverceCharging, $match)) {
+        $convertReverceCharging = $match[0];
+    }
 
     return [
         [
@@ -379,13 +408,17 @@ function build_specs_grid($sizeInInches, $specMap, $shortChipset, $mainCam)
         ],
         [
             "key" => "battery",
-            "value" => ($specMap['battery']['capacity'] ?? "N/A"),
-            "subvalue" => $fastCharging ?? "N/A"
+            "value" => $specMap['battery']['capacity'] ?? "N/A",
+            "subvalue" => [
+                "wired" => $fastCharging ?? null,
+                "wireless" => $convertWirlessCharging ?? null,
+                "reverse" => $convertReverceCharging ?? null
+            ]
         ],
         [
             "key" => "chipset",
             "value" => $shortChipset,
-            "subText" => $coreType ?? "",
+            "subvalue" => $coreType ?? "",
             "hide_on_details_page" => true
         ],
 
