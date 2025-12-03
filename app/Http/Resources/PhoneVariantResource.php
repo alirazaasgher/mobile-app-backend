@@ -13,7 +13,7 @@ class PhoneVariantResource extends JsonResource
             'usd_price' => number_format($this->usd_price, 0, '.', ','),
             'storage' => $this->storage,
             'ram_type' => $this->ram_type->name ?? null,
-            'storage_type' => $this->storage_type->name,
+            'storage_type' => $this->storage_type->name ?? null,
             'ram' => $this->ram
         ];
     }
