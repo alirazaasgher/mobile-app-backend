@@ -186,7 +186,7 @@ class MobileController extends Controller
 
     public function store(Request $request)
     {
-       
+
 
         $validated = $request->validate([
             'brand' => 'required|string',
@@ -220,7 +220,9 @@ class MobileController extends Controller
             $variantsSpecs = $validated['variants']['specs'] ?? [];
             $priceModifiersUSD = $validated['variants']['price_modifier_usd'] ?? [];
             $priceModifiersPKR = $validated['variants']['price_modifier_pkr'] ?? [];
-            [$ram_list, $storage_list, $price_list] = $this->phoneService->syncVariants($phone, $variantsSpecs, $priceModifiersPKR, $priceModifiersUSD);
+            $ramType = $validated['variants']['ram_type'] ?? null;
+            $storageType = $validated['variants']['storage_type'] ?? null;
+            [$ram_list, $storage_list, $price_list] = $this->phoneService->syncVariants($phone, $variantsSpecs, $priceModifiersPKR, $priceModifiersUSD, $ramType, $storageType);
 
             // colors & images
             $variantsColors = $validated['variants']['colors'] ?? [];
