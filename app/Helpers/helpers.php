@@ -135,15 +135,13 @@ function update_phone_search_index(
         }
     }
     $cpuString = $specMap['performance']['cpu'];
-
-    preg_match('/^[^(]+/', $cpuString, $match);
-
-    $cpuType = trim($match[0]);
+    $cpuType = "";
+    if ($cpuString) {
+        preg_match('/^[^(]+/', $cpuString, $match);
+        $cpuType = trim($match[0]);
+    }
 
     $topSpecs = build_top_specs($specMap, $weightGs, $os, $shortChipset, $cpuType);
-    echo "<pre>";
-    print_r("h");
-    exit;
     $specsGrid = build_specs_grid($sizeInInches, $specMap, $shortChipset, $mainCam, $cpuType);
     // echo "<pre>";
     // print_r(json_encode($specsGrid, JSON_UNESCAPED_UNICODE));
