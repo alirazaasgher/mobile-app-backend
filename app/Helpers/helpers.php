@@ -128,14 +128,20 @@ function update_phone_search_index(
     $shortChipset = null;
 
     if ($chipset) {
-        // Match Snapdragon / MediaTek / Exynos / Apple / etc. and the version
-        if (preg_match('/(Snapdragon|MediaTek|Exynos|Apple\s\w+)\s[\w\s]+/i', $chipset, $matches)) {
-            $shortChipset = trim($matches[0]);
+
+        // Extract name + nm part dynamically
+        if (preg_match('/^(.*?)\s*\((\d+\s*nm)\)/i', $chipset, $m)) {
+            $shortChipset = trim($m[1] . ' (' . $m[2] . ')');
         }
     }
+    $cpuString = $specMap['performance']['cpu'];
 
-    $topSpecs = build_top_specs($specMap, $weightGs, $os, $shortChipset);
-    $specsGrid = build_specs_grid($sizeInInches, $specMap, $shortChipset, $mainCam);
+    preg_match('/^[^(]+/', $cpuString, $match);
+
+    $cpuType = trim($match[0]);
+
+    $topSpecs = build_top_specs($specMap, $weightGs, $os, $shortChipset, $cpuType);
+    $specsGrid = build_specs_grid($sizeInInches, $specMap, $shortChipset, $mainCam, $cpuType);
     // echo "<pre>";
     // print_r(json_encode($specsGrid, JSON_UNESCAPED_UNICODE));
     // exit;
@@ -284,16 +290,26 @@ function filterSpecs(array $arr): array
     return $out;
 }
 
-function build_top_specs($specMap, $weightGs, $os, $shortChipset)
+function build_top_specs($specMap, $weightGs, $os, $shortChipset, $cpuType)
 {
 
-    $cpu = $specMap['performance']['cpu'] ?? null;
-    if ($cpu) {
-        $parts = explode(' ', $cpu);
-        $coreType = $parts[0] . (isset($parts[1]) && strpos($parts[1], '-') !== false ? ' ' . $parts[1] : '');
-    }
-    $updates = $specMap['security']['software_updates'] ?? "";
+    $build = $specMap['design']['build'];
+    $durability = $specMap['design']['durability'];
 
+    $glassProtection = null;
+    $ipRating = null;
+    if (preg_match('/(Gorilla\s+Glass\s+[A-Za-z0-9+]+(?:\s*\d*)?|Ceramic\s+Shield(?:\s*\d*)?)/i', $build, $match)) {
+        $glassProtection = trim($match[0]);
+    }
+
+
+
+    // Matches IP ratings like IP68, IP67, IP54, IPX8, etc.
+    if (preg_match('/IP(?:\d|X){2}/i', $durability, $match)) {
+        $ipRating = strtoupper($match[0]) . ' Water Resistant';
+    }
+
+    $updates = $specMap['security']['software_updates'] ?? "";
     if ($updates) {
         $shortUpdates = str_ireplace('updates', '', $updates);
         $shortUpdates = trim($shortUpdates);
@@ -302,9 +318,9 @@ function build_top_specs($specMap, $weightGs, $os, $shortChipset)
 
     return [
         [
-            "key" => "release_date",
-            "text" => $validated['release_date'] ?? "N/A",
-            "subText" => "Official launch date"
+            "key" => "protection",
+            "text" => $glassProtection ?? "N/A",
+            "subText" => $ipRating ?? "N/A"
         ],
         [
             "key" => "body",
@@ -319,12 +335,12 @@ function build_top_specs($specMap, $weightGs, $os, $shortChipset)
         [
             "key" => "chipset",
             "text" => $shortChipset,
-            "subText" => $coreType ?? ""
+            "subText" => $cpuType ?? ""
         ],
     ];
 }
 
-function build_specs_grid($sizeInInches, $specMap, $shortChipset, $mainCam)
+function build_specs_grid($sizeInInches, $specMap, $shortChipset, $mainCam, $cpuType)
 {
 
     $resolutionFull = $specMap['display']['resolution'] ?? null;
@@ -418,7 +434,7 @@ function build_specs_grid($sizeInInches, $specMap, $shortChipset, $mainCam)
         [
             "key" => "chipset",
             "value" => $shortChipset,
-            "subvalue" => $coreType ?? "",
+            "subvalue" => $cpuType ?? "",
             "hide_on_details_page" => true
         ],
 
