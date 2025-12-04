@@ -182,63 +182,6 @@ function update_phone_search_index(
         ]
     );
 }
-function build_phone_tags(array $specMap): array
-{
-    $tags = [];
-
-    // 5G
-    if (isset($specMap['5G']) && stripos($specMap['5G'], 'yes') !== false) {
-        $tags[] = '5G';
-    }
-
-    // Chipset
-    if (!empty($specMap['chipset'])) {
-        $tags[] = trim($specMap['chipset']);
-    }
-
-    // Display
-    $screenSize = null;
-    if (!empty($specMap['Display Size (inches)'])) {
-        // Extract number like 6.67 from "6.67 inches, 107.4 cm2 ..."
-        preg_match('/([\d.]+)\s*inches?/i', $specMap['Display Size (inches)'], $m);
-        $screenSize = $m[1] ?? null;
-    }
-
-    $displayType = $specMap['Display Type'] ?? null;
-
-    if ($screenSize && $displayType) {
-        $tags[] = "{$screenSize} {$displayType}";
-    } elseif ($screenSize) {
-        $tags[] = "{$screenSize}\"";
-    } elseif ($displayType) {
-        $tags[] = $displayType;
-    }
-
-    // Battery
-    if (!empty($specMap['Battery Capacity (mAh)'])) {
-        $tags[] = $specMap['Battery Capacity (mAh)'] . 'mAh';
-    }
-
-    // OS
-    if (!empty($specMap['os'])) {
-        $tags[] = $specMap['os'];
-    }
-
-    // Fast / Wireless Charging
-    if (isset($specMap['Fast Charging']) && stripos($specMap['Fast Charging'], 'yes') !== false) {
-        $tags[] = 'Fast Charging';
-    }
-    if (isset($specMap['Wireless Charging']) && stripos($specMap['Wireless Charging'], 'yes') !== false) {
-        $tags[] = 'Wireless Charging';
-    }
-
-    // Main Camera
-    if (!empty($specMap['Main Camera (MP)'])) {
-        $tags[] = $specMap['Main Camera (MP)'] . 'MP Camera';
-    }
-
-    return array_values(array_unique(array_filter($tags)));
-}
 
 function hasNonEmptyValue(array $arr): bool
 {
@@ -399,7 +342,7 @@ function build_specs_grid($sizeInInches, $specMap, $shortChipset, $mainCam, $cpu
         $fastCharging = "$match[1]W";
     }
     // 2. Try iPhone-style (PD + AVS + time)
-    elseif (preg_match('/PD\s*([\d\.]+).*?\((\d+% in \d+ min)\)/i', $chargingSpec, $match)) {
+    elseif (preg_match('/PD\s*([\d\.]+).*?(?:\(?(\d+% in \d+ min)\)?)/i', $chargingSpec, $match)) {
         $fastCharging = "PD{$match[1]}";
     }
 
