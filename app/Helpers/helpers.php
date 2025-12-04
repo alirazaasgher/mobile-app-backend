@@ -12,9 +12,7 @@ function update_phone_search_index(
     $validated,
     $phoneId
 ) {
-    echo "<pre>";
-    print_r("h");
-    exit;
+
 
 
     // Calculate price range
@@ -143,6 +141,9 @@ function update_phone_search_index(
     $cpuType = trim($match[0]);
 
     $topSpecs = build_top_specs($specMap, $weightGs, $os, $shortChipset, $cpuType);
+    echo "<pre>";
+    print_r("h");
+    exit;
     $specsGrid = build_specs_grid($sizeInInches, $specMap, $shortChipset, $mainCam, $cpuType);
     // echo "<pre>";
     // print_r(json_encode($specsGrid, JSON_UNESCAPED_UNICODE));
