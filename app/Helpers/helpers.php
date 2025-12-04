@@ -12,7 +12,9 @@ function update_phone_search_index(
     $validated,
     $phoneId
 ) {
-
+    echo "<pre>";
+    print_r("h");
+    exit;
 
 
     // Calculate price range
