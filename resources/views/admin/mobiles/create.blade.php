@@ -346,9 +346,9 @@
                 // --- Premium Tier ---
                 ['value' => '8/128', 'label' => '8GB/128GB', 'modifier' => 0, 'badge' => 'Premium'],
                 ['value' => '8/256', 'label' => '8GB/256GB', 'modifier' => 0, 'badge' => 'Premium'],
-                ['value' => '8/512', 'label' => '8GB/128GB', 'modifier' => 0, 'badge' => 'Premium'],
-                ['value' => '8/1TB', 'label' => '8GB/256GB', 'modifier' => 0, 'badge' => 'Premium'],
-                ['value' => '8/2TB', 'label' => '8GB/256GB', 'modifier' => 0, 'badge' => 'Premium'],
+                ['value' => '8/512', 'label' => '8GB/512GB', 'modifier' => 0, 'badge' => 'Premium'],
+                ['value' => '8/1TB', 'label' => '8GB/1TB', 'modifier' => 0, 'badge' => 'Premium'],
+                ['value' => '8/2TB', 'label' => '8GB/2TB', 'modifier' => 0, 'badge' => 'Premium'],
 
                 // --- Pro Tier ---
                 ['value' => '12/256', 'label' => '12GB/256GB', 'modifier' => 0, 'badge' => 'Pro'],
