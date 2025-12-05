@@ -121,13 +121,13 @@ class PhoneApiController extends Controller
             'colors',
             'colors.images',
             'variants' => function ($query) {
-            $query->with(['ram_type:id,name', 'storage_type:id,name']) // eager load RAM & storage for each variant
-              ->orderBy('storage')
-              ->orderBy('pkr_price');
-    },
+                $query->with(['ram_type:id,name', 'storage_type:id,name']) // eager load RAM & storage for each variant
+                    ->orderBy('storage')
+                    ->orderBy('pkr_price');
+            },
         ])->where('slug', $slug)->firstOrFail();
         $queries = DB::getQueryLog();
-    
+
         // Print queries
         //dd($phone->toArray());
         // $phone = Cache::remember($cacheKey, 600, function () use ($id) {
@@ -245,17 +245,30 @@ class PhoneApiController extends Controller
                     }
                 });
             }
-
             // RAM
             if (!empty($filters['ram'])) {
                 $ramValues = array_map('intval', $filters['ram']);
-                $query->whereHas('searchIndex', fn($q) => $q->whereRaw("JSON_OVERLAPS(ram_options, ?)", [json_encode($ramValues)]));
+
+                $query->whereHas('searchIndex', function ($q) use ($ramValues) {
+                    $q->where(function ($subQ) use ($ramValues) {
+                        foreach ($ramValues as $value) {
+                            $subQ->orWhereRaw("JSON_CONTAINS(ram_options, ?)", [json_encode($value)]);
+                        }
+                    });
+                });
             }
 
             // Storage
             if (!empty($filters['storage'])) {
                 $storageValues = array_map('intval', $filters['storage']);
-                $query->whereHas('searchIndex', fn($q) => $q->whereRaw("JSON_OVERLAPS(storage_options, ?)", [json_encode($storageValues)]));
+
+                $query->whereHas('searchIndex', function ($q) use ($storageValues) {
+                    $q->where(function ($subQ) use ($storageValues) {
+                        foreach ($storageValues as $value) {
+                            $subQ->orWhereRaw("JSON_CONTAINS(storage_options, ?)", [json_encode($value)]);
+                        }
+                    });
+                });
             }
 
             // Features

@@ -145,7 +145,7 @@ function update_phone_search_index(
             'max_price_pkr' => $maxPricePKR,
             'min_price_usd' => $minPriceUSD,
             'max_price_usd' => $maxPriceUSD,
-            'ram_options' => json_encode(array_map('intval', $ramOptions)),
+            'ram_options' => json_encode(value: array_map('intval', $ramOptions)),
             'storage_options' => json_encode(array_map('intval', $storageOptions)),
             'storage_type' => $storage_type,
             'available_colors' => json_encode($availableColors),
@@ -333,6 +333,7 @@ function build_specs_grid($sizeInInches, $specMap, $shortChipset, $mainCam, $cpu
     elseif (preg_match('/PD\s*([\d\.]+).*?(?:\(?(\d+% in \d+ min)\)?)/i', $chargingSpec, $match)) {
         $fastCharging = "PD{$match[1]}";
     }
+
 
     // Wireless charging
     if (preg_match('/(\d+(\.\d+)?)\s*W\s*(wireless)?/i', $wirlessCharging, $match)) {
