@@ -12,13 +12,18 @@ class PhoneSearchResource extends JsonResource
         $storageOptions = json_decode($this->storage_options, true) ?: [];
 
         $numericValues = array_map(function ($value) {
-            if (str_contains($value, 'TB')) {
-                return (int) filter_var($value, FILTER_SANITIZE_NUMBER_INT) * 1024; // Convert TB → GB
+
+            // If value is <= 10, treat as TB → convert to GB
+            if ($value <= 10) {
+                return $value * 1024;
             }
-            return (int) filter_var($value, FILTER_SANITIZE_NUMBER_INT);
+
+            // Otherwise treat as normal GB
+            return (int) $value;
         }, $storageOptions);
 
         $minNumeric = min($numericValues);
+
         $data = [
             'ram' => !empty($ramOptions) ? min($ramOptions) : null,
             'storage' => $storageOptions[array_search($minNumeric, $numericValues)],

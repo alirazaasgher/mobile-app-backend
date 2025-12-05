@@ -125,15 +125,7 @@ function update_phone_search_index(
         // $selfieCam,
     ]);
 
-    $shortChipset = null;
-
-    if ($chipset) {
-
-        // Extract name + nm part dynamically
-        if (preg_match('/^(.*?)\s*\((\d+\s*nm)\)/i', $chipset, $m)) {
-            $shortChipset = trim($m[1] . ' (' . $m[2] . ')');
-        }
-    }
+    $shortChipset = getShortChipset($chipset);
     $cpuString = $specMap['performance']['cpu'];
     $cpuType = "";
     if ($cpuString) {
@@ -143,10 +135,6 @@ function update_phone_search_index(
 
     $topSpecs = build_top_specs($specMap, $weightGs, $os, $shortChipset, $cpuType);
     $specsGrid = build_specs_grid($sizeInInches, $specMap, $shortChipset, $mainCam, $cpuType);
-    // echo "<pre>";
-    // print_r(json_encode($specsGrid, JSON_UNESCAPED_UNICODE));
-    // exit;
-    // ✅ Insert into phone_search_indices
     DB::table('phone_search_indices')->updateOrInsert(
         ['phone_id' => $phoneId],
         [
@@ -157,8 +145,8 @@ function update_phone_search_index(
             'max_price_pkr' => $maxPricePKR,
             'min_price_usd' => $minPriceUSD,
             'max_price_usd' => $maxPriceUSD,
-            'ram_options' => json_encode($ramOptions),
-            'storage_options' => json_encode(array_unique($storageOptions)),
+            'ram_options' => json_encode(array_map('intval', $ramOptions)),
+            'storage_options' => json_encode(array_map('intval', $storageOptions)),
             'storage_type' => $storage_type,
             'available_colors' => json_encode($availableColors),
             'screen_size_inches' => $sizeInInches,
@@ -389,3 +377,42 @@ function build_specs_grid($sizeInInches, $specMap, $shortChipset, $mainCam, $cpu
         ],
     ];
 }
+
+function getShortChipset($chipset)
+{
+    if (!$chipset) return null;
+
+    // If already short, return as-is
+    if (preg_match('/^(Snapdragon|Dimensity|A\d+|Tensor|Exynos|Kirin)\s+.*\(\d+\s*nm\)$/i', $chipset)) {
+        return $chipset;
+    }
+
+    // Extract nm reliably
+    preg_match('/\((\d+\s*nm)\)/i', $chipset, $nmMatch);
+    $nm = $nmMatch[1] ?? null;
+
+    // Remove hardware codes such as SM7750-AB, MT6989, etc.
+    $clean = preg_replace(
+        '/^(Qualcomm|MediaTek|Apple|Samsung|Google|Huawei|HiSilicon)\s+[A-Za-z0-9\-]+/i',
+        '$1',
+        $chipset
+    );
+
+    // Extract the readable chipset name
+    preg_match(
+        '/(Snapdragon\s+[^\(]+|Dimensity\s+[^\(]+|A\d+\s*\w*|Exynos\s+[^\(]+|Tensor\s+[^\(]+|Kirin\s+[^\(]+)/i',
+        $clean,
+        $nameMatch
+    );
+
+    $shortName = trim($nameMatch[1] ?? $chipset);
+
+    // If shortName already contains (x nm), don't append nm
+    if (preg_match('/\(\d+\s*nm\)/i', $shortName)) {
+        return $shortName;
+    }
+
+    // Append nm if available
+    return $nm ? "$shortName ($nm)" : $shortName;
+}
+

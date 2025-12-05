@@ -437,7 +437,7 @@ class PhoneService
                 'ram' => $data['ram'],
                 'storage' => $data['storage'],
                 'ram_type_id' => $incoming['ram_type_id'] ?? null,
-                        'storage_type_id' => $incoming['storage_type_id'] ?? null,
+                'storage_type_id' => $incoming['storage_type_id'] ?? null,
                 'pkr_price' => $data['pkr_price'],
                 'usd_price' => $data['usd_price'],
             ]);
