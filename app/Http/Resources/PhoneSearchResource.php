@@ -27,7 +27,9 @@ class PhoneSearchResource extends JsonResource
         $data = [
             'ram' => !empty($ramOptions) ? min($ramOptions) : null,
             'storage' => $storageOptions[array_search($minNumeric, $numericValues)],
-            'min_price' => number_format($this->min_price_pkr, 0, '.', ','),
+            'min_price' => !empty($this->min_price_pkr)
+                ? number_format(min($this->min_price_pkr), 0, '.', ',')
+                : null,  // or 'NA'
             'specs_grid' => json_decode($this->specs_grid, true),
         ];
 
