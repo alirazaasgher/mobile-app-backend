@@ -63,7 +63,7 @@ class Phone extends Model
     // Scopes for filtering
     public function scopeActive($query)
     {
-        return $query->where('status', 'published');
+        return $query->where('deleted', 0);
     }
 
     public function scopePopular($query)
