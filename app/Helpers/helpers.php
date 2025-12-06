@@ -283,38 +283,7 @@ function build_specs_grid($sizeInInches, $specMap, $shortChipset, $mainCam, $cpu
     preg_match('/(\d+)\s*nits/i', $brightness, $matches);
     $brightnessShort = $matches[1] ?? null;
     $displayTypeShort = $specMap['display']['type'];
-    // Short display type
-    $shortTypes = ['AMOLED', 'OLED', 'LTPO OLED', 'Foldable AMOLED', 'IPS LCD', 'Mini LED', 'Micro LED'];
-
-    $replacements = [
-        // Dynamic + LTPO + main type → preserve main type + trailing
-        '/Foldable\s+Dynamic\s+LTPO\s+(AMOLED|OLED)(.*)/i' => 'LTPO $1$2',
-        '/Dynamic\s+LTPO\s+(AMOLED|OLED)(.*)/i' => 'LTPO $1$2',
-        '/LTPO\s+(AMOLED|OLED)(.*)/i' => 'LTPO $1$2',
-
-        // Dynamic / Super AMOLED → preserve main type + trailing
-        '/Foldable\s+Dynamic\s+(AMOLED)(.*)/i' => 'Foldable $1$2',
-        '/Dynamic\s+(AMOLED)(.*)/i' => '$1$2',
-        '/Super\s+(AMOLED)(.*)/i' => '$1$2',
-
-        // Simple types
-        '/AMOLED/i' => 'AMOLED',
-        '/OLED/i' => 'OLED',
-        '/Foldable.*AMOLED(.*)/i' => 'Foldable AMOLED$1',
-        '/(IPS|TFT|PLS|LTPS|IGZO).*LCD/i' => 'LCD',
-        '/Mini[- ]?LED/i' => 'Mini LED',
-        '/Micro[- ]?LED/i' => 'Micro LED',
-    ];
-
-    if (!in_array($displayTypeShort, $shortTypes)) {
-        foreach ($replacements as $pattern => $replacement) {
-            $newDisplay = preg_replace($pattern, $replacement, $displayTypeShort, 1);
-            if ($newDisplay !== $displayTypeShort) {
-                $displayTypeShort = $newDisplay;
-                break;
-            }
-        }
-    }
+    $displayTypeShort = getShortDisplay($displayTypeShort);
 
     $resolution = null;
     if ($resolutionFull) {
@@ -431,6 +400,72 @@ function getShortChipset($chipset)
     }
 
     return $shortChip;
+}
+
+function getShortDisplay($type)
+{
+    if (!$type)
+        return null;
+
+    $t = strtolower($type);
+
+    // Extract tag like "2X", "3X", "144Hz", "120Hz" etc.
+    preg_match('/\b(\d+x|\d+hz)\b/i', $type, $tagMatch);
+    $tag = isset($tagMatch[0]) ? ' ' . strtoupper($tagMatch[0]) : '';
+
+    // Check for display types
+    $hasLTPO = str_contains($t, 'ltpo');
+    $hasFoldable = str_contains($t, 'foldable');
+    $hasDynamic = str_contains($t, 'dynamic');
+    $hasRetina = str_contains($t, 'retina') || str_contains($t, 'xdr');
+    $hasAMOLED = str_contains($t, 'amoled');
+    $hasOLED = str_contains($t, 'oled');
+    $hasLCD = str_contains($t, 'lcd');
+    $hasMiniLED = preg_match('/\bmini[- ]?led\b/i', $t);
+    $hasMicroLED = preg_match('/\bmicro[- ]?led\b/i', $t);
+
+    // Priority-based matching
+
+    // Mini/Micro LED (check first before generic LED)
+    if ($hasMiniLED)
+        return 'Mini LED';
+    if ($hasMicroLED)
+        return 'Micro LED';
+
+    // Foldable combinations
+    if ($hasFoldable) {
+        if ($hasAMOLED)
+            return "Foldable AMOLED$tag";
+    }
+
+    // LTPO combinations
+    if ($hasLTPO) {
+        if ($hasRetina && $hasOLED)
+            return 'LTPO OLED';
+        if ($hasAMOLED)
+            return "LTPO AMOLED$tag";
+        if ($hasOLED)
+            return 'LTPO OLED';
+    }
+
+    // Dynamic AMOLED
+    if ($hasDynamic && $hasAMOLED) {
+        return "Dynamic AMOLED$tag";
+    }
+
+    // Basic AMOLED/OLED
+    if ($hasAMOLED)
+        return 'AMOLED';
+    if ($hasOLED)
+        return 'OLED';
+
+    // LCD (IPS, TFT, etc. all become LCD)
+    if ($hasLCD || preg_match('/\b(ips|tft|pls|ltps)\b/i', $t)) {
+        return 'LCD';
+    }
+
+    // Return original if no pattern matched
+    return trim($type);
 }
 
 
