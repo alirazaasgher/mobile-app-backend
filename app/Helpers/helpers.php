@@ -126,9 +126,7 @@ function update_phone_search_index(
     ]);
 
     $shortChipset = getShortChipset($chipset);
-    // echo "<pre>";
-    // print_r($shortChipset);
-    // exit;
+
     $cpuString = $specMap['performance']['cpu'];
     $cpuType = "";
     if ($cpuString) {
@@ -287,22 +285,30 @@ function build_specs_grid($sizeInInches, $specMap, $shortChipset, $mainCam, $cpu
     $brightnessShort = $matches[1] ?? null;
     $displayTypeShort = $specMap['display']['type'];
     // Short display type
+    $shortTypes = ['AMOLED', 'OLED', 'LTPO OLED', 'Foldable AMOLED', 'IPS LCD', 'Mini LED', 'Micro LED'];
+
     $replacements = [
-        '/LTPO.*(AMOLED|OLED)/i' => 'LTPO OLED',
-        '/Dynamic.*AMOLED/i' => 'AMOLED',
-        '/Super.*AMOLED/i' => 'AMOLED',
+        '/Dynamic LTPO.*(AMOLED|OLED)(.*)/i' => 'LTPO OLED$2',
+        '/LTPO.*(AMOLED|OLED)(.*)/i' => 'LTPO OLED$2',
+        '/Dynamic.*AMOLED(.*)/i' => 'AMOLED$1',
+        '/Super.*AMOLED(.*)/i' => 'AMOLED$1',
         '/AMOLED/i' => 'AMOLED',
         '/OLED/i' => 'OLED',
-        '/Foldable.*AMOLED/i' => 'Foldable AMOLED',
+        '/Foldable.*AMOLED(.*)/i' => 'Foldable AMOLED$1',
         '/(IPS|TFT|PLS|LTPS|IGZO).*LCD/i' => 'LCD',
         '/Mini[- ]?LED/i' => 'Mini LED',
         '/Micro[- ]?LED/i' => 'Micro LED',
     ];
 
-    foreach ($replacements as $pattern => $replacement) {
-        if (preg_match($pattern, $displayTypeShort)) {
-            $displayTypeShort = preg_replace($pattern, $replacement, $displayTypeShort);
-            break; // 🔥 stop after first valid replacement
+
+    // ✅ Skip processing if already short
+    if (!in_array($displayTypeShort, $shortTypes)) {
+        foreach ($replacements as $pattern => $replacement) {
+            $newDisplay = preg_replace($pattern, $replacement, $displayTypeShort, 1);
+            if ($newDisplay !== $displayTypeShort) {
+                $displayTypeShort = $newDisplay;
+                break; // stop after first valid replacement
+            }
         }
     }
 
@@ -387,31 +393,37 @@ function getShortChipset($chipset)
     if (!$chipset)
         return null;
 
+    // If already short: Brand + main chipset + optional generation + optional nm, do nothing
+    if (preg_match('/^(Qualcomm|MediaTek|Apple|Samsung|Google|Huawei|HiSilicon)\s+(Snapdragon|Dimensity|A\d+|Exynos|Tensor|Kirin)(?:\s+[\w\+\-]+)*(\s*\(\d+\s*nm\))?$/i', $chipset)) {
+        return $chipset; // already short, leave as-is
+    }
+
     // Extract nm if present
     preg_match('/\((\d+\s*nm)\)/i', $chipset, $nmMatch);
     $nm = $nmMatch[1] ?? null;
 
-    // Match main chipset keywords
-    if (preg_match('/\b(Snapdragon|Dimensity|A\d+|Exynos|Tensor|Kirin)\b/i', $chipset, $match)) {
-        $keyword = $match[1];
+    // Extract main chipset keyword
+    if (preg_match('/\b(Snapdragon|Dimensity|A\d+|Exynos|Tensor|Kirin)\b/i', $chipset, $chipMatch)) {
+        $chip = $chipMatch[1];
 
-        // Extract keyword + next 1-2 words for short name
-        if (preg_match('/' . preg_quote($keyword, '/') . '\s+([\w\-]+(?:\s[\w\-]+)?)/i', $chipset, $nameMatch)) {
-            $shortName = $keyword . ' ' . $nameMatch[1];
+        // Extract numbers or generation after chipset keyword (1–2 words)
+        if (preg_match('/' . preg_quote($chip, '/') . '\s+([\w\+\-]+(?:\s[\w\-]+)?)/i', $chipset, $nameMatch)) {
+            $shortChip = $chip . ' ' . $nameMatch[1];
         } else {
-            $shortName = $keyword;
+            $shortChip = $chip;
         }
     } else {
-        $shortName = $chipset; // fallback
+        $shortChip = $chipset; // fallback
     }
 
-    // Append nm if available and not already present
-    if ($nm && !preg_match('/\(\d+\s*nm\)/i', $shortName)) {
-        $shortName .= " ($nm)";
+    // Append nm if available
+    if ($nm && !preg_match('/\(\d+\s*nm\)/i', $shortChip)) {
+        $shortChip .= " ($nm)";
     }
 
-    return $shortName;
+    return $shortChip;
 }
+
 
 
 
