@@ -126,9 +126,9 @@ function update_phone_search_index(
     ]);
 
     $shortChipset = getSmartShortChipset($chipset);
-    echo "<pre>";
-    print_r($shortChipset);
-    exit;
+    // echo "<pre>";
+    // print_r($shortChipset);
+    // exit;
     $cpuString = $specMap['performance']['cpu'];
     $cpuType = "";
     if ($cpuString) {
