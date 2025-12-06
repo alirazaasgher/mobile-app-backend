@@ -17,6 +17,7 @@ class Phone extends Model
         'tagline',
         'primary_image',
         'status',
+        'deleted',
         'popularity_score',
         'avg_rating',
         'total_reviews',
@@ -34,7 +35,7 @@ class Phone extends Model
 
     public function specifications(): HasMany
     {
-        return $this->hasMany(PhoneSpecification::class)->orderBy('order','asc');
+        return $this->hasMany(PhoneSpecification::class)->orderBy('order', 'asc');
     }
 
     public function variants(): HasMany
@@ -136,7 +137,7 @@ class Phone extends Model
         if (!empty($filters['search'])) {
             $query->where(function ($q) use ($filters) {
                 $q->where('name', 'like', "%{$filters['search']}%");
-                    // ->orWhere('brand', 'like', "%{$filters['search']}%");
+                // ->orWhere('brand', 'like', "%{$filters['search']}%");
             });
         }
 
@@ -161,4 +162,4 @@ class Phone extends Model
 
 }
 
-   
+

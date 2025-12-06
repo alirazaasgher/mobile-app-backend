@@ -195,9 +195,9 @@ class MobileController extends Controller
             'release_date' => 'nullable|date',
             'variants' => 'required|array|min:1',
             'specifications' => 'required|array|min:1',
+            'status' => 'nullable|string'
         ]);
-
-        $status = $request->input('action') === 'draft' ? 'draft' : 'published';
+        $deleted = $request->input('action') === 'draft' ? 1 : 0;
         $storage_type = $request->input('storage_type');
         DB::beginTransaction();
         try {
@@ -213,7 +213,8 @@ class MobileController extends Controller
                 'primary_image' => $primaryPath,
                 'release_date' => $validated['release_date'] ?? null,
                 'announced_date' => $request->input('announced_date'),
-                'status' => $status,
+                'status' => $request->input('status'),
+                'deleted' => $deleted
             ]);
 
             // variants
@@ -266,7 +267,7 @@ class MobileController extends Controller
             update_phone_search_index($storage_type, $ram_list, $storage_list, $price_list, $available_colors, $updatedSpecs, $validated, $phone->id);
 
             DB::commit();
-            $message = $status === 'draft' ? 'Phone saved as draft!' : 'Phone published successfully!';
+            $message = $deleted === 'draft' ? 'Phone saved as draft!' : 'Phone published successfully!';
             return redirect()->route('mobiles.create')->with('success', $message);
         } catch (\Throwable $e) {
             DB::rollBack();
@@ -291,6 +292,7 @@ class MobileController extends Controller
 
     public function update(Request $request, $id)
     {
+
         $validated = $request->validate([
             'brand' => 'required|string',
             'name' => 'required|string|max:255',
@@ -299,10 +301,10 @@ class MobileController extends Controller
             'release_date' => 'nullable|date',
             'variants' => 'required|array|min:1',
             'specifications' => 'required|array|min:1',
+            'status' => 'nullable|string'
         ]);
-
         $phone = Phone::findOrFail($id);
-        $status = $request->input('action') === 'draft' ? 'draft' : 'published';
+        $deleted = $request->input('action') === 'draft' ? 1 : 0;
         $storage_type = $request->input('storage_type');
         DB::beginTransaction();
         try {
@@ -312,7 +314,8 @@ class MobileController extends Controller
                 'tagline' => $validated['tagline'] ?? null,
                 'release_date' => $validated['release_date'] ?? null,
                 'announced_date' => $request->input('announced_date') ?? null,
-                'status' => $status,
+                'status' => $request->input('status'),
+                'deleted' => $deleted
             ];
 
             if ($primaryPath) {
@@ -373,7 +376,7 @@ class MobileController extends Controller
 
             DB::commit();
 
-            $message = $status === 'draft' ? 'Phone saved as draft!' : 'Phone updated successfully!';
+            $message = $deleted === 'draft' ? 'Phone saved as draft!' : 'Phone updated successfully!';
             return redirect()->route('mobiles.edit', $phone->id)->with('success', $message);
         } catch (\Throwable $e) {
             DB::rollBack();

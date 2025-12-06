@@ -83,6 +83,19 @@
               class="border rounded w-full p-2">
           </div>
         </div>
+
+        <div class="grid grid-cols-2 gap-4">
+         <div>
+    <label class="block font-medium">Status</label>
+    <select name="status" class="border rounded w-full p-2">
+        <option value="">Select Status</option>
+        <option value="new" {{ old('status', $mobile->status ?? '') == 'new' ? 'selected' : '' }}>New</option>
+        <option value="upcoming" {{ old('status', $mobile->status ?? '') == 'upcoming' ? 'selected' : '' }}>Upcoming</option>
+        <option value="rumored" {{ old('status', $mobile->status ?? '') == 'rumored' ? 'selected' : '' }}>Rumored</option>
+        <option value="discontinued" {{ old('status', $mobile->status ?? '') == 'discontinued' ? 'selected' : '' }}>Discontinued</option>
+    </select>
+</div>
+        </div>
       </div>
 
       <div class="bg-white shadow-sm rounded-lg p-6 mb-6">
