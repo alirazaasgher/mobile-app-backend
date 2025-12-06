@@ -74,8 +74,8 @@ function update_phone_search_index(
         $parts = array_map('trim', explode(',', $camera));
 
         $labelsPriority = [
-            'ultrawide' => 'Ultra-Wide',
-            'ultra wide' => 'Ultra-Wide',
+            'ultrawide' => '(UW)',
+            'ultra wide' => '(UW)',
             'telephoto' => 'Telephoto',
             'macro' => 'Macro',
             'depth' => 'Depth',
