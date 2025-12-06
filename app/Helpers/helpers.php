@@ -125,7 +125,10 @@ function update_phone_search_index(
         // $selfieCam,
     ]);
 
-    $shortChipset = getShortChipset($chipset);
+    $shortChipset = getSmartShortChipset($chipset);
+    echo "<pre>";
+    print_r($shortChipset);
+    exit;
     $cpuString = $specMap['performance']['cpu'];
     $cpuType = "";
     if ($cpuString) {
@@ -379,41 +382,52 @@ function build_specs_grid($sizeInInches, $specMap, $shortChipset, $mainCam, $cpu
     ];
 }
 
-function getShortChipset($chipset)
+function getSmartShortChipset($chipset)
 {
-    if (!$chipset) return null;
+    if (!$chipset)
+        return null;
 
-    // If already short, return as-is
-    if (preg_match('/^(Snapdragon|Dimensity|A\d+|Tensor|Exynos|Kirin)\s+.*\(\d+\s*nm\)$/i', $chipset)) {
-        return $chipset;
+    // If already short: Brand + main chipset + optional nm, do nothing
+    if (preg_match('/^(Qualcomm|MediaTek|Apple|Samsung|Google|Huawei|HiSilicon)\s+(Snapdragon|Dimensity|A\d+|Exynos|Tensor|Kirin)(?:\s+[\w\-]+)*(\s*\(\d+\s*nm\))?$/i', $chipset)) {
+        return $chipset; // already short
     }
 
-    // Extract nm reliably
+    // Extract nm if present
     preg_match('/\((\d+\s*nm)\)/i', $chipset, $nmMatch);
     $nm = $nmMatch[1] ?? null;
 
-    // Remove hardware codes such as SM7750-AB, MT6989, etc.
-    $clean = preg_replace(
-        '/^(Qualcomm|MediaTek|Apple|Samsung|Google|Huawei|HiSilicon)\s+[A-Za-z0-9\-]+/i',
-        '$1',
-        $chipset
-    );
+    // Extract brand
+    preg_match('/\b(Qualcomm|MediaTek|Apple|Samsung|Google|Huawei|HiSilicon)\b/i', $chipset, $brandMatch);
+    $brand = $brandMatch[1] ?? '';
 
-    // Extract the readable chipset name
-    preg_match(
-        '/(Snapdragon\s+[^\(]+|Dimensity\s+[^\(]+|A\d+\s*\w*|Exynos\s+[^\(]+|Tensor\s+[^\(]+|Kirin\s+[^\(]+)/i',
-        $clean,
-        $nameMatch
-    );
+    // Extract main chipset keyword
+    preg_match('/\b(Snapdragon|Dimensity|A\d+|Exynos|Tensor|Kirin)\b/i', $chipset, $chipMatch);
+    $chip = $chipMatch[1] ?? '';
 
-    $shortName = trim($nameMatch[1] ?? $chipset);
-
-    // If shortName already contains (x nm), don't append nm
-    if (preg_match('/\(\d+\s*nm\)/i', $shortName)) {
-        return $shortName;
+    if (!$chip) {
+        // fallback
+        return $chipset;
     }
 
-    // Append nm if available
-    return $nm ? "$shortName ($nm)" : $shortName;
+    // Extract numbers or generation after chipset keyword
+    // e.g., Snapdragon 8 Gen 1, Dimensity 6100+, A17 Pro
+    if (preg_match('/' . preg_quote($chip, '/') . '\s*([\w\+\-]+(?:\sGen\s\d+)?)/i', $chipset, $nameMatch)) {
+        $shortChip = $chip . ' ' . $nameMatch[1];
+    } else {
+        $shortChip = $chip;
+    }
+
+    // Build final short name with brand
+    $shortName = trim(($brand ? $brand . ' ' : '') . $shortChip);
+
+    // Append nm if available and not already present
+    if ($nm && !preg_match('/\(\d+\s*nm\)/i', $shortName)) {
+        $shortName .= " ($nm)";
+    }
+
+    return $shortName;
 }
+
+
+
 
