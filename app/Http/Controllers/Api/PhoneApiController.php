@@ -223,9 +223,7 @@ class PhoneApiController extends Controller
         ]));
 
         $phones = Cache::remember($cacheKey, 50, function () use ($filters, $sort, $perPage, $page) {
-
             $query = Phone::active()->with(['brand:id,name', 'searchIndex']);
-
             // Brands
             if (!empty($filters['brands'])) {
                 $brands = array_map('strtolower', $filters['brands']);
@@ -330,7 +328,7 @@ class PhoneApiController extends Controller
 
             // If no filters, return mixed phones
             if (empty(array_filter($filters))) {
-                $query->select('id', 'name', 'slug', 'release_date', 'primary_image')
+                $query->select('id', 'name', 'slug', 'release_date', 'primary_image', 'status')
                     ->orderBy('release_date', 'desc')
                     ->inRandomOrder();
             }
