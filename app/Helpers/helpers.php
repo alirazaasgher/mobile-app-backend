@@ -398,6 +398,11 @@ function getShortChipset($chipset)
         return null;
     }
 
+    // If already short (chipset + 1-2 words + optional nm), return as-is
+    if (preg_match('/^(Snapdragon|Dimensity|A\d+|Exynos|Tensor|Kirin)\s+[\w\+\-]+(?:\s+[\w\+\-]+)?(?:\s*\(\d+\s*nm\))?$/i', $chipset)) {
+        return $chipset;
+    }
+
     // Extract nm if present
     preg_match('/\((\d+\s*nm)\)/i', $chipset, $nmMatch);
     $nm = $nmMatch[1] ?? null;
