@@ -126,7 +126,6 @@ function update_phone_search_index(
     ]);
 
     $shortChipset = getShortChipset($chipset);
-
     $cpuString = $specMap['performance']['cpu'];
     $cpuType = "";
     if ($cpuString) {
@@ -395,39 +394,40 @@ function build_specs_grid($sizeInInches, $specMap, $shortChipset, $mainCam, $cpu
 
 function getShortChipset($chipset)
 {
-    if (!$chipset)
+    if (!$chipset) {
         return null;
-
-    // If already short: Brand + main chipset + optional generation + optional nm, do nothing
-    if (preg_match('/^(Qualcomm|MediaTek|Apple|Samsung|Google|Huawei|HiSilicon)\s+(Snapdragon|Dimensity|A\d+|Exynos|Tensor|Kirin)(?:\s+[\w\+\-]+)*(\s*\(\d+\s*nm\))?$/i', $chipset)) {
-        return $chipset; // already short, leave as-is
     }
 
     // Extract nm if present
     preg_match('/\((\d+\s*nm)\)/i', $chipset, $nmMatch);
     $nm = $nmMatch[1] ?? null;
 
-    // Extract main chipset keyword
-    if (preg_match('/\b(Snapdragon|Dimensity|A\d+|Exynos|Tensor|Kirin)\b/i', $chipset, $chipMatch)) {
+    // Extract main chipset keyword and following words
+    if (preg_match('/\b(Snapdragon|Dimensity|A\d+|Exynos|Tensor|Kirin)\s+([\w\+\-]+(?:\s+[\w\+\-]+)?)/i', $chipset, $chipMatch)) {
         $chip = $chipMatch[1];
+        $suffix = $chipMatch[2];
 
-        // Extract numbers or generation after chipset keyword (1–2 words)
-        if (preg_match('/' . preg_quote($chip, '/') . '\s+([\w\+\-]+(?:\s[\w\-]+)?)/i', $chipset, $nameMatch)) {
-            $shortChip = $chip . ' ' . $nameMatch[1];
-        } else {
-            $shortChip = $chip;
-        }
+        // Stop at common filler words
+        $suffix = preg_replace('/\s+(Mobile|Platform|Processor|for|with|Edition|Series).*/i', '', $suffix);
+
+        $shortChip = $chip . ' ' . trim($suffix);
+    } elseif (preg_match('/\b(Snapdragon|Dimensity|A\d+|Exynos|Tensor|Kirin)\b/i', $chipset, $chipMatch)) {
+        // Just the chipset name without suffix
+        $shortChip = $chipMatch[1];
     } else {
-        $shortChip = $chipset; // fallback
+        // No recognized chipset, return first 2-3 words
+        preg_match('/^(\S+(?:\s+\S+){0,2})/', $chipset, $fallbackMatch);
+        $shortChip = $fallbackMatch[1] ?? $chipset;
     }
 
-    // Append nm if available
+    // Append nm if available and not already present
     if ($nm && !preg_match('/\(\d+\s*nm\)/i', $shortChip)) {
         $shortChip .= " ($nm)";
     }
 
     return $shortChip;
 }
+
 
 
 
