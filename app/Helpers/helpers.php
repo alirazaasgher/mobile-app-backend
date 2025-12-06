@@ -125,7 +125,7 @@ function update_phone_search_index(
         // $selfieCam,
     ]);
 
-    $shortChipset = getSmartShortChipset($chipset);
+    $shortChipset = getShortChipset($chipset);
     // echo "<pre>";
     // print_r($shortChipset);
     // exit;
@@ -382,43 +382,28 @@ function build_specs_grid($sizeInInches, $specMap, $shortChipset, $mainCam, $cpu
     ];
 }
 
-function getSmartShortChipset($chipset)
+function getShortChipset($chipset)
 {
     if (!$chipset)
         return null;
-
-    // If already short: Brand + main chipset + optional nm, do nothing
-    if (preg_match('/^(Qualcomm|MediaTek|Apple|Samsung|Google|Huawei|HiSilicon)\s+(Snapdragon|Dimensity|A\d+|Exynos|Tensor|Kirin)(?:\s+[\w\-]+)*(\s*\(\d+\s*nm\))?$/i', $chipset)) {
-        return $chipset; // already short
-    }
 
     // Extract nm if present
     preg_match('/\((\d+\s*nm)\)/i', $chipset, $nmMatch);
     $nm = $nmMatch[1] ?? null;
 
-    // Extract brand
-    preg_match('/\b(Qualcomm|MediaTek|Apple|Samsung|Google|Huawei|HiSilicon)\b/i', $chipset, $brandMatch);
-    $brand = $brandMatch[1] ?? '';
+    // Match main chipset keywords
+    if (preg_match('/\b(Snapdragon|Dimensity|A\d+|Exynos|Tensor|Kirin)\b/i', $chipset, $match)) {
+        $keyword = $match[1];
 
-    // Extract main chipset keyword
-    preg_match('/\b(Snapdragon|Dimensity|A\d+|Exynos|Tensor|Kirin)\b/i', $chipset, $chipMatch);
-    $chip = $chipMatch[1] ?? '';
-
-    if (!$chip) {
-        // fallback
-        return $chipset;
-    }
-
-    // Extract numbers or generation after chipset keyword
-    // e.g., Snapdragon 8 Gen 1, Dimensity 6100+, A17 Pro
-    if (preg_match('/' . preg_quote($chip, '/') . '\s*([\w\+\-]+(?:\sGen\s\d+)?)/i', $chipset, $nameMatch)) {
-        $shortChip = $chip . ' ' . $nameMatch[1];
+        // Extract keyword + next 1-2 words for short name
+        if (preg_match('/' . preg_quote($keyword, '/') . '\s+([\w\-]+(?:\s[\w\-]+)?)/i', $chipset, $nameMatch)) {
+            $shortName = $keyword . ' ' . $nameMatch[1];
+        } else {
+            $shortName = $keyword;
+        }
     } else {
-        $shortChip = $chip;
+        $shortName = $chipset; // fallback
     }
-
-    // Build final short name with brand
-    $shortName = trim(($brand ? $brand . ' ' : '') . $shortChip);
 
     // Append nm if available and not already present
     if ($nm && !preg_match('/\(\d+\s*nm\)/i', $shortName)) {
