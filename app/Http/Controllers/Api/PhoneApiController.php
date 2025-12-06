@@ -47,7 +47,7 @@ class PhoneApiController extends Controller
          * Upcoming Phones
          */
         $upcomingMobiles = (clone $baseQuery)
-            ->where('release_date', '>', now())
+            ->whereIn('status', ['rumored', 'upcoming'])
             ->whereNotIn('id', $usedPhoneIds)
             ->orderBy('release_date', 'asc')
             ->take(10)
