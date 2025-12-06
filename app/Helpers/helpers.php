@@ -288,10 +288,17 @@ function build_specs_grid($sizeInInches, $specMap, $shortChipset, $mainCam, $cpu
     $shortTypes = ['AMOLED', 'OLED', 'LTPO OLED', 'Foldable AMOLED', 'IPS LCD', 'Mini LED', 'Micro LED'];
 
     $replacements = [
-        '/Dynamic LTPO.*(AMOLED|OLED)(.*)/i' => 'LTPO OLED$2',
-        '/LTPO.*(AMOLED|OLED)(.*)/i' => 'LTPO OLED$2',
-        '/Dynamic.*AMOLED(.*)/i' => 'AMOLED$1',
-        '/Super.*AMOLED(.*)/i' => 'AMOLED$1',
+        // Dynamic + LTPO + main type → preserve main type + trailing
+        '/Foldable\s+Dynamic\s+LTPO\s+(AMOLED|OLED)(.*)/i' => 'LTPO $1$2',
+        '/Dynamic\s+LTPO\s+(AMOLED|OLED)(.*)/i' => 'LTPO $1$2',
+        '/LTPO\s+(AMOLED|OLED)(.*)/i' => 'LTPO $1$2',
+
+        // Dynamic / Super AMOLED → preserve main type + trailing
+        '/Foldable\s+Dynamic\s+(AMOLED)(.*)/i' => 'Foldable $1$2',
+        '/Dynamic\s+(AMOLED)(.*)/i' => '$1$2',
+        '/Super\s+(AMOLED)(.*)/i' => '$1$2',
+
+        // Simple types
         '/AMOLED/i' => 'AMOLED',
         '/OLED/i' => 'OLED',
         '/Foldable.*AMOLED(.*)/i' => 'Foldable AMOLED$1',
@@ -300,14 +307,12 @@ function build_specs_grid($sizeInInches, $specMap, $shortChipset, $mainCam, $cpu
         '/Micro[- ]?LED/i' => 'Micro LED',
     ];
 
-
-    // ✅ Skip processing if already short
     if (!in_array($displayTypeShort, $shortTypes)) {
         foreach ($replacements as $pattern => $replacement) {
             $newDisplay = preg_replace($pattern, $replacement, $displayTypeShort, 1);
             if ($newDisplay !== $displayTypeShort) {
                 $displayTypeShort = $newDisplay;
-                break; // stop after first valid replacement
+                break;
             }
         }
     }
