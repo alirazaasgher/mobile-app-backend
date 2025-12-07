@@ -28,7 +28,7 @@ class PhoneApiController extends Controller
     public function index(Request $request): JsonResponse
     {
         $usedPhoneIds = [];
-        $baseQuery = Phone::select('id', 'name', 'slug', 'release_date', 'primary_image')->
+        $baseQuery = Phone::select('id', 'name', 'slug', 'release_date', 'primary_image', 'status')->
             with(['searchIndex'])->active();
         $usedPhoneIds = [];
 
