@@ -125,7 +125,7 @@ function update_phone_search_index(
     }
 
     $topSpecs = build_top_specs($specMap, $os, $release_date, $mainCam);
-    $specsGrid = build_specs_grid($sizeInInches, $specMap, $shortChipset, $mainCam, $cpuType);
+    $specsGrid = build_specs_grid($sizeInInches, $specMap, $shortChipset, $cpuType);
     DB::table('phone_search_indices')->updateOrInsert(
         ['phone_id' => $phoneId],
         [
@@ -269,7 +269,7 @@ function build_top_specs($specMap, $os, $date, $mainCam)
     ];
 }
 
-function build_specs_grid($sizeInInches, $specMap, $shortChipset, $mainCam, $cpuType)
+function build_specs_grid($sizeInInches, $specMap, $shortChipset, $cpuType)
 {
 
     $resolutionFull = $specMap['display']['resolution'] ?? null;
@@ -329,11 +329,6 @@ function build_specs_grid($sizeInInches, $specMap, $shortChipset, $mainCam, $cpu
     }
 
     return [
-        [
-            "key" => "main_camera",
-            "value" => $mainCam ?? "",
-            "subvalue" => "" // auto convert logic later
-        ],
         [
             "key" => "battery",
             "value" => $specMap['battery']['capacity'] ?? "N/A",
