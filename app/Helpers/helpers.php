@@ -61,6 +61,7 @@ function update_phone_search_index(
     $hasFastCharging = isset($specMap['battery']['charging_speed']) && preg_match('/\d+\s*W/i', $specMap['battery']['charging_speed']) ? 1 : 0;
     $hasWirelessCharging = isset($specMap['battery']['wireless']) && strtolower($specMap['battery']['wireless']) === 'yes' ? 1 : 0;
     $release_date = $validated['release_date'];
+
     // Extract commonly used specs
 
     $battery = $specMap['Battery Capacity (mAh)'] ?? null;
@@ -214,10 +215,10 @@ function filterSpecs(array $arr): array
 
 function build_top_specs($specMap, $os, $date, $mainCam)
 {
-
     $main_camera_video = getVideoHighlight($specMap['main_camera']['video']);
     $fornt_camera_video = getVideoHighlight($specMap['selfie_camera']['video']);
-    $date = Carbon::parse($date)->format('j F, Y');
+
+    $date = !empty($date) ? Carbon::parse($date)->format('j F, Y') : " ";
     $build = $specMap['design']['build'];
     $durability = $specMap['design']['durability'];
 
