@@ -218,7 +218,8 @@ function build_top_specs($specMap, $os, $date, $mainCam)
     $main_camera_video = getVideoHighlight($specMap['main_camera']['video']);
     $fornt_camera_video = getVideoHighlight($specMap['selfie_camera']['video']);
 
-    $date = !empty($date) ? Carbon::parse($date)->format('j F, Y') : " ";
+    $date = !empty($date) ? Carbon::parse($date)->format('j F, Y') : null;
+
     $build = $specMap['design']['build'];
     $durability = $specMap['design']['durability'];
 
