@@ -223,12 +223,7 @@ function build_top_specs($specMap, $os, $date, $mainCam)
 
     $glassProtection = null;
     $ipRating = null;
-    if (preg_match('/(Gorilla\s+Glass\s+[A-Za-z0-9+]+(?:\s*\d*)?|Ceramic\s+Shield(?:\s*\d*)?)/i', $build, $match)) {
-        $glassProtection = trim($match[0]);
-    }
-
-
-
+    $glassProtection = getGlassProtectionShort($build);
     // Matches IP ratings like IP68, IP67, IP54, IPX8, etc.
     if (preg_match('/IP(?:\d|X){2}/i', $durability, $match)) {
         $ipRating = strtoupper($match[0]) . ' Water Resistant';
@@ -493,6 +488,31 @@ function getVideoHighlight($video)
     // Remove duplicates and return as comma-separated string
     return implode(', ', array_unique($highlight));
 }
+
+function getGlassProtectionShort($build)
+{
+    $out = [];
+
+    // Gorilla Glass / Ceramic Shield
+    if (preg_match('/(Gorilla\s+Glass\s+[A-Za-z0-9+]+|Ceramic\s+Shield)/i', $build, $m)) {
+        $out[] = trim($m[0]) . " (front)";
+    }
+
+    // Glass front
+    if (stripos($build, 'glass front') !== false) {
+        if (!preg_match('/Gorilla|Ceramic/i', $build)) {
+            $out[] = "Glass front";
+        }
+    }
+
+    // Glass back
+    if (stripos($build, 'glass back') !== false) {
+        $out[] = "Glass back";
+    }
+
+    return implode(', ', array_unique($out));
+}
+
 
 
 
