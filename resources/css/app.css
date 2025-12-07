@@ -1,3 +1,19 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* Force multi-select to display properly */
+select[multiple] {
+    background-image: none !important;
+    padding: 0.5rem !important;
+    height: auto !important;
+}
+
+select[multiple] option {
+    padding: 0.25rem 0.5rem;
+}
+
+select[multiple] option:checked {
+    background: #3b82f6 linear-gradient(0deg, #3b82f6 0%, #3b82f6 100%) !important;
+    color: white !important;
+}

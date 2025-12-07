@@ -94,7 +94,11 @@
         <option value="rumored" {{ old('status', $mobile->status ?? '') == 'rumored' ? 'selected' : '' }}>Rumored</option>
         <option value="discontinued" {{ old('status', $mobile->status ?? '') == 'discontinued' ? 'selected' : '' }}>Discontinued</option>
     </select>
+
 </div>
+
+
+
         </div>
       </div>
 

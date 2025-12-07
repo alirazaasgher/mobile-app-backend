@@ -23,6 +23,7 @@ class MobileController extends Controller
         $brands = Brand::all();
         $ram_type = RamType::all();
         $storage_type = StorageType::all();
+        $allMobiles = Phone::all();
         $specificationTemplates = [
             'design' => [
                 'expandable' => true,
@@ -167,6 +168,7 @@ class MobileController extends Controller
             'ramTypes' => $ram_type,
             'storageTypes' => $storage_type,
             'specificationTemplates' => $specificationTemplates,
+            'allMobiles' => $allMobiles
         ]);
     }
 

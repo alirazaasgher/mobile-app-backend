@@ -1,7 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\DB;
-
+use Carbon\Carbon;
 function update_phone_search_index(
     $storage_type,
     $ramOptions,
@@ -12,8 +12,6 @@ function update_phone_search_index(
     $validated,
     $phoneId
 ) {
-
-
 
     // Calculate price range
     foreach ($priceList as $price) {
@@ -62,17 +60,15 @@ function update_phone_search_index(
     $hasNfc = isset($specMap['connectivity']['nfc']) && strtolower($specMap['connectivity']['nfc']) === 'yes' ? 1 : 0;
     $hasFastCharging = isset($specMap['battery']['charging_speed']) && preg_match('/\d+\s*W/i', $specMap['battery']['charging_speed']) ? 1 : 0;
     $hasWirelessCharging = isset($specMap['battery']['wireless']) && strtolower($specMap['battery']['wireless']) === 'yes' ? 1 : 0;
-
+    $release_date = $validated['release_date'];
     // Extract commonly used specs
 
     $battery = $specMap['Battery Capacity (mAh)'] ?? null;
     $selfieCam = $specMap['Selfie Camera (MP)'] ?? null;
     $mainCam = $specMap['main_camera']['setup'] ?? null;
     if ($mainCam && strpos($mainCam, ',') !== false) {
-
         $camera = strtolower($mainCam);
         $parts = array_map('trim', explode(',', $camera));
-
         $labelsPriority = [
             'ultrawide' => '(UW)',
             'ultra wide' => '(UW)',
@@ -83,11 +79,9 @@ function update_phone_search_index(
         ];
 
         $final = [];
-
         // First camera → always the first MP
         preg_match('/(\d+(\.\d+)?)\s*mp/i', $parts[0], $mpMatch);
         $final[] = $mpMatch[1] . 'MP';
-
         // Second camera → choose based on priority
         $second = null;
         foreach ($labelsPriority as $key => $labelName) {
@@ -101,29 +95,26 @@ function update_phone_search_index(
                 }
             }
         }
-
         // If no priority label found, take second camera if exists
         if (!$second && isset($parts[1])) {
             preg_match('/(\d+(\.\d+)?)\s*mp/i', $parts[1], $mpMatch);
             $second = $mpMatch ? $mpMatch[1] . 'MP' : null;
         }
-
         if ($second) {
             $final[] = $second;
         }
-
         $mainCam = implode(' + ', $final);
     }
     // Search content
-    $searchContent = implode(' ', [
-        $validated['name'],
-        $chipset,
-        $os,
-        $sizeInInches,
-        $battery,
-        // $mainCam,
-        // $selfieCam,
-    ]);
+    // $searchContent = implode(' ', [
+    //     $validated['name'],
+    //     $chipset,
+    //     $os,
+    //     $sizeInInches,
+    //     $battery,
+    //     // $mainCam,
+    //     // $selfieCam,
+    // ]);
 
     $shortChipset = getShortChipset($chipset);
     $cpuString = $specMap['performance']['cpu'];
@@ -133,7 +124,7 @@ function update_phone_search_index(
         $cpuType = trim($match[0]);
     }
 
-    $topSpecs = build_top_specs($specMap, $weightGs, $os, $shortChipset, $cpuType);
+    $topSpecs = build_top_specs($specMap, $os, $release_date, $mainCam);
     $specsGrid = build_specs_grid($sizeInInches, $specMap, $shortChipset, $mainCam, $cpuType);
     DB::table('phone_search_indices')->updateOrInsert(
         ['phone_id' => $phoneId],
@@ -163,7 +154,6 @@ function update_phone_search_index(
             'display_type' => $displayType,
             'ip_rating' => $onlyIp ?? "",
             'weight_grams' => $weightGs,
-            'search_content' => $searchContent,
             'top_specs' => json_encode($topSpecs),
             'specs_grid' => json_encode($specsGrid, JSON_UNESCAPED_UNICODE),
             'updated_at' => now(),
@@ -222,9 +212,12 @@ function filterSpecs(array $arr): array
     return $out;
 }
 
-function build_top_specs($specMap, $weightGs, $os, $shortChipset, $cpuType)
+function build_top_specs($specMap, $os, $date, $mainCam)
 {
 
+    $main_camera_video = getVideoHighlight($specMap['main_camera']['video']);
+    $fornt_camera_video = getVideoHighlight($specMap['selfie_camera']['video']);
+    $date = Carbon::parse($date)->format('j F, Y');
     $build = $specMap['design']['build'];
     $durability = $specMap['design']['durability'];
 
@@ -247,27 +240,31 @@ function build_top_specs($specMap, $weightGs, $os, $shortChipset, $cpuType)
         $shortUpdates = trim($shortUpdates);
     }
 
-
     return [
         [
-            "key" => "protection",
-            "text" => $glassProtection ?? "N/A",
-            "subText" => $ipRating ?? "N/A"
+            "key" => "released_data",
+            "text" => $date ?? "Not Announced Yet",
+            "subText" => ""
         ],
         [
-            "key" => "body",
-            "text" => "{$weightGs}g, 8mm thickness",
-            "subText" => "Weight & Thickness"
+            "key" => "glass_protection",
+            "text" => $glassProtection ?? "NA",
+            "subText" => $ipRating ?? ""
+        ],
+        [
+            "key" => "main_camera",
+            "text" => $mainCam ?? "NA",
+            "subText" => $main_camera_video ?? ""
+        ],
+        [
+            "key" => "front_camera",
+            "text" => $specMap['selfie_camera']['setup'] ?? "NA",
+            "subText" => $fornt_camera_video ?? ""
         ],
         [
             "key" => "os",
             "text" => $os,
             "subText" => $shortUpdates ?? ""
-        ],
-        [
-            "key" => "chipset",
-            "text" => $shortChipset,
-            "subText" => $cpuType ?? ""
         ],
     ];
 }
@@ -466,6 +463,40 @@ function getShortDisplay($type)
 
     // Return original if no pattern matched
     return trim($type);
+}
+
+function getVideoHighlight($video)
+{
+    // 1️⃣ Extract resolutions (e.g., 1080p, 720p, 4K, 8K)
+    preg_match_all('/(\d{3,4}p|[48]K)/i', $video, $resMatches);
+
+    $resolutions = [];
+    foreach ($resMatches[0] as $r) {
+        $rUpper = strtoupper($r);
+        if ($rUpper === '4K')
+            $resolutions[$r] = 4000;
+        elseif ($rUpper === '8K')
+            $resolutions[$r] = 8000;
+        else
+            $resolutions[$r] = (int) rtrim($r, 'p');
+    }
+
+    // Sort resolutions descending
+    arsort($resolutions);
+
+    // Keep top 2 resolutions only (optional: change to 1 if needed)
+    $topRes = array_slice(array_keys($resolutions), 0, 2);
+
+    // 2️⃣ Extract key features (HDR, Dolby Vision, 10-bit, etc.)
+    preg_match_all('/HDR|Dolby Vision|HDR10\+?|10-bit|12-bit/i', $video, $featMatches);
+
+    $features = array_map('ucwords', array_unique($featMatches[0]));
+
+    // 3️⃣ Combine resolutions + features
+    $highlight = array_merge($topRes, $features);
+
+    // Remove duplicates and return as comma-separated string
+    return implode(', ', array_unique($highlight));
 }
 
 

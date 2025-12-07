@@ -10,7 +10,6 @@ class PhoneSearchResource extends JsonResource
     {
         $ramOptions = json_decode($this->ram_options, true) ?: [];
         $storageOptions = json_decode($this->storage_options, true) ?: [];
-
         $numericValues = array_map(function ($value) {
 
             // If value is <= 10, treat as TB → convert to GB
@@ -30,7 +29,7 @@ class PhoneSearchResource extends JsonResource
             'min_price' => isset($this->min_price_pkr) && $this->min_price_pkr > 0
                 ? number_format($this->min_price_pkr, 0, '.', ',')
                 : null,
-            'specs_grid' => json_decode($this->specs_grid, true),
+            // 'specs_grid' => json_decode($this->specs_grid, true),
         ];
 
         // Only include top_specs and specs_grid if request has details page flag
