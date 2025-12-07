@@ -13,10 +13,12 @@ class PhoneResource extends JsonResource
         return [
             'id' => $this->id,
             'name' => $this->name,
+            'brand' => $this->brand,
             'slug' => $this->slug,
             'status' => $this->status,
             'primary_image' => $this->primary_image ? $baseUrl . '/storage/' . ltrim($this->primary_image, '/')
                 : null,
+            // 'is_popular' => $this->is_popular,
             'variants' => PhoneVariantResource::collection($this->whenLoaded('variants')),
             'colors' => ColorResource::collection($this->whenLoaded('colors')),
             'specifications' => PhoneSpecificationResource::collection($this->whenLoaded('specifications')),
