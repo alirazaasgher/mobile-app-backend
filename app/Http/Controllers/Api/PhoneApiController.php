@@ -144,11 +144,10 @@ class PhoneApiController extends Controller
         $minPrice = $phone->searchIndex->min_price_pkr ?? 0;
         $maxPrice = $phone->searchIndex->max_price_pkr ?? 0;
         $priceRange = [$minPrice * 0.85, $maxPrice * 1.15];
-        $similarMobiles = Phone::with('searchIndex')
-            ->where('id', '!=', $phone->id)
-            ->whereHas('searchIndex', function ($query) use ($ramOptions, $storageOptions, $priceRange) {
-
-                // RAM filter
+        $similarMobiles = Phone::select('phones.id', 'phones.name', 'phones.slug', 'phones.primary_image', 'phones.brand_id')
+            ->join('phone_search_indices as psi', 'phones.id', '=', 'psi.phone_id')
+            ->where('phones.id', '!=', $phone->id)
+            ->where(function ($query) use ($ramOptions, $storageOptions, $priceRange) {
                 if (!empty($ramOptions)) {
                     $query->where(function ($q) use ($ramOptions) {
                         foreach ($ramOptions as $ram) {
@@ -157,7 +156,6 @@ class PhoneApiController extends Controller
                     });
                 }
 
-                // Storage filter
                 if (!empty($storageOptions)) {
                     $query->where(function ($q) use ($storageOptions) {
                         foreach ($storageOptions as $storage) {
@@ -166,17 +164,14 @@ class PhoneApiController extends Controller
                     });
                 }
 
-                // Price filter
                 if ($priceRange) {
                     $query->where(function ($q) use ($priceRange) {
                         $q->whereBetween('min_price_pkr', $priceRange)
                             ->orWhereBetween('max_price_pkr', $priceRange);
                     });
                 }
-
             })
-            // Sort by closest average price
-            ->orderByRaw('( (min_price_pkr + max_price_pkr) / 2 - ?) * ( (min_price_pkr + max_price_pkr) / 2 - ? ) ASC', [$minPrice, $minPrice])
+            ->orderByRaw('( (psi.min_price_pkr + psi.max_price_pkr) / 2 - ?) * ( (psi.min_price_pkr + psi.max_price_pkr) / 2 - ? ) ASC', [$phone->searchIndex->min_price_pkr, $phone->searchIndex->min_price_pkr])
             ->limit(6)
             ->get(['id', 'name', 'slug', 'primary_image', 'brand_id']);
 
