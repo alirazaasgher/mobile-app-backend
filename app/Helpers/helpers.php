@@ -2,6 +2,7 @@
 
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
+
 function update_phone_search_index(
     $storage_type,
     $ramOptions,
@@ -126,7 +127,7 @@ function update_phone_search_index(
     }
 
     $topSpecs = build_top_specs($specMap, $os, $release_date, $mainCam);
-    $specsGrid = build_specs_grid($sizeInInches, $specMap, $shortChipset, $cpuType);
+    $specsGrid = build_specs_grid($sizeInInches, $specMap, $shortChipset, $cpuType,$mainCam);
     DB::table('phone_search_indices')->updateOrInsert(
         ['phone_id' => $phoneId],
         [
@@ -266,13 +267,12 @@ function build_top_specs($specMap, $os, $date, $mainCam)
     ];
 }
 
-function build_specs_grid($sizeInInches, $specMap, $shortChipset, $cpuType)
+function build_specs_grid($sizeInInches, $specMap, $shortChipset, $cpuType,$mainCam)
 {
 
     $resolutionFull = $specMap['display']['resolution'] ?? null;
     $refreshRate = $specMap['display']['refresh_rate'] ?? null;
     $brightness = $specMap['display']['brightness'] ?? null;
-    $video = $specMap['main_camera']['video'];
     // Extract nits (only number)
     preg_match('/(\d+)\s*nits/i', $brightness, $matches);
     $brightnessShort = $matches[1] ?? null;
@@ -327,13 +327,9 @@ function build_specs_grid($sizeInInches, $specMap, $shortChipset, $cpuType)
 
     return [
         [
-            "key" => "battery",
-            "value" => $specMap['battery']['capacity'] ?? "N/A",
-            "subvalue" => [
-                "wired" => $fastCharging ?? null,
-                "wireless" => $convertWirlessCharging ?? null,
-                "reverse" => $convertReverceCharging ?? null
-            ]
+            "key" => "display",
+            "value" => $sizeInInches . '" ' . $displayTypeShort,
+            "subvalue" => implode(' • ', array_filter($subvalueParts))
         ],
         [
             "key" => "chipset",
@@ -341,12 +337,20 @@ function build_specs_grid($sizeInInches, $specMap, $shortChipset, $cpuType)
             "subvalue" => $cpuType ?? "",
             "hide_on_details_page" => true
         ],
-
         [
-            "key" => "display",
-            "value" => $sizeInInches . '" ' . $displayTypeShort,
-            "subvalue" => implode(' • ', array_filter($subvalueParts))
+            "key" => "main_camera",
+            "value" => $mainCam,
+            "subvalue" => "",
         ],
+        [
+            "key" => "battery",
+            "value" => $specMap['battery']['capacity'] ?? "N/A",
+            "subvalue" => [
+                "wired" => $fastCharging ?? null,
+                "wireless" => $convertWirlessCharging ?? null,
+                "reverse" => $convertReverceCharging ?? null
+            ]
+        ]
     ];
 }
 
@@ -514,10 +518,3 @@ function getGlassProtectionShort($build)
 
     return implode(', ', array_unique($out));
 }
-
-
-
-
-
-
-

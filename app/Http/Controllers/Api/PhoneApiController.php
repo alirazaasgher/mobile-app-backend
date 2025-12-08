@@ -28,8 +28,7 @@ class PhoneApiController extends Controller
     public function index(Request $request): JsonResponse
     {
         $usedPhoneIds = [];
-        $baseQuery = Phone::select('id', 'name', 'slug', 'release_date', 'primary_image', 'status')->
-            with(['searchIndex'])->active();
+        $baseQuery = Phone::select('id', 'name', 'slug', 'release_date', 'primary_image', 'status')->with(['searchIndex'])->active();
         $usedPhoneIds = [];
 
         /**
@@ -123,21 +122,37 @@ class PhoneApiController extends Controller
             'colors',
             'colors.images',
             'variants' => function ($query) {
-                $query->with(['ram_type:id,name', 'storage_type:id,name']) // eager load RAM & storage for each variant
+                $query->with(['ram_type:id,name', 'storage_type:id,name'])
                     ->orderBy('storage')
                     ->orderBy('pkr_price');
             },
-        ])->where('slug', $slug)->firstOrFail();
-        $queries = DB::getQueryLog();
-
-        // Print queries
-        //dd($phone->toArray());
-        // $phone = Cache::remember($cacheKey, 600, function () use ($id) {
-
-        // });
+            // Competitors only need minimal info: id, name, slug, primary_image, brand_id
+            'competitors' => function ($q) {
+                $q->select('phones.id', 'phones.name', 'phones.slug', 'phones.primary_image') // minimal fields
+                    ->with('searchIndex'); // eager load searchIndex
+            }
+        ])
+            ->where('slug', $slug)
+            ->firstOrFail();
+        $ramOptions = $phone->searchIndex->ramOptions ?? [];
+        $storageOptions = $phone->searchIndex->storageOptions ?? [];
+        $similarMobiles = Phone::where('id', '!=', $phone->id)
+            ->whereHas('searchIndex', function ($query) use ($phone, $ramOptions, $storageOptions) {
+                $query->whereIn('ram', $ramOptions)
+                    ->whereIn('storage', $storageOptions)
+                    ->where(function ($q) use ($phone) {
+                        $minPrice = $phone->searchIndex->min_price ?? 0;
+                        $maxPrice = $phone->searchIndex->max_price ?? 0;
+                        $q->whereBetween('min_price_pkr', [$minPrice * 0.85, $maxPrice * 1.15])
+                            ->orWhereBetween('max_price_pkr', [$minPrice * 0.85, $maxPrice * 1.15]);
+                    });
+            })
+            ->limit(6)
+            ->get(['id', 'name', 'slug', 'primary_image', 'brand_id']);
         return response()->json([
             'success' => true,
-            'data' => new PhoneResource(resource: $phone)
+            'data' => new PhoneResource(resource: $phone),
+            'similarMobiles' => $similarMobiles
         ]);
     }
 

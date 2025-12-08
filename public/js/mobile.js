@@ -61,4 +61,8 @@ $(document).ready(function () {
     $(document).on('click', '.remove-color', function () {
         $(this).closest('.color-option-row').remove();
     });
+     $('select[name="competitors[]"]').select2({
+        placeholder: "Select Status",
+        width: "100%"
+    });
 });

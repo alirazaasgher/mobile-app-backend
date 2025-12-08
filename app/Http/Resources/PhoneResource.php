@@ -10,7 +10,7 @@ class PhoneResource extends JsonResource
     public function toArray($request)
     {
         $baseUrl = config('app.url');
-        return [
+         $data = [
             'id' => $this->id,
             'name' => $this->name,
             'brand' => $this->brand,
@@ -22,7 +22,12 @@ class PhoneResource extends JsonResource
             'variants' => PhoneVariantResource::collection($this->whenLoaded('variants')),
             'colors' => ColorResource::collection($this->whenLoaded('colors')),
             'specifications' => PhoneSpecificationResource::collection($this->whenLoaded('specifications')),
-            'searchIndex' => new PhoneSearchResource($this->whenLoaded('searchIndex')),
+            'searchIndex' => new PhoneSearchResource($this->whenLoaded('searchIndex'),hideDetails: false),
         ];
+        if ($request->query('details') || $request->routeIs('phones.show')) {
+            $data['competitors'] = CompetitorResource::collection($this->whenLoaded('competitors'));
+        }
+
+        return $data;
     }
 }

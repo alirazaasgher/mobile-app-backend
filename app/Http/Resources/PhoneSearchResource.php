@@ -6,36 +6,45 @@ use Illuminate\Http\Resources\Json\JsonResource;
 
 class PhoneSearchResource extends JsonResource
 {
+
+    protected $hideDetails;
+
+    public function __construct($resource, $hideDetails = false)
+    {
+        parent::__construct($resource);
+        $this->hideDetails = $hideDetails;
+    }
     public function toArray($request)
     {
         $ramOptions = json_decode($this->ram_options, true) ?: [];
         $storageOptions = json_decode($this->storage_options, true) ?: [];
         $numericValues = array_map(function ($value) {
-
             // If value is <= 10, treat as TB → convert to GB
             if ($value <= 10) {
                 return $value * 1024;
             }
+            return (int) $value; // Otherwise treat as GB
+        }, $storageOptions ?? []);
 
-            // Otherwise treat as normal GB
-            return (int) $value;
-        }, $storageOptions);
+        // Get min value safely
+        $minNumeric = !empty($numericValues) ? min($numericValues) : null;
 
-        $minNumeric = min($numericValues);
+        // Find original storage value safely
+        $minIndex = $minNumeric !== null ? array_search($minNumeric, $numericValues, true) : false;
+        $minStorage = $minIndex !== false ? $storageOptions[$minIndex] : null;
 
         $data = [
             'ram' => !empty($ramOptions) ? min($ramOptions) : null,
-            'storage' => $storageOptions[array_search($minNumeric, $numericValues)],
+            'storage' => $minStorage,
             'min_price' => isset($this->min_price_pkr) && $this->min_price_pkr > 0
                 ? number_format($this->min_price_pkr, 0, '.', ',')
                 : null,
-            // 'specs_grid' => json_decode($this->specs_grid, true),
+            'specs_grid' => json_decode($this->specs_grid, true)
         ];
-
+        // !$this->hideDetails && 
         // Only include top_specs and specs_grid if request has details page flag
-        if ($request->query('details') || $request->routeIs('phones.show')) {
+        if (!$this->hideDetails && ($request->query('details') || $request->routeIs('phones.show'))) {
             $data['top_specs'] = json_decode($this->top_specs, true);
-            $data['specs_grid'] = json_decode($this->specs_grid, true);
         }
 
         return $data;

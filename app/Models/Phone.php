@@ -158,7 +158,10 @@ class Phone extends Model
         return $this->belongsTo(Brand::class);
     }
 
-
+    public function competitors()
+    {
+        return $this->belongsToMany(Phone::class, 'mobile_competitors', 'mobile_id', 'competitor_id');
+    }
 
 }
 

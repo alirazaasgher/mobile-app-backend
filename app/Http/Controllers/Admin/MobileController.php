@@ -188,8 +188,6 @@ class MobileController extends Controller
 
     public function store(Request $request)
     {
-
-
         $validated = $request->validate([
             'brand' => 'required|string',
             'name' => 'required|string|max:255',
@@ -197,7 +195,8 @@ class MobileController extends Controller
             'release_date' => 'nullable|date',
             'variants' => 'required|array|min:1',
             'specifications' => 'required|array|min:1',
-            'status' => 'nullable|string'
+            'status' => 'nullable|string',
+            'competitors' => 'nullable|array'
         ]);
         $deleted = $request->input('action') === 'draft' ? 1 : 0;
         $storage_type = $request->input('storage_type');
@@ -218,7 +217,8 @@ class MobileController extends Controller
                 'status' => $request->input('status'),
                 'deleted' => $deleted
             ]);
-
+            $competitors = $validated['competitors'] ?? [];
+            $phone->competitors()->sync($competitors);
             // variants
             $variantsSpecs = $validated['variants']['specs'] ?? [];
             $priceModifiersUSD = $validated['variants']['price_modifier_usd'] ?? [];
@@ -283,13 +283,11 @@ class MobileController extends Controller
 
     public function edit($id)
     {
-        $mobile = Phone::with(['variants', 'colors', 'specifications'])->findOrFail($id);
+        $mobile = Phone::with(['competitors', 'variants', 'colors', 'specifications'])->findOrFail($id);
 
         $mobile->specifications = collect($mobile->specifications)->keyBy('category');
-        // echo '<pre>';
-        // print_r( $mobile->toArray());
-        // exit;
-        return view('admin.mobiles.create', compact('mobile'));
+        $existingCompetitors = $mobile->competitors->pluck('id')->toArray();
+        return view('admin.mobiles.create', compact('mobile', 'existingCompetitors'));
     }
 
     public function update(Request $request, $id)
@@ -303,7 +301,8 @@ class MobileController extends Controller
             'release_date' => 'nullable|date',
             'variants' => 'required|array|min:1',
             'specifications' => 'required|array|min:1',
-            'status' => 'nullable|string'
+            'status' => 'nullable|string',
+            'competitors' => 'nullable|array'
         ]);
         $phone = Phone::findOrFail($id);
         $deleted = $request->input('action') === 'draft' ? 1 : 0;
@@ -325,7 +324,8 @@ class MobileController extends Controller
             }
 
             $phone->update($updateData);
-
+            $competitors = $validated['competitors'] ?? [];
+            $phone->competitors()->sync($competitors);
             // variants - smart sync (diff)
             $variantsSpecs = $validated['variants']['specs'] ?? [];
             $priceModifiersUSD = $validated['variants']['price_modifier_usd'] ?? null;
