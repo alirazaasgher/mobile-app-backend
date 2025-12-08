@@ -169,10 +169,10 @@ class PhoneApiController extends Controller
             })
             // Optional: order by closest price to main phone
             ->orderByRaw('( (min_price_pkr + max_price_pkr) / 2 - ?) * ( (min_price_pkr + max_price_pkr) / 2 - ? ) ASC', [$minPrice, $minPrice])
-            ->limit(6);
-        // ->get(['id', 'name', 'slug', 'primary_image', 'brand_id']);
+            ->limit(6)
+            ->get(['id', 'name', 'slug', 'primary_image', 'brand_id']);
 
-        dd($similarMobiles->toSql(), $similarMobiles->getBindings());
+        //dd($similarMobiles->toSql(), $similarMobiles->getBindings());
         // ->get(['id', 'name', 'slug', 'primary_image', 'brand_id']);
         return response()->json([
             'success' => true,
