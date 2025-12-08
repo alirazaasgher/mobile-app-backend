@@ -144,16 +144,31 @@ class PhoneApiController extends Controller
         $minPrice = $phone->searchIndex->min_price_pkr ?? 0;
         $maxPrice = $phone->searchIndex->max_price_pkr ?? 0;
         $priceRange = [$minPrice * 0.85, $maxPrice * 1.15];
-        $similarMobiles = Phone::with('searchIndex') // eager load to prevent N+1
+        $similarMobiles = Phone::with('searchIndex')
             ->where('id', '!=', $phone->id)
             ->whereHas('searchIndex', function ($query) use ($ramOptions, $storageOptions, $priceRange) {
-                $query->when(!empty($ramOptions), fn($q) => $q->whereIn('ram_options', $ramOptions))
-                    ->when(!empty($storageOptions), fn($q) => $q->whereIn('storage_options', $storageOptions))
-                    ->where(function ($q) use ($priceRange) {
+
+                // RAM filter using JSON_OVERLAPS (faster than multiple JSON_CONTAINS)
+                if (!empty($ramOptions)) {
+                    $query->whereRaw('JSON_OVERLAPS(ram_options, ?)', [json_encode($ramOptions)]);
+                }
+
+                // Storage filter using JSON_OVERLAPS
+                if (!empty($storageOptions)) {
+                    $query->whereRaw('JSON_OVERLAPS(storage_options, ?)', [json_encode($storageOptions)]);
+                }
+
+                // Price filter if priceRange exists
+                if ($priceRange) {
+                    $query->where(function ($q) use ($priceRange) {
                         $q->whereBetween('min_price_pkr', $priceRange)
                             ->orWhereBetween('max_price_pkr', $priceRange);
                     });
+                }
+
             })
+            // Optional: order by closest price to main phone
+            ->orderByRaw('( (min_price_pkr + max_price_pkr) / 2 - ?) * ( (min_price_pkr + max_price_pkr) / 2 - ? ) ASC', [$minPrice, $minPrice])
             ->limit(6);
         // ->get(['id', 'name', 'slug', 'primary_image', 'brand_id']);
 
