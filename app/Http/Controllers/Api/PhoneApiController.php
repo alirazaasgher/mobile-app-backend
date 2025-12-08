@@ -134,6 +134,7 @@ class PhoneApiController extends Controller
         ])
             ->where('slug', $slug)
             ->firstOrFail();
+        $competitorIds = $phone->competitors->pluck('id')->toArray();
         $ramOptions = $phone->searchIndex->ram_options
             ? json_decode($phone->searchIndex->ram_options, true)
             : [];
@@ -147,6 +148,7 @@ class PhoneApiController extends Controller
         $similarMobiles = Phone::select('phones.id', 'phones.name', 'phones.slug', 'phones.primary_image', 'phones.brand_id')
             ->join('phone_search_indices as psi', 'phones.id', '=', 'psi.phone_id')
             ->where('phones.id', '!=', $phone->id)
+            ->when(!empty($competitorIds), fn($q) => $q->whereNotIn('phones.id', $competitorIds))
             ->where(function ($query) use ($ramOptions, $storageOptions, $priceRange) {
                 if (!empty($ramOptions)) {
                     $query->where(function ($q) use ($ramOptions) {
