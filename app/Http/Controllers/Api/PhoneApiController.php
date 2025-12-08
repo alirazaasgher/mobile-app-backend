@@ -136,18 +136,28 @@ class PhoneApiController extends Controller
             ->firstOrFail();
         $ramOptions = $phone->searchIndex->ramOptions ?? [];
         $storageOptions = $phone->searchIndex->storageOptions ?? [];
-        $similarMobiles = Phone::where('id', '!=', $phone->id)
-            ->whereHas('searchIndex', function ($query) use ($phone, $ramOptions, $storageOptions) {
-                $query->whereIn('ram', $ramOptions)
-                    ->whereIn('storage', $storageOptions)
-                    ->where(function ($q) use ($phone) {
-                        $minPrice = $phone->searchIndex->min_price ?? 0;
-                        $maxPrice = $phone->searchIndex->max_price ?? 0;
-                        $q->whereBetween('min_price_pkr', [$minPrice * 0.85, $maxPrice * 1.15])
-                            ->orWhereBetween('max_price_pkr', [$minPrice * 0.85, $maxPrice * 1.15]);
+        echo "<pre>";
+        print_r($ramOptions);
+        echo "----";
+        print_r($storageOptions);
+        exit;
+        $minPrice = $phone->searchIndex->min_price ?? 0;
+        $maxPrice = $phone->searchIndex->max_price ?? 0;
+        $priceRange = [$minPrice * 0.85, $maxPrice * 1.15];
+
+        $similarMobiles = Phone::with('searchIndex') // eager load to prevent N+1
+            ->where('id', '!=', $phone->id)
+            ->whereHas('searchIndex', function ($query) use ($ramOptions, $storageOptions, $priceRange) {
+                $query->when(!empty($ramOptions), fn($q) => $q->whereIn('ram', $ramOptions))
+                    ->when(!empty($storageOptions), fn($q) => $q->whereIn('storage', $storageOptions))
+                    ->where(function ($q) use ($priceRange) {
+                        $q->whereBetween('min_price_pkr', $priceRange)
+                            ->orWhereBetween('max_price_pkr', $priceRange);
                     });
             })
-            ->limit(6);
+            ->limit(6)
+            ->get(['id', 'name', 'slug', 'primary_image', 'brand_id']);
+
         dd($similarMobiles->toSql());
         // ->get(['id', 'name', 'slug', 'primary_image', 'brand_id']);
         return response()->json([
