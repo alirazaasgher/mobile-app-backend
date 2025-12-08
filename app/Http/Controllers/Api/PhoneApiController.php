@@ -148,17 +148,25 @@ class PhoneApiController extends Controller
             ->where('id', '!=', $phone->id)
             ->whereHas('searchIndex', function ($query) use ($ramOptions, $storageOptions, $priceRange) {
 
-                // RAM filter using JSON_OVERLAPS (faster than multiple JSON_CONTAINS)
+                // RAM filter
                 if (!empty($ramOptions)) {
-                    $query->whereRaw('JSON_OVERLAPS(ram_options, ?)', [json_encode($ramOptions)]);
+                    $query->where(function ($q) use ($ramOptions) {
+                        foreach ($ramOptions as $ram) {
+                            $q->orWhereRaw('JSON_CONTAINS(ram_options, ?)', [json_encode($ram)]);
+                        }
+                    });
                 }
 
-                // Storage filter using JSON_OVERLAPS
+                // Storage filter
                 if (!empty($storageOptions)) {
-                    $query->whereRaw('JSON_OVERLAPS(storage_options, ?)', [json_encode($storageOptions)]);
+                    $query->where(function ($q) use ($storageOptions) {
+                        foreach ($storageOptions as $storage) {
+                            $q->orWhereRaw('JSON_CONTAINS(storage_options, ?)', [json_encode($storage)]);
+                        }
+                    });
                 }
 
-                // Price filter if priceRange exists
+                // Price filter
                 if ($priceRange) {
                     $query->where(function ($q) use ($priceRange) {
                         $q->whereBetween('min_price_pkr', $priceRange)
@@ -167,7 +175,7 @@ class PhoneApiController extends Controller
                 }
 
             })
-            // Optional: order by closest price to main phone
+            // Sort by closest average price
             ->orderByRaw('( (min_price_pkr + max_price_pkr) / 2 - ?) * ( (min_price_pkr + max_price_pkr) / 2 - ? ) ASC', [$minPrice, $minPrice])
             ->limit(6)
             ->get(['id', 'name', 'slug', 'primary_image', 'brand_id']);
