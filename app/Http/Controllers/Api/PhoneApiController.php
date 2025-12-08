@@ -134,13 +134,8 @@ class PhoneApiController extends Controller
         ])
             ->where('slug', $slug)
             ->firstOrFail();
-        $ramOptions = $phone->searchIndex->ramOptions ?? [];
-        $storageOptions = $phone->searchIndex->storageOptions ?? [];
-        echo "<pre>";
-        print_r($phone->searchIndex);
-        echo "----";
-        print_r($storageOptions);
-        exit;
+        $ramOptions = $phone->searchIndex->ram_options ?? [];
+        $storageOptions = $phone->searchIndex->storage_options ?? [];
         $minPrice = $phone->searchIndex->min_price ?? 0;
         $maxPrice = $phone->searchIndex->max_price ?? 0;
         $priceRange = [$minPrice * 0.85, $maxPrice * 1.15];
