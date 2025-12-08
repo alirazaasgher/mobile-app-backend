@@ -147,8 +147,9 @@ class PhoneApiController extends Controller
                             ->orWhereBetween('max_price_pkr', [$minPrice * 0.85, $maxPrice * 1.15]);
                     });
             })
-            ->limit(6)
-            ->get(['id', 'name', 'slug', 'primary_image', 'brand_id']);
+            ->limit(6);
+        dd($similarMobiles->toSql());
+        // ->get(['id', 'name', 'slug', 'primary_image', 'brand_id']);
         return response()->json([
             'success' => true,
             'data' => new PhoneResource(resource: $phone),
