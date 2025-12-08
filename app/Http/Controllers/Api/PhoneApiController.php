@@ -147,8 +147,8 @@ class PhoneApiController extends Controller
         $similarMobiles = Phone::with('searchIndex') // eager load to prevent N+1
             ->where('id', '!=', $phone->id)
             ->whereHas('searchIndex', function ($query) use ($ramOptions, $storageOptions, $priceRange) {
-                $query->when(!empty($ramOptions), fn($q) => $q->whereIn('ram', $ramOptions))
-                    ->when(!empty($storageOptions), fn($q) => $q->whereIn('storage', $storageOptions))
+                $query->when(!empty($ramOptions), fn($q) => $q->whereIn('ram_options', $ramOptions))
+                    ->when(!empty($storageOptions), fn($q) => $q->whereIn('storage_options', $storageOptions))
                     ->where(function ($q) use ($priceRange) {
                         $q->whereBetween('min_price_pkr', $priceRange)
                             ->orWhereBetween('max_price_pkr', $priceRange);
