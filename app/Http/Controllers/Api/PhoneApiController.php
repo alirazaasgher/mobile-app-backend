@@ -141,8 +141,8 @@ class PhoneApiController extends Controller
         $storageOptions = $phone->searchIndex->storage_options
             ? json_decode($phone->searchIndex->storage_options, true)
             : [];
-        $minPrice = $phone->searchIndex->min_price ?? 0;
-        $maxPrice = $phone->searchIndex->max_price ?? 0;
+        $minPrice = $phone->searchIndex->min_price_pkr ?? 0;
+        $maxPrice = $phone->searchIndex->max_price_pkr ?? 0;
         $priceRange = [$minPrice * 0.85, $maxPrice * 1.15];
         $similarMobiles = Phone::with('searchIndex') // eager load to prevent N+1
             ->where('id', '!=', $phone->id)
