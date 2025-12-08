@@ -157,7 +157,7 @@ class PhoneApiController extends Controller
             ->limit(6)
             ->get(['id', 'name', 'slug', 'primary_image', 'brand_id']);
 
-        //dd($similarMobiles->toSql());
+        dd($similarMobiles->toSql(), $similarMobiles->bindings);
         // ->get(['id', 'name', 'slug', 'primary_image', 'brand_id']);
         return response()->json([
             'success' => true,
