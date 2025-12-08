@@ -150,8 +150,8 @@ class PhoneApiController extends Controller
                             ->orWhereBetween('max_price_pkr', $priceRange);
                     });
             })
-            ->limit(6)
-            ->get(['id', 'name', 'slug', 'primary_image', 'brand_id']);
+            ->limit(6);
+        // ->get(['id', 'name', 'slug', 'primary_image', 'brand_id']);
 
         dd($similarMobiles->toSql());
         // ->get(['id', 'name', 'slug', 'primary_image', 'brand_id']);
