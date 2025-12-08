@@ -137,7 +137,7 @@ class PhoneApiController extends Controller
         $ramOptions = $phone->searchIndex->ramOptions ?? [];
         $storageOptions = $phone->searchIndex->storageOptions ?? [];
         echo "<pre>";
-        print_r($ramOptions);
+        print_r($phone);
         echo "----";
         print_r($storageOptions);
         exit;
