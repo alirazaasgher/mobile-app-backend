@@ -144,9 +144,6 @@ class PhoneApiController extends Controller
         $minPrice = $phone->searchIndex->min_price ?? 0;
         $maxPrice = $phone->searchIndex->max_price ?? 0;
         $priceRange = [$minPrice * 0.85, $maxPrice * 1.15];
-        echo "<pre>";
-        print_r($ramOptions);
-        exit;
         $similarMobiles = Phone::with('searchIndex') // eager load to prevent N+1
             ->where('id', '!=', $phone->id)
             ->whereHas('searchIndex', function ($query) use ($ramOptions, $storageOptions, $priceRange) {
