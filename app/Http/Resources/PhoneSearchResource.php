@@ -39,9 +39,11 @@ class PhoneSearchResource extends JsonResource
             'min_price' => isset($this->min_price_pkr) && $this->min_price_pkr > 0
                 ? number_format($this->min_price_pkr, 0, '.', ',')
                 : null,
-            'specs_grid' => json_decode($this->specs_grid, true)
+            'specs_grid' => json_decode($this->specs_grid, true),
+            'min_price_usd' => $this->min_price_usd,
+            true
         ];
-        // !$this->hideDetails && 
+        // !$this->hideDetails &&
         // Only include top_specs and specs_grid if request has details page flag
         if (!$this->hideDetails && ($request->query('details') || $request->routeIs('phones.show'))) {
             $data['top_specs'] = json_decode($this->top_specs, true);
