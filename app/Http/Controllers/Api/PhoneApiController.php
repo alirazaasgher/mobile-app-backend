@@ -251,7 +251,7 @@ class PhoneApiController extends Controller
             'filters.has_5g' => 'nullable|boolean',
             'filters.priceRange' => 'nullable|array|max:2',
             'filters.priceRange.*' => 'nullable|numeric|min:0',
-            'filters.screenSizes' => 'nullable|array',
+            'filters.screenSize' => 'nullable|array',
             'filters.batteryCapacity' => 'nullable|array',
             'sort' => ['nullable', Rule::in(['price_low_high', 'price_high_low', 'popular', 'newest'])],
         ]);
@@ -317,11 +317,11 @@ class PhoneApiController extends Controller
             }
 
             // Features
-            if (!empty($filters['screenSizes'])) {
+            if (!empty($filters['screenSize'])) {
                 $query->whereHas('searchIndex', function ($q) use ($filters) {
                     $q->whereColumn('phones.id', 'phone_search_indices.phone_id'); // ensures the join condition
                     $q->where(function ($q2) use ($filters) {
-                        foreach ($filters['screenSizes'] as $range) {
+                        foreach ($filters['screenSize'] as $range) {
                             if (preg_match('/^(\d+(\.\d+)?)to(\d+(\.\d+)?)$/', $range, $matches)) {
                                 $min = floatval($matches[1]);
                                 $max = floatval($matches[3]);
@@ -398,7 +398,7 @@ class PhoneApiController extends Controller
                     $query->orderByDesc('release_date');
                     break;
             }
-            //dd($query->toSql(),$query->getBindings());
+            //dd($query->toSql(), $query->getBindings());
 
             // Paginate
             return $query->paginate($perPage, ['phones.*'], 'page', $page);

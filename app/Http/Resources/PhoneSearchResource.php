@@ -41,7 +41,6 @@ class PhoneSearchResource extends JsonResource
                 : null,
             'specs_grid' => json_decode($this->specs_grid, true),
             'min_price_usd' => $this->min_price_usd,
-            true
         ];
         // !$this->hideDetails &&
         // Only include top_specs and specs_grid if request has details page flag
