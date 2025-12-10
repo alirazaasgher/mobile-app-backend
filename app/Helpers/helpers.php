@@ -65,7 +65,7 @@ function update_phone_search_index(
 
     // Extract commonly used specs
 
-    $battery = $specMap['Battery Capacity (mAh)'] ?? null;
+    $capacity = preg_replace('/[^0-9]/', '', $specMap['battery']['capacity']);
     $selfieCam = $specMap['Selfie Camera (MP)'] ?? null;
     $mainCam = $specMap['main_camera']['setup'] ?? null;
     if ($mainCam && strpos($mainCam, ',') !== false) {
@@ -126,8 +126,10 @@ function update_phone_search_index(
         $cpuType = trim($match[0]);
     }
 
-    $topSpecs = build_top_specs($specMap, $os, $release_date, $mainCam);
-    $specsGrid = build_specs_grid($sizeInInches, $specMap, $shortChipset, $cpuType,$mainCam);
+    $main_camera_video = getVideoHighlight($specMap['main_camera']['video']);
+
+    $topSpecs = build_top_specs($specMap, $os, $release_date, $mainCam, $main_camera_video);
+    $specsGrid = build_specs_grid($sizeInInches, $specMap, $shortChipset, $cpuType, $mainCam, $main_camera_video);
     DB::table('phone_search_indices')->updateOrInsert(
         ['phone_id' => $phoneId],
         [
@@ -143,7 +145,7 @@ function update_phone_search_index(
             'storage_type' => $storage_type,
             'available_colors' => json_encode($availableColors),
             'screen_size_inches' => $sizeInInches,
-            'battery_capacity_mah' => $battery,
+            'battery_capacity_mah' => $capacity,
             'main_camera_mp' => $mainCam,
             'selfie_camera_mp' => $selfieCam,
             'os' => $os,
@@ -214,9 +216,8 @@ function filterSpecs(array $arr): array
     return $out;
 }
 
-function build_top_specs($specMap, $os, $date, $mainCam)
+function build_top_specs($specMap, $os, $date, $mainCam, $main_camera_video)
 {
-    $main_camera_video = getVideoHighlight($specMap['main_camera']['video']);
     $fornt_camera_video = getVideoHighlight($specMap['selfie_camera']['video']);
 
     $date = !empty($date) ? Carbon::parse($date)->format('j F, Y') : null;
@@ -267,7 +268,7 @@ function build_top_specs($specMap, $os, $date, $mainCam)
     ];
 }
 
-function build_specs_grid($sizeInInches, $specMap, $shortChipset, $cpuType,$mainCam)
+function build_specs_grid($sizeInInches, $specMap, $shortChipset, $cpuType, $mainCam, $main_camera_video)
 {
 
     $resolutionFull = $specMap['display']['resolution'] ?? null;
@@ -340,7 +341,7 @@ function build_specs_grid($sizeInInches, $specMap, $shortChipset, $cpuType,$main
         [
             "key" => "main_camera",
             "value" => $mainCam,
-            "subvalue" => "",
+            "subvalue" => $main_camera_video,
         ],
         [
             "key" => "battery",
