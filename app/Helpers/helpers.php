@@ -273,6 +273,16 @@ function build_specs_grid($sizeInInches, $specMap, $shortChipset, $cpuType, $mai
 
     $resolutionFull = $specMap['display']['resolution'] ?? null;
     $refreshRate = $specMap['display']['refresh_rate'] ?? null;
+    // Find all occurrences like "120Hz", "165 Hz", etc.
+    preg_match_all('/(\d+)\s*Hz/i', $refreshRate, $matches);
+    // Extract numbers
+    $rates = array_map('intval', $matches[1]);
+    if (!empty($rates)) {
+        $highest = max($rates);
+        $highestWithHz = $highest . 'Hz';
+    } else {
+        $highestWithHz = null;
+    }
     $brightness = $specMap['display']['brightness'] ?? null;
     // Extract nits (only number)
     preg_match('/(\d+)\s*nits/i', $brightness, $matches);
@@ -290,7 +300,7 @@ function build_specs_grid($sizeInInches, $specMap, $shortChipset, $cpuType, $mai
 
     $subvalueParts = [
         $resolution,
-        $refreshRate,
+        $highestWithHz,
         $brightnessShort ? $brightnessShort . " nits" : null
     ];
 
