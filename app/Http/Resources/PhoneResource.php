@@ -9,8 +9,8 @@ class PhoneResource extends JsonResource
 {
     public function toArray($request)
     {
-        // $baseUrl = "https://cdn.mobile42.com";
-        $baseUrl = "http://127.0.0.1:8000";
+        $baseUrl = "https://cdn.mobile42.com";
+        // $baseUrl = "http://127.0.0.1:8000";
         $data = [
             'id' => $this->id,
             'name' => $this->name,
