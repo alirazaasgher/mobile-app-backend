@@ -10,12 +10,13 @@ class PhoneResource extends JsonResource
     public function toArray($request)
     {
         $baseUrl = "https://cdn.mobile42.com";
-        // $baseUrl = "http://127.0.0.1:8000";
+        //$baseUrl = "http://127.0.0.1:8000";
         $data = [
             'id' => $this->id,
             'name' => $this->name,
             'brand' => $this->brand,
             'slug' => $this->slug,
+            'updated_at' => $this->updated_at->toDateString(),
             'release_date' => !empty($this->release_date) ? Carbon::parse($this->release_date)->format('j F, Y') : null,
             'status' => $this->status,
             'primary_image' => $this->primary_image ? $baseUrl . '/storage/' . ltrim($this->primary_image, '/')
