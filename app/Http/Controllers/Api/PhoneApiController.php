@@ -471,4 +471,10 @@ class PhoneApiController extends Controller
         $brands = Brand::all();
         return response()->json(["data" => $brands]);
     }
+
+    public function count()
+    {
+        $count = Phone::count();
+        return response()->json(["count" => $count]);
+    }
 }

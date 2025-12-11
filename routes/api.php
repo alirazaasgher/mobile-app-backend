@@ -8,8 +8,8 @@ Route::get('/getStaticFilters', [PhoneApiController::class, 'getStaticFilters'])
 Route::post('/phones', [PhoneApiController::class, 'phones']);
 Route::get('/phones/filters', [PhoneApiController::class, 'getFilterOptions']);
 Route::get('/phones/{slug}', [PhoneApiController::class, 'show'])->name('phones.show');
-Route::get('/brands', [PhoneApiController::class, 'brands'])->name('phones.show');
-
+Route::get('/brands', [PhoneApiController::class, 'brands']);
+Route::get('/count', [PhoneApiController::class, 'count']);
 // Admin routes (protected by auth middleware)
 Route::middleware(['auth:sanctum', 'admin'])->prefix('admin')->group(function () {
     Route::post('/phones', [PhoneApiController::class, 'store']);
