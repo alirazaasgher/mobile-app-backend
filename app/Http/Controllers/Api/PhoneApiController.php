@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\Brand;
 use App\Models\Phone;
 use App\Services\PhoneSearchService;
 use Illuminate\Http\Request;
@@ -12,6 +13,7 @@ use App\Http\Resources\PhoneResource;
 use App\Http\Resources\PhoneListResource;
 use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\DB;
+use PhpParser\Node\Expr\FuncCall;
 
 class PhoneApiController extends Controller
 {
@@ -391,7 +393,7 @@ class PhoneApiController extends Controller
                         ->orderBy('searchIndex.max_price', 'desc');
                     break;
                 case 'upcoming':
-                    $query->where('status','upcoming')->orderByDesc('release_date');
+                    $query->where('status', 'upcoming')->orderByDesc('release_date');
                     break;
                 case 'newest':
                 default:
@@ -462,5 +464,11 @@ class PhoneApiController extends Controller
         return response()->json([
             'data' => $params
         ]);
+    }
+
+    public function brands()
+    {
+        $brands = Brand::all();
+        return response()->json(["data" => $brands]);
     }
 }
