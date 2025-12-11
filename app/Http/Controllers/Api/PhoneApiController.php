@@ -253,7 +253,7 @@ class PhoneApiController extends Controller
             'filters.priceRange.*' => 'nullable|numeric|min:0',
             'filters.screenSize' => 'nullable|array',
             'filters.batteryCapacity' => 'nullable|array',
-            'sort' => ['nullable', Rule::in(['price_low_high', 'price_high_low', 'popular', 'newest'])],
+            'sort' => ['nullable', Rule::in(['price_low_high', 'price_high_low', 'upcoming', 'newest'])],
         ]);
 
         $filters = $validated['filters'] ?? [];
@@ -390,8 +390,8 @@ class PhoneApiController extends Controller
                     $query->join('phone_search_index as searchIndex', 'phones.id', '=', 'searchIndex.phone_id')
                         ->orderBy('searchIndex.max_price', 'desc');
                     break;
-                case 'popular':
-                    $query->orderByDesc('is_popular')->orderByDesc('release_date');
+                case 'upcoming':
+                    $query->where('status','upcoming')->orderByDesc('release_date');
                     break;
                 case 'newest':
                 default:
