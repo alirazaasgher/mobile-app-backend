@@ -377,7 +377,7 @@ class PhoneApiController extends Controller
 
             // If no filters, return mixed phones
             if (empty(array_filter($filters))) {
-                $query->select('id', 'name', 'slug', 'release_date', 'primary_image', 'status')
+                $query->select('id', 'name', 'slug', 'release_date', 'primary_image', 'status', 'updated_at')
                     ->orderBy('release_date', 'desc')
                     ->inRandomOrder();
             }
