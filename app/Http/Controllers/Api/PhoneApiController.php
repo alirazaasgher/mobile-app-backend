@@ -147,7 +147,7 @@ class PhoneApiController extends Controller
         $minPrice = $phone->searchIndex->min_price_pkr ?? 0;
         $maxPrice = $phone->searchIndex->max_price_pkr ?? 0;
         $priceRange = [$minPrice * 0.85, $maxPrice * 1.15];
-        $similarMobiles = Phone::select('phones.id', 'phones.name', 'phones.slug', 'phones.primary_image', 'phones.brand_id', 'phones.updated_at')
+        $similarMobiles = Phone::select('phones.id', 'phones.name', 'phones.slug', 'phones.primary_image', 'phones.brand_id', 'phones.updated_at', 'phones.status')
             ->join('phone_search_indices as psi', 'phones.id', '=', 'psi.phone_id')
             ->where('phones.id', '!=', $phone->id)
             ->when(!empty($competitorIds), fn($q) => $q->whereNotIn('phones.id', $competitorIds))
@@ -177,7 +177,7 @@ class PhoneApiController extends Controller
             })
             ->orderByRaw('( (psi.min_price_pkr + psi.max_price_pkr) / 2 - ?) * ( (psi.min_price_pkr + psi.max_price_pkr) / 2 - ? ) ASC', [$phone->searchIndex->min_price_pkr, $phone->searchIndex->min_price_pkr])
             ->limit(6)
-            ->get(['id', 'name', 'slug', 'primary_image', 'brand_id','phones.updated_at']);
+            ->get();
 
         //dd($similarMobiles->toSql(), $similarMobiles->getBindings());
         // ->get(['id', 'name', 'slug', 'primary_image', 'brand_id']);
