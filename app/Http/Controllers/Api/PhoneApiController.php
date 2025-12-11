@@ -178,15 +178,13 @@ class PhoneApiController extends Controller
             ->orderByRaw('( (psi.min_price_pkr + psi.max_price_pkr) / 2 - ?) * ( (psi.min_price_pkr + psi.max_price_pkr) / 2 - ? ) ASC', [$phone->searchIndex->min_price_pkr, $phone->searchIndex->min_price_pkr])
             ->limit(6)
             ->get(['id', 'name', 'slug', 'primary_image', 'brand_id']);
-        echo "<pre>";
-        print_r($similarMobiles);
-        exit;
+
         //dd($similarMobiles->toSql(), $similarMobiles->getBindings());
         // ->get(['id', 'name', 'slug', 'primary_image', 'brand_id']);
         return response()->json([
             'success' => true,
             'data' => new PhoneResource(resource: $phone),
-            'similarMobiles' => new PhoneResource(resource: $similarMobiles),
+            'similarMobiles' => PhoneResource::collection($similarMobiles),
         ]);
     }
 
