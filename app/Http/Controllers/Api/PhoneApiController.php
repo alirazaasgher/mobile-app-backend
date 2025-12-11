@@ -256,6 +256,8 @@ class PhoneApiController extends Controller
             'filters.screenSize' => 'nullable|array',
             'filters.batteryCapacity' => 'nullable|array',
             'sort' => ['nullable', Rule::in(['price_low_high', 'price_high_low', 'upcoming', 'newest'])],
+            'per_page' => 'nullable|numeric|min:0',
+            'page' => 'nullable|numeric|min:0',
         ]);
 
         $filters = $validated['filters'] ?? [];
@@ -271,7 +273,8 @@ class PhoneApiController extends Controller
             'per_page' => $perPage
         ]));
 
-        $phones = Cache::remember($cacheKey, 50, function () use ($filters, $sort, $perPage, $page) {
+        $phones = Cache::remember($cacheKey, 1, function () use ($filters, $sort, $perPage, $page) {
+
             $query = Phone::active()->with(['brand:id,name', 'searchIndex']);
             // Brands
             if (!empty($filters['brands'])) {
@@ -400,10 +403,11 @@ class PhoneApiController extends Controller
                     $query->orderByDesc('release_date');
                     break;
             }
-            //dd($query->toSql(), $query->getBindings());
 
             // Paginate
             return $query->paginate($perPage, ['phones.*'], 'page', $page);
+            dd($query->toSql(), $query->getBindings());
+
         });
 
         return response()->json([
