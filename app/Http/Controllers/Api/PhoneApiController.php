@@ -30,7 +30,7 @@ class PhoneApiController extends Controller
     public function index(Request $request): JsonResponse
     {
         $usedPhoneIds = [];
-        $baseQuery = Phone::select('id', 'name', 'slug', 'release_date', 'primary_image', 'status','updated_at')->with(['searchIndex'])->active();
+        $baseQuery = Phone::select('id', 'name', 'slug', 'release_date', 'primary_image', 'status', 'updated_at')->with(['searchIndex'])->active();
         $usedPhoneIds = [];
 
         /**
@@ -184,7 +184,7 @@ class PhoneApiController extends Controller
         return response()->json([
             'success' => true,
             'data' => new PhoneResource(resource: $phone),
-            'similarMobiles' => $similarMobiles
+            'similarMobiles' => new PhoneResource(resource: $similarMobiles),
         ]);
     }
 
