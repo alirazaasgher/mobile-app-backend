@@ -526,4 +526,27 @@ class PhoneApiController extends Controller
         ]);
     }
 
+    public function search(Request $request)
+    {
+        $term = $request->query('q'); // Get search term from query parameter
+
+        if (!$term) {
+            return response()->json([
+                'data' => [],
+                'message' => 'No search term provided.'
+            ]);
+        }
+
+        // Search phones by name or brand and select only required fields
+        $phones = Phone::where('name', 'LIKE', "%{$term}%")
+            ->orWhere('brand', 'LIKE', "%{$term}%")
+            ->limit(10)
+            ->get(['id', 'name', 'brand', 'slug', 'price', 'image']); // select only needed fields
+
+        return response()->json([
+            'data' => $phones
+        ]);
+    }
+
+
 }

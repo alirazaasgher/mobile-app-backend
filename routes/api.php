@@ -11,9 +11,12 @@ Route::get('/phones/{slug}', [PhoneApiController::class, 'show'])->name('phones.
 Route::get('/brands', [PhoneApiController::class, 'brands']);
 Route::get('/count', [PhoneApiController::class, 'count']);
 Route::post('/phones/compare', [PhoneApiController::class, 'compare']);
+Route::get('/phones/search', [PhoneApiController::class, 'search']);
+
 // // Admin routes (protected by auth middleware)
 // Route::middleware(['auth:sanctum', 'admin'])->prefix('admin')->group(function () {
 //     Route::post('/phones', [PhoneApiController::class, 'store']);
 //     Route::put('/phones/{phone}', [PhoneApiController::class, 'update']);
 //     Route::delete('/phones/{phone}', [PhoneApiController::class, 'destroy']);
 // });
+
