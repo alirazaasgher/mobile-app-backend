@@ -537,11 +537,15 @@ class PhoneApiController extends Controller
             ]);
         }
 
-        // Search phones by name or brand and select only required fields
-        $phones = Phone::where('name', 'LIKE', "%{$term}%")
-            ->orWhere('brand', 'LIKE', "%{$term}%")
+        $phones = Phone::query()
+            ->select(['id', 'name', 'slug', 'primary_image', 'brand_id'])
+            ->with('brand:id,name')
+            ->where('name', 'LIKE', "%{$term}%")
+            ->orWhereHas('brand', function ($q) use ($term) {
+                $q->where('name', 'LIKE', "%{$term}%");
+            })
             ->limit(10)
-            ->get(['id', 'name', 'brand', 'slug', 'price', 'image']); // select only needed fields
+            ->get();
 
         return response()->json([
             'data' => $phones

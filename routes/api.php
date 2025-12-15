@@ -1,6 +1,5 @@
 <?php
 use App\Http\Controllers\Api\PhoneApiController;
-use App\Http\Controllers\Api\BrandApiController;
 use Illuminate\Support\Facades\Route;
 Route::get('/homepage', [PhoneApiController::class, 'index']);
 Route::get('/getPhoneBySlug', [PhoneApiController::class, 'getPhoneBySlug']);
@@ -11,7 +10,7 @@ Route::get('/phones/{slug}', [PhoneApiController::class, 'show'])->name('phones.
 Route::get('/brands', [PhoneApiController::class, 'brands']);
 Route::get('/count', [PhoneApiController::class, 'count']);
 Route::post('/phones/compare', [PhoneApiController::class, 'compare']);
-Route::get('/phones/search', [PhoneApiController::class, 'search']);
+Route::get('/search', [PhoneApiController::class, 'search']);
 
 // // Admin routes (protected by auth middleware)
 // Route::middleware(['auth:sanctum', 'admin'])->prefix('admin')->group(function () {
