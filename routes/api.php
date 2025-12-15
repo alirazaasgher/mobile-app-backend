@@ -10,9 +10,10 @@ Route::get('/phones/filters', [PhoneApiController::class, 'getFilterOptions']);
 Route::get('/phones/{slug}', [PhoneApiController::class, 'show'])->name('phones.show');
 Route::get('/brands', [PhoneApiController::class, 'brands']);
 Route::get('/count', [PhoneApiController::class, 'count']);
-// Admin routes (protected by auth middleware)
-Route::middleware(['auth:sanctum', 'admin'])->prefix('admin')->group(function () {
-    Route::post('/phones', [PhoneApiController::class, 'store']);
-    Route::put('/phones/{phone}', [PhoneApiController::class, 'update']);
-    Route::delete('/phones/{phone}', [PhoneApiController::class, 'destroy']);
-});
+Route::post('/phones/compare', [PhoneApiController::class, 'compare']);
+// // Admin routes (protected by auth middleware)
+// Route::middleware(['auth:sanctum', 'admin'])->prefix('admin')->group(function () {
+//     Route::post('/phones', [PhoneApiController::class, 'store']);
+//     Route::put('/phones/{phone}', [PhoneApiController::class, 'update']);
+//     Route::delete('/phones/{phone}', [PhoneApiController::class, 'destroy']);
+// });

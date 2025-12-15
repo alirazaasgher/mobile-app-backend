@@ -55,9 +55,11 @@ class Phone extends Model
 
     public function getSpecsByCategory(string $category)
     {
-        return $this->specifications()
-            ->where('category', $category)
-            ->first()?->specifications ?? [];
+        $spec = $this->specifications
+            ->firstWhere('category', $category)
+            ?->specifications ?? [];
+
+        return json_decode($spec, true) ?: [];
     }
 
     // Scopes for filtering
@@ -163,6 +165,45 @@ class Phone extends Model
         return $this->belongsToMany(Phone::class, 'mobile_competitors', 'mobile_id', 'competitor_id');
     }
 
+    public function getCompareSpecsAttribute(): array
+    {
+        $design      = $this->getSpecsByCategory('design');
+        $display     = $this->getSpecsByCategory('display');
+        $performance = $this->getSpecsByCategory('performance');
+        $battery     = $this->getSpecsByCategory('battery');
+        $memory      = $this->getSpecsByCategory('memory');
+        $camera      = $this->getSpecsByCategory('main_camera');
+
+        return [
+            // DESIGN
+            'dimensions' => $design['dimensions'] ?? null,
+            'weight'     => $design['weight'] ?? null,
+            'build'      => $design['build'] ?? null,
+            'sim'        => $design['sim'] ?? null,
+
+            // DISPLAY
+            'display' => trim(
+                ($display['size'] ?? '') . ' ' .
+                    ($display['type'] ?? '')
+            ) ?: null,
+
+            'resolution'  => $display['resolution'] ?? null,
+            'refreshRate' => $display['refresh_rate'] ?? null,
+
+            // PERFORMANCE
+            'chipset' => $performance['chipset'] ?? null,
+            'os'      => $performance['os'] ?? null,
+
+            // BATTERY
+            'battery'  => $battery['capacity'] ?? null,
+            'charging' => $battery['charging_speed'] ?? null,
+
+            // MEMORY
+            'ram'     => $memory['RAM'] ?? null,
+            'storage' => $memory['Storage'] ?? null,
+
+            // CAMERA
+            'rearCamera' => $camera['setup'] ?? null,
+        ];
+    }
 }
-
-

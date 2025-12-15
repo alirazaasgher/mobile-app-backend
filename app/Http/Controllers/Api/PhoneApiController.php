@@ -411,7 +411,6 @@ class PhoneApiController extends Controller
             // Paginate
             return $query->paginate($perPage, ['phones.*'], 'page', $page);
             dd($query->toSql(), $query->getBindings());
-
         });
 
         return response()->json([
@@ -484,5 +483,33 @@ class PhoneApiController extends Controller
     {
         $count = Phone::count();
         return response()->json(["count" => $count]);
+    }
+
+    public function compare(Request $request)
+    {
+        $validated = $request->validate([
+            'slugs'   => 'required|array|min:2|max:4',
+            'slugs.*' => 'string|exists:phones,slug',
+        ]);
+
+        $slugs = $validated['slugs'];
+
+        $phones = Phone::with('specifications')
+            ->whereIn('slug', $slugs)
+            ->get();
+
+        $data = $phones->map(fn($phone) => [
+            'id'     => $phone->id,
+            'name'   => $phone->name,
+            'slug'   => $phone->slug,
+            'brand'  => $phone->brand_id, // or relation later
+            'rating' => $phone->avg_rating,
+            'specs'  => $phone->compare_specs, // 🔥 magic here
+        ]);
+
+        return response()->json([
+            'count' => $data->count(),
+            'data'  => $data,
+        ]);
     }
 }
