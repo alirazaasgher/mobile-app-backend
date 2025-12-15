@@ -487,26 +487,43 @@ class PhoneApiController extends Controller
 
     public function compare(Request $request)
     {
+        $baseUrl = "https://cdn.mobile42.com";
+
+        // Validate input
         $validated = $request->validate([
             'slugs' => 'required|array|min:1|max:4',
             'slugs.*' => 'string|exists:phones,slug',
         ]);
+
         $slugs = $validated['slugs'];
-        $phones = Phone::with('specifications')
+
+        // Fetch phones with only needed relationships
+        $phones = Phone::with([
+            'brand:id,name',           // only id and name
+            'searchIndex:phone_id,min_price_usd',
+            'specifications'           // include compare_specs in resource
+        ])
             ->whereIn('slug', $slugs)
             ->get();
+
+        // Transform using map
         $data = $phones->map(fn($phone) => [
             'id' => $phone->id,
             'name' => $phone->name,
             'slug' => $phone->slug,
-            'brand' => $phone->brand_id, // or relation later
+            'image' => $phone->primary_image
+                ? $baseUrl . '/storage/' . ltrim($phone->primary_image, '/')
+                : null,
+            'brand' => $phone->brand->name ?? null,
             'rating' => $phone->avg_rating,
-            'specs' => $phone->compare_specs, // 🔥 magic here
+            'price' => $phone->searchIndex->min_price_usd ?? null,
+            'specs' => $phone->compare_specs,
         ]);
 
         return response()->json([
-            'count' => $data->count(),
+            'count' => $phones->count(),
             'data' => $data,
         ]);
     }
+
 }
