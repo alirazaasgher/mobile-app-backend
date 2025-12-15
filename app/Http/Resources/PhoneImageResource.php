@@ -7,7 +7,7 @@ class PhoneImageResource extends JsonResource
 {
     public function toArray($request)
     {
-        // $baseUrl = "http://127.0.0.1:8000";
+        //$baseUrl = "http://127.0.0.1:8000";
         $baseUrl = "https://cdn.mobile42.com";
         return [
             'id' => $this->id,

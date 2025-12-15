@@ -488,28 +488,25 @@ class PhoneApiController extends Controller
     public function compare(Request $request)
     {
         $validated = $request->validate([
-            'slugs'   => 'required|array|min:2|max:4',
+            'slugs' => 'required|array|min:1|max:4',
             'slugs.*' => 'string|exists:phones,slug',
         ]);
-
         $slugs = $validated['slugs'];
-
         $phones = Phone::with('specifications')
             ->whereIn('slug', $slugs)
             ->get();
-
         $data = $phones->map(fn($phone) => [
-            'id'     => $phone->id,
-            'name'   => $phone->name,
-            'slug'   => $phone->slug,
-            'brand'  => $phone->brand_id, // or relation later
+            'id' => $phone->id,
+            'name' => $phone->name,
+            'slug' => $phone->slug,
+            'brand' => $phone->brand_id, // or relation later
             'rating' => $phone->avg_rating,
-            'specs'  => $phone->compare_specs, // 🔥 magic here
+            'specs' => $phone->compare_specs, // 🔥 magic here
         ]);
 
         return response()->json([
             'count' => $data->count(),
-            'data'  => $data,
+            'data' => $data,
         ]);
     }
 }

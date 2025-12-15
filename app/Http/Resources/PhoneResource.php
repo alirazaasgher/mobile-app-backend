@@ -16,7 +16,7 @@ class PhoneResource extends JsonResource
             'name' => $this->name,
             'brand' => $this->brand,
             'slug' => $this->slug,
-            'updated_at' => $this->updated_at->toDateString(),
+            'updated_at' => $this->updated_at->toDateString() ?? null,
             'release_date' => !empty($this->release_date) ? Carbon::parse($this->release_date)->format('j F, Y') : null,
             'status' => $this->status,
             'primary_image' => $this->primary_image ? $baseUrl . '/storage/' . ltrim($this->primary_image, '/')
