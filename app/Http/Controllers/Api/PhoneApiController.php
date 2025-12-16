@@ -500,7 +500,7 @@ class PhoneApiController extends Controller
         // Fetch phones with only needed relationships
         $phones = Phone::with([
             'brand:id,name',           // only id and name
-            'searchIndex:phone_id,min_price_usd',
+            'searchIndex',
             'specifications'           // include compare_specs in resource
         ])
             ->whereIn('slug', $slugs)
@@ -511,18 +511,20 @@ class PhoneApiController extends Controller
             'id' => $phone->id,
             'name' => $phone->name,
             'slug' => $phone->slug,
-            'image' => $phone->primary_image
+            'status' => $phone->status,
+            'primary_image' => $phone->primary_image
                 ? $baseUrl . '/storage/' . ltrim($phone->primary_image, '/')
                 : null,
             'brand' => $phone->brand->name ?? null,
             'rating' => $phone->avg_rating,
-            'price' => $phone->searchIndex->min_price_usd ?? null,
+            'searchIndex' => $phone->searchIndex ?? null,
             'specs' => $phone->compare_specs,
         ]);
-
+        PhoneResource::$hideDetails = true;
         return response()->json([
-            'count' => $phones->count(),
-            'data' => $data,
+            'success' => true,
+            'data' => PhoneResource::collection($phones),
+
         ]);
     }
 

@@ -8,11 +8,13 @@ class PhoneSearchResource extends JsonResource
 {
 
     protected $hideDetails;
+    protected $fromCompare;
 
-    public function __construct($resource, $hideDetails = false)
+    public function __construct($resource, $hideDetails = false, $fromCompare = false)
     {
         parent::__construct($resource);
         $this->hideDetails = $hideDetails;
+        $this->fromCompare = $fromCompare;
     }
     public function toArray($request)
     {
@@ -39,9 +41,12 @@ class PhoneSearchResource extends JsonResource
             'min_price' => isset($this->min_price_pkr) && $this->min_price_pkr > 0
                 ? number_format($this->min_price_pkr, 0, '.', ',')
                 : null,
-            'specs_grid' => json_decode($this->specs_grid, true),
+            // 'specs_grid' => json_decode($this->specs_grid, true),
             'min_price_usd' => $this->min_price_usd,
         ];
+        if (!$this->fromCompare) {
+            $data['specs_grid'] = json_decode($this->specs_grid, true);
+        }
         // !$this->hideDetails &&
         // Only include top_specs and specs_grid if request has details page flag
         if (!$this->hideDetails && ($request->query('details') || $request->routeIs('phones.show'))) {

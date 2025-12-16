@@ -7,6 +7,12 @@ use Illuminate\Support\Carbon;
 
 class PhoneResource extends JsonResource
 {
+    public static $hideDetails;
+
+    public function __construct($resource)
+    {
+        parent::__construct($resource);
+    }
     public function toArray($request)
     {
         $baseUrl = "https://cdn.mobile42.com";
@@ -21,12 +27,21 @@ class PhoneResource extends JsonResource
             'status' => $this->status,
             'primary_image' => $this->primary_image ? $baseUrl . '/storage/' . ltrim($this->primary_image, '/')
                 : null,
-            // 'is_popular' => $this->is_popular,
-            'variants' => PhoneVariantResource::collection($this->whenLoaded('variants')),
-            'colors' => ColorResource::collection($this->whenLoaded('colors')),
-            'specifications' => PhoneSpecificationResource::collection($this->whenLoaded('specifications')),
+            // 'variants' => PhoneVariantResource::collection($this->whenLoaded('variants')),
+            // 'colors' => ColorResource::collection($this->whenLoaded('colors')),
+            // 'specifications' => PhoneSpecificationResource::collection($this->whenLoaded('specifications')),
             'searchIndex' => new PhoneSearchResource($this->whenLoaded('searchIndex'), hideDetails: false),
+            'specs' => $this->compare_specs,
         ];
+        if (self::$hideDetails) {
+            $data['specs'] = $this->compare_specs;
+            $data['searchIndex'] = new PhoneSearchResource($this->whenLoaded('searchIndex'), hideDetails: true, fromCompare: true);
+        } else {
+            $data['variants'] = PhoneVariantResource::collection($this->whenLoaded('variants'));
+            $data['colors'] = ColorResource::collection($this->whenLoaded('colors'));
+            $data['specifications'] = PhoneSpecificationResource::collection($this->whenLoaded('specifications'));
+            $data['searchIndex'] = new PhoneSearchResource($this->whenLoaded('searchIndex'), hideDetails: false);
+        }
         if ($request->query('details') || $request->routeIs('phones.show')) {
             $data['competitors'] = CompetitorResource::collection($this->whenLoaded('competitors'));
         }
