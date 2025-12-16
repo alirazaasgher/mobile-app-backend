@@ -488,7 +488,7 @@ class PhoneApiController extends Controller
     public function compare(Request $request)
     {
         $baseUrl = "https://cdn.mobile42.com";
-
+        // $baseUrl = "http://127.0.0.1:8000";
         // Validate input
         $validated = $request->validate([
             'slugs' => 'required|array|min:1|max:4',

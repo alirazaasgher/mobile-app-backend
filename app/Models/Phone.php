@@ -165,45 +165,137 @@ class Phone extends Model
         return $this->belongsToMany(Phone::class, 'mobile_competitors', 'mobile_id', 'competitor_id');
     }
 
+    // In App\Models\Phone.php
+
     public function getCompareSpecsAttribute(): array
     {
-        $design      = $this->getSpecsByCategory('design');
-        $display     = $this->getSpecsByCategory('display');
-        $performance = $this->getSpecsByCategory('performance');
-        $battery     = $this->getSpecsByCategory('battery');
-        $memory      = $this->getSpecsByCategory('memory');
-        $camera      = $this->getSpecsByCategory('main_camera');
+        $s = $this->specifications->keyBy('category')
+            ->map(fn($spec) => json_decode($spec->specifications, true) ?: []);
+        try {
+            $chargingSpec = $s['battery']['charging_speed'] ?? '';
+            $wirlessCharging = $s['battery']['wireless'] ?? '';
+            $reverceCharging = $s['battery']['reverse'] ?? '';
+            $chargingSpec = shortChargingSpec($chargingSpec, $wirlessCharging, $reverceCharging);
+            return [
+                'key' => [
+                    'battery' => [
+                        'capacity' => $chargingSpec['fastCharging'] ?? null,
+                        'charging' => $chargingSpec['convertWirlessCharging'] ?? null,
+                        'wireless' => $chargingSpec['convertReverceCharging'] ?? null,
+                    ],
+                    'display' => [
+                        'size' => $this->extractSize($s['display']['size'] ?? null),
+                        'type' => getShortDisplay($s['display']['type'] ?? null),
+                        'resolution' => $this->shortResolution($s['display']['resolution'] ?? null),
+                        'refresh_rate' => $this->extractNumber($s['display']['refresh_rate'] ?? null),
+                    ],
+                    'camera' => [
+                        'main' => getShortCamera($s['main_camera']['setup'] ?? null),
+                        'front' => getShortCamera($s['selfie_camera']['setup'] ?? null),
+                        'main_video' => getVideoHighlight($s['main_camera']['video'] ?? null),
+                        'front_video' => getVideoHighlight($s['selfie_camera']['video'] ?? null),
+                    ],
+                    'performance' => [
+                        'chipset' => getShortChipset($s['performance']['chipset'] ?? null),
+                        'ram' => $this->extractNumber($s['memory']['RAM'] ?? null),
+                        'storage' => $this->shortStorage($s['memory']['Storage'] ?? null),
+                    ],
+                    'software' => [
+                        'os' => $this->shortOS($s['performance']['os'] ?? null),
+                        'updates' => $s['performance']['update_policy'] ?? null,
+                    ],
+                ],
+                'expandable' => [
+                    'design' => [
+                        'dimensions' => $s['design']['dimensions'] ?? null,
+                        'weight' => $this->extractNumber($s['design']['weight'] ?? null),
+                        'build' => getGlassProtectionShort($s['design']['build'] ?? null),
+                        'ip_rating' => format_ip_rating($s['design']['durability']) ?? null,
+                        'sim' => $this->shortSim($s['design']['sim'] ?? null),
+                    ],
+                    'connectivity' => [
+                        '5g' => $this->toBool($s['connectivity']['5G'] ?? null),
+                        'wifi' => $s['connectivity']['wifi'] ?? null,
+                        'bluetooth' => $this->extractVersion($s['connectivity']['bluetooth'] ?? null),
+                        'nfc' => $this->toBool($s['connectivity']['nfc'] ?? null),
+                    ],
+                    'audio' => [
+                        'speakers' => $s['features']['speakers'] ?? null,
+                        'jack' => $this->toBool($s['features']['3.5mm_jack'] ?? null),
+                    ],
+                    'sensors' => [
+                        'fingerprint' => $s['features']['fingerprint'] ?? null,
+                        'face_unlock' => $this->toBool($s['features']['face_unlock'] ?? null),
+                    ],
+                ],
+            ];
+        } catch (\Exception $e) {
+            \Log::error("Error in getCompareSpecsAttribute for phone {$this->id}: " . $e->getMessage());
+            echo "<pre>";
+            print_r($e->getMessage());
+            exit;
+            return ['key' => [], 'expandable' => []];
+        }
+    }
 
-        return [
-            // DESIGN
-            'dimensions' => $design['dimensions'] ?? null,
-            'weight'     => $design['weight'] ?? null,
-            'build'      => $design['build'] ?? null,
-            'sim'        => $design['sim'] ?? null,
+    // Helper methods - ADD THESE TO YOUR PHONE MODEL
+    private function extractNumber($value)
+    {
+        if (!$value) return null;
+        preg_match('/\d+/', $value, $matches);
+        return $matches[0] ?? null;
+    }
 
-            // DISPLAY
-            'display' => trim(
-                ($display['size'] ?? '') . ' ' .
-                    ($display['type'] ?? '')
-            ) ?: null,
+    private function toBool($value)
+    {
+        if (!$value) return null;
+        return strtolower($value) === 'yes' || strtolower($value) === 'true';
+    }
 
-            'resolution'  => $display['resolution'] ?? null,
-            'refreshRate' => $display['refresh_rate'] ?? null,
+    private function extractSize($value)
+    {
+        if (!$value) return null;
+        preg_match('/([\d.]+)\s*inch/i', $value, $matches);
+        return $matches[1] ?? null;
+    }
 
-            // PERFORMANCE
-            'chipset' => $performance['chipset'] ?? null,
-            'os'      => $performance['os'] ?? null,
+    private function shortResolution($value)
+    {
+        if (!$value) return null;
+        // "2868 x 1320 (~460 ppi)" -> "2868x1320"
+        preg_match('/(\d+)\s*x\s*(\d+)/', $value, $matches);
+        return isset($matches[1], $matches[2]) ? "{$matches[1]}x{$matches[2]}" : null;
+    }
 
-            // BATTERY
-            'battery'  => $battery['capacity'] ?? null,
-            'charging' => $battery['charging_speed'] ?? null,
+    private function shortStorage($value)
+    {
+        if (!$value) return null;
+        $parts = array_map('trim', explode('/', $value));
+        return count($parts) > 1 ? $parts[0] . '-' . end($parts) : $parts[0];
+    }
 
-            // MEMORY
-            'ram'     => $memory['RAM'] ?? null,
-            'storage' => $memory['Storage'] ?? null,
+    private function shortOS($value)
+    {
+        if (!$value) return null;
+        // "Android 16 ,OneUI 8.0" -> "Android 16"
+        // "IOS 26" -> "iOS 26"
+        return trim(explode(',', $value)[0]);
+    }
 
-            // CAMERA
-            'rearCamera' => $camera['setup'] ?? null,
-        ];
+    private function shortSim($value)
+    {
+        if (!$value) return null;
+        // Count SIM types
+        $types = [];
+        if (stripos($value, 'Nano-SIM') !== false) $types[] = 'Nano-SIM';
+        if (stripos($value, 'eSIM') !== false) $types[] = 'eSIM';
+        return implode(' + ', array_unique($types)) ?: $value;
+    }
+
+    private function extractVersion($value)
+    {
+        if (!$value) return null;
+        preg_match('/v?([\d.]+)/', $value, $matches);
+        return $matches[1] ?? null;
     }
 }

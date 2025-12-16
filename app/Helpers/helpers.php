@@ -67,46 +67,7 @@ function update_phone_search_index(
 
     $capacity = preg_replace('/[^0-9]/', '', $specMap['battery']['capacity']);
     $selfieCam = $specMap['Selfie Camera (MP)'] ?? null;
-    $mainCam = $specMap['main_camera']['setup'] ?? null;
-    if ($mainCam && strpos($mainCam, ',') !== false) {
-        $camera = strtolower($mainCam);
-        $parts = array_map('trim', explode(',', $camera));
-        $labelsPriority = [
-            'ultrawide' => '(UW)',
-            'ultra wide' => '(UW)',
-            'telephoto' => 'Telephoto',
-            'macro' => 'Macro',
-            'depth' => 'Depth',
-            'periscope' => 'Periscope Telephoto',
-        ];
-
-        $final = [];
-        // First camera → always the first MP
-        preg_match('/(\d+(\.\d+)?)\s*mp/i', $parts[0], $mpMatch);
-        $final[] = $mpMatch[1] . 'MP';
-        // Second camera → choose based on priority
-        $second = null;
-        foreach ($labelsPriority as $key => $labelName) {
-            foreach ($parts as $part) {
-                if (strpos($part, $key) !== false) {
-                    preg_match('/(\d+(\.\d+)?)\s*mp/i', $part, $mpMatch);
-                    if ($mpMatch) {
-                        $second = $mpMatch[1] . 'MP ' . $labelName;
-                        break 2;
-                    }
-                }
-            }
-        }
-        // If no priority label found, take second camera if exists
-        if (!$second && isset($parts[1])) {
-            preg_match('/(\d+(\.\d+)?)\s*mp/i', $parts[1], $mpMatch);
-            $second = $mpMatch ? $mpMatch[1] . 'MP' : null;
-        }
-        if ($second) {
-            $final[] = $second;
-        }
-        $mainCam = implode(' + ', $final);
-    }
+    $mainCam = getShortCamera($specMap['main_camera']['setup'] ?? null);
     // Search content
     // $searchContent = implode(' ', [
     //     $validated['name'],
@@ -311,31 +272,7 @@ function build_specs_grid($sizeInInches, $specMap, $shortChipset, $cpuType, $mai
     $reverceCharging = $specMap['battery']['reverse'] ?? '';
     $convertWirlessCharging = null;
     $convertReverceCharging = null;
-
-    // 1. Try Android-style (digits + W)
-    if (preg_match('/(\d+)\s*W/i', $chargingSpec, $match)) {
-        $fastCharging = "$match[1]W";
-    }
-    // 2. Try iPhone-style (PD + AVS + time)
-    elseif (preg_match('/PD\s*([\d\.]+).*?(?:\(?(\d+% in \d+ min)\)?)/i', $chargingSpec, $match)) {
-        $fastCharging = "PD{$match[1]}";
-    }
-
-
-    // Wireless charging
-    if (preg_match('/(\d+(\.\d+)?)\s*W\s*(wireless)?/i', $wirlessCharging, $match)) {
-        $convertWirlessCharging = "$match[1]W";
-    } elseif (preg_match('/(PD[\d\.]+|MagSafe|Qi2)/i', $wirlessCharging, $match)) {
-        $convertWirlessCharging = $match[0];
-    }
-
-    // Reverse charging
-    if (preg_match('/(\d+(\.\d+)?)\s*W\s*(reverse\s*wired)?/i', $reverceCharging, $match)) {
-        $convertReverceCharging = "$match[1]W";
-    } elseif (preg_match('/(PD[\d\.]+|MagSafe|Qi2)/i', $reverceCharging, $match)) {
-        $convertReverceCharging = $match[0];
-    }
-
+    $chargingSpec = shortChargingSpec($chargingSpec,$wirlessCharging,$reverceCharging);
     return [
         [
             "key" => "display",
@@ -357,9 +294,9 @@ function build_specs_grid($sizeInInches, $specMap, $shortChipset, $cpuType, $mai
             "key" => "battery",
             "value" => $specMap['battery']['capacity'] ?? "N/A",
             "subvalue" => [
-                "wired" => $fastCharging ?? null,
-                "wireless" => $convertWirlessCharging ?? null,
-                "reverse" => $convertReverceCharging ?? null
+                "wired" => $chargingSpec['fastCharging'] ?? null,
+                "wireless" => $chargingSpec['convertWirlessCharging'] ?? null,
+                "reverse" => $chargingSpec['convertReverceCharging'] ?? null
             ]
         ]
     ];
@@ -529,3 +466,112 @@ function getGlassProtectionShort($build)
 
     return implode(', ', array_unique($out));
 }
+
+function getShortCamera($mainCam)
+{
+    if ($mainCam && strpos($mainCam, ',') !== false) {
+        $camera = strtolower($mainCam);
+        $parts = array_map('trim', explode(',', $camera));
+        $labelsPriority = [
+            'ultrawide' => '(UW)',
+            'ultra wide' => '(UW)',
+            'telephoto' => 'Telephoto',
+            'macro' => 'Macro',
+            'depth' => 'Depth',
+            'periscope' => 'Periscope Telephoto',
+        ];
+
+        $final = [];
+        // First camera → always the first MP
+        preg_match('/(\d+(\.\d+)?)\s*mp/i', $parts[0], $mpMatch);
+        $final[] = $mpMatch[1] . 'MP';
+        // Second camera → choose based on priority
+        $second = null;
+        foreach ($labelsPriority as $key => $labelName) {
+            foreach ($parts as $part) {
+                if (strpos($part, $key) !== false) {
+                    preg_match('/(\d+(\.\d+)?)\s*mp/i', $part, $mpMatch);
+                    if ($mpMatch) {
+                        $second = $mpMatch[1] . 'MP ' . $labelName;
+                        break 2;
+                    }
+                }
+            }
+        }
+        // If no priority label found, take second camera if exists
+        if (!$second && isset($parts[1])) {
+            preg_match('/(\d+(\.\d+)?)\s*mp/i', $parts[1], $mpMatch);
+            $second = $mpMatch ? $mpMatch[1] . 'MP' : null;
+        }
+        if ($second) {
+            $final[] = $second;
+        }
+        $mainCam = implode(' + ', $final);
+    }
+
+    return $mainCam;
+}
+
+function shortChargingSpec($chargingSpec,$wirlessCharging,$reverceCharging)
+{
+    $fastCharging = null;
+    $convertWirlessCharging = null;
+    $convertReverceCharging = null;
+    // 1. Try Android-style (digits + W)
+    if (preg_match('/(\d+)\s*W/i', $chargingSpec, $match)) {
+        $fastCharging = "$match[1]W";
+    }
+    // 2. Try iPhone-style (PD + AVS + time)
+    elseif (preg_match('/PD\s*([\d\.]+).*?(?:\(?(\d+% in \d+ min)\)?)/i', $chargingSpec, $match)) {
+        $fastCharging = "PD{$match[1]}";
+    }
+
+
+    // Wireless charging
+    if (preg_match('/(\d+(\.\d+)?)\s*W\s*(wireless)?/i', $wirlessCharging, $match)) {
+        $convertWirlessCharging = "$match[1]W";
+    } elseif (preg_match('/(PD[\d\.]+|MagSafe|Qi2)/i', $wirlessCharging, $match)) {
+        $convertWirlessCharging = $match[0];
+    }
+
+    // Reverse charging
+    if (preg_match('/(\d+(\.\d+)?)\s*W\s*(reverse\s*wired)?/i', $reverceCharging, $match)) {
+        $convertReverceCharging = "$match[1]W";
+    } elseif (preg_match('/(PD[\d\.]+|MagSafe|Qi2)/i', $reverceCharging, $match)) {
+        $convertReverceCharging = $match[0];
+    }
+
+    return [
+        'fastCharging' => $fastCharging,
+        'convertWirlessCharging' => $convertWirlessCharging,
+        'convertReverceCharging' => $convertReverceCharging
+    ];
+}
+
+  function format_ip_rating($text)
+    {
+        if (!$text) return null;
+
+        // Extract IP rating
+        preg_match('/IP\s?(\d{2})/i', $text, $ip);
+
+        // Extract depth (meters)
+        preg_match('/maximum depth of (\d+(\.\d+)?) meters?/i', $text, $depth);
+
+        // Extract time (minutes)
+        preg_match('/up to (\d+)\s*minutes?/i', $text, $time);
+
+        if (empty($ip)) return null;
+
+        $parts = ['IP' . $ip[1]];
+
+        if (!empty($depth[1])) {
+            $parts[] = "Maximum depth {$depth[1]} meters";
+        }
+
+        if (!empty($time[1])) {
+            $parts[] = "up to {$time[1]} minutes";
+        }
+
+        return implode(', ', $parts);
+    }
