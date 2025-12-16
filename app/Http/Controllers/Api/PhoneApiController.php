@@ -548,9 +548,9 @@ class PhoneApiController extends Controller
             })
             ->limit(10)
             ->get();
-
+        PhoneResource::$hideDetails = false;
         return response()->json([
-            'data' => $phones
+            'data' => PhoneResource::collection(resource: $phones)
         ]);
     }
 
