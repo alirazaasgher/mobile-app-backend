@@ -5,7 +5,7 @@ return [
     'allowed_methods' => ['*'],
     'allowed_origins' => [
         'http://localhost:3000', // Next.js development
-        'https://your-nextjs-domain.com', // Production domain
+        'https://www.mobile42.com'
     ],
     'allowed_origins_patterns' => [],
     'allowed_headers' => ['*'],
