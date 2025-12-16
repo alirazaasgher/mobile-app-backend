@@ -539,18 +539,26 @@ class PhoneApiController extends Controller
             ]);
         }
 
-        $phones = Phone::query()
-            ->select(['id', 'name', 'slug', 'primary_image', 'brand_id'])
-            ->with('brand:id,name')
-            ->where('name', 'LIKE', "%{$term}%")
-            ->orWhereHas('brand', function ($q) use ($term) {
-                $q->where('name', 'LIKE', "%{$term}%");
-            })
-            ->limit(10)
-            ->get();
+        // Create a cache key based on the search term
+        $cacheKey = 'phone_search_' . md5(strtolower(trim($term)));
+
+        // Cache the results for 1 hour (3600 seconds)
+        $phones = Cache::remember($cacheKey, 3600, function () use ($term) {
+            return Phone::query()
+                ->select(['id', 'name', 'slug', 'primary_image', 'brand_id'])
+                ->with('brand:id,name')
+                ->where('name', 'LIKE', "%{$term}%")
+                ->orWhereHas('brand', function ($q) use ($term) {
+                    $q->where('name', 'LIKE', "%{$term}%");
+                })
+                ->limit(10)
+                ->get();
+        });
+
         PhoneResource::$hideDetails = false;
+
         return response()->json([
-            'data' => PhoneResource::collection(resource: $phones)
+            'data' => PhoneResource::collection($phones)
         ]);
     }
 
