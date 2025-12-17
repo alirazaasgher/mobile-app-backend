@@ -180,9 +180,9 @@ class Phone extends Model
                 'key' => [
                     'battery' => [
                         'capacity' => $s['battery']['capacity'] ?? null,
-                        'fastCharging' => $chargingSpec['fastCharging'] ?? null,
-                        'wirlesscharging' => $chargingSpec['convertWirlessCharging'] ?? null,
-                        'revercecharging' => $chargingSpec['convertReverceCharging'] ?? null,
+                        'Fast Charging' => $chargingSpec['fastCharging'] ?? null,
+                        'Wirless Charging' => $chargingSpec['convertWirlessCharging'] ?? null,
+                        'Reverce Charging' => $chargingSpec['convertReverceCharging'] ?? null,
                     ],
                     'display' => [
                         'size' => $this->extractSize($s['display']['size'] ?? null),
