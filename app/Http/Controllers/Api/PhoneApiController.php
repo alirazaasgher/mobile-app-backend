@@ -504,10 +504,6 @@ class PhoneApiController extends Controller
         ])
             ->whereIn('slug', $slugs)
             ->get();
-<<<<<<< Updated upstream
-
-=======
->>>>>>> Stashed changes
         PhoneResource::$hideDetails = true;
         return response()->json([
             'success' => true,
