@@ -291,7 +291,7 @@ class PhoneApiController extends Controller
                     $max = $filters['priceRange'][1] ?? null;
 
                     if (!is_null($min)) {
-                        $q->where('min_price_pkr', '>=', $min);
+                        $q->where('min_price_pkr', '>=', value: $min);
                     }
                     if (!is_null($max)) {
                         $q->where('max_price_pkr', '<=', $max);
@@ -408,7 +408,7 @@ class PhoneApiController extends Controller
             }
 
             // Paginate
-            return $query->paginate($perPage, ['phones.*'], 'page', $page);
+            //return $query->paginate($perPage, ['phones.*'], 'page', $page);
             dd($query->toSql(), $query->getBindings());
         });
 
