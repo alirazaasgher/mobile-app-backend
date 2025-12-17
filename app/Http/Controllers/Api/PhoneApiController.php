@@ -287,19 +287,21 @@ class PhoneApiController extends Controller
             // Price Range
             if (!empty($filters['priceRange'])) {
                 $query->whereHas('searchIndex', function ($q) use ($filters) {
-                    $min = is_numeric($filters['priceRange'][0] ?? null)
-                        ? (int) $filters['priceRange'][0]
-                        : null;
-
-                    $max = is_numeric($filters['priceRange'][1] ?? null)
-                        ? (int) $filters['priceRange'][1]
-                        : null;
+                    $min = $filters['priceRange'][0] ?? null;
+                    $max = $filters['priceRange'][1] ?? null;
 
                     if (!is_null($min)) {
-                        $q->where('min_price_pkr', '<=', value: $min);
+                        $q->where(function ($query) use ($min) {
+                            $query->where('max_price_pkr', '>=', $min)
+                                ->where('max_price_pkr', '>', 0);
+                        });
                     }
+
                     if (!is_null($max)) {
-                        $q->where('max_price_pkr', '>=', $max);
+                        $q->where(function ($query) use ($max) {
+                            $query->where('min_price_pkr', '<=', $max)
+                                ->where('min_price_pkr', '>', 0);
+                        });
                     }
                 });
             }
@@ -414,7 +416,7 @@ class PhoneApiController extends Controller
 
             // Paginate
             return $query->paginate($perPage, ['phones.*'], 'page', $page);
-            //dd($query->toSql(), $query->getBindings());
+            dd($query->toSql(), $query->getBindings());
         });
 
         return response()->json([
