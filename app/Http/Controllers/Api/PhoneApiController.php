@@ -291,10 +291,10 @@ class PhoneApiController extends Controller
                     $max = $filters['priceRange'][1] ?? null;
 
                     if (!is_null($min)) {
-                        $q->where('min_price', '>=', $min);
+                        $q->where('min_price_pkr', '>=', $min);
                     }
                     if (!is_null($max)) {
-                        $q->where('max_price', '<=', $max);
+                        $q->where('max_price_pkr', '<=', $max);
                     }
                 });
             }
@@ -392,11 +392,11 @@ class PhoneApiController extends Controller
             switch ($sort) {
                 case 'price_low_high':
                     $query->join('phone_search_index as searchIndex', 'phones.id', '=', 'searchIndex.phone_id')
-                        ->orderBy('searchIndex.min_price', 'asc');
+                        ->orderBy('searchIndex.min_price_pkr', 'asc');
                     break;
                 case 'price_high_low':
                     $query->join('phone_search_index as searchIndex', 'phones.id', '=', 'searchIndex.phone_id')
-                        ->orderBy('searchIndex.max_price', 'desc');
+                        ->orderBy('searchIndex.max_price_pkr', 'desc');
                     break;
                 case 'upcoming':
                     $query->where('status', 'upcoming')->orderByDesc('release_date');
