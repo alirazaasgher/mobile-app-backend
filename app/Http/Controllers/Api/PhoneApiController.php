@@ -408,8 +408,8 @@ class PhoneApiController extends Controller
             }
 
             // Paginate
-            //return $query->paginate($perPage, ['phones.*'], 'page', $page);
-            dd($query->toSql(), $query->getBindings());
+            return $query->paginate($perPage, ['phones.*'], 'page', $page);
+            //dd($query->toSql(), $query->getBindings());
         });
 
         return response()->json([
