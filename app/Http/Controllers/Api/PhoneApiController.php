@@ -287,8 +287,13 @@ class PhoneApiController extends Controller
             // Price Range
             if (!empty($filters['priceRange'])) {
                 $query->whereHas('searchIndex', function ($q) use ($filters) {
-                    $min = $filters['priceRange'][0] ?? null;
-                    $max = $filters['priceRange'][1] ?? null;
+                    $min = is_numeric($filters['priceRange'][0] ?? null)
+                        ? (int) $filters['priceRange'][0]
+                        : null;
+
+                    $max = is_numeric($filters['priceRange'][1] ?? null)
+                        ? (int) $filters['priceRange'][1]
+                        : null;
 
                     if (!is_null($min)) {
                         $q->where('min_price_pkr', '<=', value: $min);
