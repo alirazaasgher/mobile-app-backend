@@ -256,7 +256,6 @@ class PhoneApiController extends Controller
             'filters.os.*' => 'string',
             'filters.has_5g' => 'nullable|boolean',
             'filters.priceRange' => 'nullable|array',
-            'filters.priceRange.*' => 'nullable|numeric',
             'filters.screenSize' => 'nullable|array',
             'filters.batteryCapacity' => 'nullable|array',
             'sort' => ['nullable', Rule::in(['price_low_high', 'price_high_low', 'upcoming', 'newest'])],
