@@ -10,6 +10,7 @@ Route::get('/phones/{slug}', [PhoneApiController::class, 'show'])->name('phones.
 Route::get('/brands', [PhoneApiController::class, 'brands']);
 Route::get('/count', [PhoneApiController::class, 'count']);
 Route::post('/phones/compare', [PhoneApiController::class, 'compare']);
+Route::get('/getAllCompareSlugs', [PhoneApiController::class, 'getAllCompareSlugs']);
 Route::get('/search', [PhoneApiController::class, 'search']);
 
 // // Admin routes (protected by auth middleware)

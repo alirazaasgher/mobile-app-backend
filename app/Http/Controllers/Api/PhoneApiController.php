@@ -546,5 +546,23 @@ class PhoneApiController extends Controller
         ]);
     }
 
+    public function getAllCompareSlugs()
+    {
+        // Only generate comparisons for popular or recent phones
+        $phones = Phone::where('deleted', 0)
+            ->orderBy('release_date', 'desc') // or 'created_at', 'desc'
+            ->limit($limit ?? 100) // Limit to top N phones to keep sitemap manageable
+            ->pluck('slug')
+            ->toArray();
 
+        $count = count($phones);
+        $slugs = [];
+
+        for ($i = 0; $i < $count; $i++) {
+            for ($j = $i + 1; $j < $count; $j++) {
+                $slugs[] = $phones[$i] . '-vs-' . $phones[$j];
+            }
+        }
+        return response()->json(["data" => $slugs]);
+    }
 }
