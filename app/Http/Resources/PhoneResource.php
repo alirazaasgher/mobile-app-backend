@@ -15,8 +15,8 @@ class PhoneResource extends JsonResource
     }
     public function toArray($request)
     {
-        //$baseUrl = "https://cdn.mobile42.com";
-        $baseUrl = "http://127.0.0.1:8000";
+        $baseUrl = "https://cdn.mobile42.com";
+        //$baseUrl = "http://127.0.0.1:8000";
         $data = [
             'id' => $this->id,
             'name' => $this->name,
@@ -32,6 +32,7 @@ class PhoneResource extends JsonResource
         if (self::$hideDetails) {
             $data['specs'] = $this->compare_specs;
             $data['searchIndex'] = new PhoneSearchResource($this->whenLoaded('searchIndex'), hideDetails: true, fromCompare: true);
+            $data['competitors'] = CompetitorResource::collection($this->whenLoaded('competitors'));
         } else {
             $data['variants'] = PhoneVariantResource::collection($this->whenLoaded('variants'));
             $data['colors'] = ColorResource::collection($this->whenLoaded('colors'));

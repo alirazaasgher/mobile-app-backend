@@ -499,11 +499,15 @@ class PhoneApiController extends Controller
         $phones = Phone::with([
             'brand:id,name',           // only id and name
             'searchIndex',
-            'specifications'           // include compare_specs in resource
+            'specifications',
+            'competitors'           // include compare_specs in resource
         ])
             ->whereIn('slug', $slugs)
             ->get();
+<<<<<<< Updated upstream
 
+=======
+>>>>>>> Stashed changes
         PhoneResource::$hideDetails = true;
         return response()->json([
             'success' => true,
