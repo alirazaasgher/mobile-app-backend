@@ -291,10 +291,10 @@ class PhoneApiController extends Controller
                     $max = $filters['priceRange'][1] ?? null;
 
                     if (!is_null($min)) {
-                        $q->where('min_price_pkr', '>=', value: $min);
+                        $q->where('min_price_pkr', '<=', value: $min);
                     }
                     if (!is_null($max)) {
-                        $q->where('max_price_pkr', '<=', $max);
+                        $q->where('max_price_pkr', '>=', $max);
                     }
                 });
             }
