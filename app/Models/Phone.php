@@ -57,7 +57,7 @@ class Phone extends Model
     {
         $spec = $this->specifications
             ->firstWhere('category', $category)
-            ?->specifications ?? [];
+                ?->specifications ?? [];
 
         return json_decode($spec, true) ?: [];
     }
@@ -220,42 +220,48 @@ class Phone extends Model
     // Helper methods - ADD THESE TO YOUR PHONE MODEL
     private function extractNumber($value)
     {
-        if (!$value) return null;
+        if (!$value)
+            return null;
         preg_match('/\d+/', $value, $matches);
         return $matches[0] ?? null;
     }
 
     private function toBool($value)
     {
-        if (!$value) return null;
+        if (!$value)
+            return null;
         return strtolower($value) === 'yes' || strtolower($value) === 'true';
     }
 
     private function extractSize($value)
     {
-        if (!$value) return null;
+        if (!$value)
+            return null;
         preg_match('/([\d.]+)\s*inch/i', $value, $matches);
         return $matches[1] ?? null;
     }
 
     private function shortResolution($value)
     {
-        if (!$value) return null;
+        if (!$value)
+            return null;
         // "2868 x 1320 (~460 ppi)" -> "2868x1320"
         preg_match('/(\d+)\s*x\s*(\d+)/', $value, $matches);
-        return isset($matches[1], $matches[2]) ? "{$matches[1]}x{$matches[2]}" : null;
+        return isset($matches[1], $matches[2]) ? "{$matches[1]} x {$matches[2]}" : null;
     }
 
     private function shortStorage($value)
     {
-        if (!$value) return null;
+        if (!$value)
+            return null;
         $parts = array_map('trim', explode('/', $value));
         return count($parts) > 1 ? $parts[0] . '-' . end($parts) : $parts[0];
     }
 
     private function shortOS($value)
     {
-        if (!$value) return null;
+        if (!$value)
+            return null;
         // "Android 16 ,OneUI 8.0" -> "Android 16"
         // "IOS 26" -> "iOS 26"
         return trim(explode(',', $value)[0]);
@@ -263,17 +269,21 @@ class Phone extends Model
 
     private function shortSim($value)
     {
-        if (!$value) return null;
+        if (!$value)
+            return null;
         // Count SIM types
         $types = [];
-        if (stripos($value, 'Nano-SIM') !== false) $types[] = 'Nano-SIM';
-        if (stripos($value, 'eSIM') !== false) $types[] = 'eSIM';
+        if (stripos($value, 'Nano-SIM') !== false)
+            $types[] = 'Nano-SIM';
+        if (stripos($value, 'eSIM') !== false)
+            $types[] = 'eSIM';
         return implode(' + ', array_unique($types)) ?: $value;
     }
 
     private function extractVersion($value)
     {
-        if (!$value) return null;
+        if (!$value)
+            return null;
         preg_match('/v?([\d.]+)/', $value, $matches);
         return $matches[1] ?? null;
     }
