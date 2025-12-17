@@ -179,9 +179,10 @@ class Phone extends Model
             return [
                 'key' => [
                     'battery' => [
-                        'capacity' => $chargingSpec['fastCharging'] ?? null,
-                        'charging' => $chargingSpec['convertWirlessCharging'] ?? null,
-                        'wireless' => $chargingSpec['convertReverceCharging'] ?? null,
+                        'capacity' => $s['battery']['capacity'] ?? null,
+                        'fastCharging' => $chargingSpec['fastCharging'] ?? null,
+                        'wirlesscharging' => $chargingSpec['convertWirlessCharging'] ?? null,
+                        'revercecharging' => $chargingSpec['convertReverceCharging'] ?? null,
                     ],
                     'display' => [
                         'size' => $this->extractSize($s['display']['size'] ?? null),
@@ -205,29 +206,7 @@ class Phone extends Model
                         'updates' => $s['performance']['update_policy'] ?? null,
                     ],
                 ],
-                'expandable' => [
-                    'design' => [
-                        'dimensions' => $s['design']['dimensions'] ?? null,
-                        'weight' => $this->extractNumber($s['design']['weight'] ?? null),
-                        'build' => getGlassProtectionShort($s['design']['build'] ?? null),
-                        'ip_rating' => format_ip_rating($s['design']['durability']) ?? null,
-                        'sim' => $this->shortSim($s['design']['sim'] ?? null),
-                    ],
-                    'connectivity' => [
-                        '5g' => $this->toBool($s['connectivity']['5G'] ?? null),
-                        'wifi' => $s['connectivity']['wifi'] ?? null,
-                        'bluetooth' => $this->extractVersion($s['connectivity']['bluetooth'] ?? null),
-                        'nfc' => $this->toBool($s['connectivity']['nfc'] ?? null),
-                    ],
-                    'audio' => [
-                        'speakers' => $s['features']['speakers'] ?? null,
-                        'jack' => $this->toBool($s['features']['3.5mm_jack'] ?? null),
-                    ],
-                    'sensors' => [
-                        'fingerprint' => $s['features']['fingerprint'] ?? null,
-                        'face_unlock' => $this->toBool($s['features']['face_unlock'] ?? null),
-                    ],
-                ],
+                'expandable' => $s
             ];
         } catch (\Exception $e) {
             \Log::error("Error in getCompareSpecsAttribute for phone {$this->id}: " . $e->getMessage());

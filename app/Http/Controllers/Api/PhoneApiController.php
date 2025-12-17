@@ -487,8 +487,6 @@ class PhoneApiController extends Controller
 
     public function compare(Request $request)
     {
-        $baseUrl = "https://cdn.mobile42.com";
-        // $baseUrl = "http://127.0.0.1:8000";
         // Validate input
         $validated = $request->validate([
             'slugs' => 'required|array|min:1|max:4',
@@ -506,20 +504,6 @@ class PhoneApiController extends Controller
             ->whereIn('slug', $slugs)
             ->get();
 
-        // Transform using map
-        $data = $phones->map(fn($phone) => [
-            'id' => $phone->id,
-            'name' => $phone->name,
-            'slug' => $phone->slug,
-            'status' => $phone->status,
-            'primary_image' => $phone->primary_image
-                ? $baseUrl . '/storage/' . ltrim($phone->primary_image, '/')
-                : null,
-            'brand' => $phone->brand->name ?? null,
-            'rating' => $phone->avg_rating,
-            'searchIndex' => $phone->searchIndex ?? null,
-            'specs' => $phone->compare_specs,
-        ]);
         PhoneResource::$hideDetails = true;
         return response()->json([
             'success' => true,
