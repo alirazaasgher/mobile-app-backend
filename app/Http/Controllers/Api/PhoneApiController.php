@@ -258,25 +258,23 @@ class PhoneApiController extends Controller
             'filters.priceRange' => 'nullable|array',
             'filters.screenSize' => 'nullable|array',
             'filters.batteryCapacity' => 'nullable|array',
-            'sort' => ['nullable', Rule::in(['price_low_high', 'price_high_low', 'upcoming', 'newest'])],
+            'filters.mobileStatus' => ['nullable', Rule::in(['price-low-to-high', 'price-high-to-low', 'upcoming', 'new'])],
             'per_page' => 'nullable|numeric|min:0',
             'page' => 'nullable|numeric|min:0',
         ]);
 
         $filters = $validated['filters'] ?? [];
-        $sort = $validated['sort'] ?? 'newest';
         $perPage = $validated['per_page'] ?? 20;
         // $query = Phone::active()->with(['brand:id,name', 'searchIndex']);
         $page = $validated['page'] ?? 1;
         // Generate a unique cache key
         $cacheKey = 'phones:' . md5(json_encode([
             'filters' => $filters,
-            'sort' => $sort,
             'page' => $page,
             'per_page' => $perPage
         ]));
 
-        $phones = Cache::remember($cacheKey, 1, function () use ($filters, $sort, $perPage, $page) {
+        $phones = Cache::remember($cacheKey, 1, function () use ($filters, $perPage, $page) {
 
             $query = Phone::active()->with(['brand:id,name', 'searchIndex']);
             // Brands
@@ -293,15 +291,31 @@ class PhoneApiController extends Controller
                     if (!is_null($min)) {
                         $q->where(function ($query) use ($min) {
                             $query->where('max_price_pkr', '>=', $min)
-                                ->where('max_price_pkr', '>', 0);
-                        });
+                                ->orWhere(function ($q) use ($min) {
+                                    $q->where('max_price_pkr', '<=', 0)
+                                        ->where('min_price_pkr', '>=', $min);
+                                });
+                        })
+                            ->where(function ($query) {
+                                // Ensure at least one price is valid
+                                $query->where('max_price_pkr', '>', 0)
+                                    ->orWhere('min_price_pkr', '>', 0);
+                            });
                     }
 
                     if (!is_null($max)) {
                         $q->where(function ($query) use ($max) {
                             $query->where('min_price_pkr', '<=', $max)
-                                ->where('min_price_pkr', '>', 0);
-                        });
+                                ->orWhere(function ($q) use ($max) {
+                                    $q->where('min_price_pkr', '<=', 0)
+                                        ->where('max_price_pkr', '<=', $max);
+                                });
+                        })
+                            ->where(function ($query) {
+                                // Ensure at least one price is valid
+                                $query->where('min_price_pkr', '>', 0)
+                                    ->orWhere('max_price_pkr', '>', 0);
+                            });
                     }
                 });
             }
@@ -377,41 +391,42 @@ class PhoneApiController extends Controller
                 });
             }
 
+            if (!empty($filters['mobileStatus'])) {
 
+                $status = $filters['mobileStatus'];
 
-            // Features
-            if (!empty($filters['features'])) {
-                foreach ($filters['features'] as $feature) {
-                    if ($feature === '5g') {
-                        $query->whereHas('searchIndex', fn($q) => $q->where('has_5g', 1));
-                    }
+                // Price: Low → High
+                if ($status === 'price-low-to-high') {
+                    $query->whereHas('searchIndex', function ($q) {
+                        $q->orderBy('min_price_pkr', 'asc');
+                    });
+                }
+
+                // Price: High → Low
+                elseif ($status === 'price-high-to-low') {
+                    $query->whereHas('searchIndex', function ($q) {
+                        $q->orderBy('max_price_pkr', 'desc');
+                    });
+                }
+
+                // Upcoming phones
+                elseif ($status === 'upcoming') {
+                    $query->where('status', 'upcoming')
+                        ->orderByDesc('release_date');
+                }
+
+                // New / Default
+                else {
+                    $query->orderByDesc('release_date');
                 }
             }
+
 
             // If no filters, return mixed phones
             if (empty(array_filter($filters))) {
                 $query->select('id', 'name', 'slug', 'release_date', 'primary_image', 'status', 'updated_at')
                     ->orderBy('release_date', 'desc')
                     ->inRandomOrder();
-            }
-
-            // Sorting
-            switch ($sort) {
-                case 'price_low_high':
-                    $query->join('phone_search_index as searchIndex', 'phones.id', '=', 'searchIndex.phone_id')
-                        ->orderBy('searchIndex.min_price_pkr', 'asc');
-                    break;
-                case 'price_high_low':
-                    $query->join('phone_search_index as searchIndex', 'phones.id', '=', 'searchIndex.phone_id')
-                        ->orderBy('searchIndex.max_price_pkr', 'desc');
-                    break;
-                case 'upcoming':
-                    $query->where('status', 'upcoming')->orderByDesc('release_date');
-                    break;
-                case 'newest':
-                default:
-                    $query->orderByDesc('release_date');
-                    break;
             }
 
             // Paginate
