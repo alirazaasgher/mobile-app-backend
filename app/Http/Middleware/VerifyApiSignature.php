@@ -66,17 +66,7 @@ class VerifyApiSignature
 
         $expected = hash_hmac('sha256', $payload, $secret);
 
-        dd([
-            'PHP Method: ' . $request->method(),
-            'PHP Timestamp: ' . $timestamp,
-            'PHP Nonce: ' . $nonce,
-            'PHP Body: ' . var_export($body, true),
-            'PHP Payload: ' . $payload,
-            'PHP Secret: ' . substr($secret, 0, 5) . '...',
-            'PHP Signature: ' . $expected,
-            'Received Signature: ' . $signature
 
-        ]);
         // echo "<pre>";
         // print_r($expected);
         // echo "---";
