@@ -50,7 +50,6 @@ class PhoneSearchResource extends JsonResource
         // Only include top_specs and specs_grid if request has details page flag
         if (!$this->hideDetails && ($request->query('details') || $request->routeIs('phones.show'))) {
             $data['top_specs'] = json_decode($this->top_specs, true);
-
         }
 
         return $data;

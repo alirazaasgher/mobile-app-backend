@@ -12,7 +12,7 @@ Route::middleware(['verify.api.signature'])->group(function () {
         Route::get('/phones/filters', [PhoneApiController::class, 'getFilterOptions']);
         Route::get('/getStaticFilters', [PhoneApiController::class, 'getStaticFilters']);
         Route::get('/getAllCompareSlugs', [PhoneApiController::class, 'getAllCompareSlugs']);
-        Route::get('/phones/{slug}', [PhoneApiController::class, 'show']);
+        Route::get('/phones/{slug}', [PhoneApiController::class, 'show'])->name('phones.show');
         Route::get('/getPhoneBySlug', [PhoneApiController::class, 'getPhoneBySlug']);
     });
 
@@ -40,3 +40,4 @@ Route::middleware(['verify.api.signature'])->group(function () {
 //     Route::put('/phones/{phone}', [PhoneApiController::class, 'update']);
 //     Route::delete('/phones/{phone}', [PhoneApiController::class, 'destroy']);
 // });
+

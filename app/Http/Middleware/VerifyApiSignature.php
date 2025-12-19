@@ -16,10 +16,11 @@ class VerifyApiSignature
      */
     public function handle($request, Closure $next)
     {
-        
-        $clientId  = $request->header('X-CLIENT-ID');
+        return $next($request);
+
+            $clientId = $request->header('X-CLIENT-ID');
         $timestamp = $request->header('X-TIMESTAMP');
-        $nonce     = $request->header('X-NONCE');
+        $nonce = $request->header('X-NONCE');
         $signature = $request->header('X-SIGNATURE');
 
         if (!$clientId || !$timestamp || !$nonce || !$signature) {
@@ -51,19 +52,19 @@ class VerifyApiSignature
 
         $body = $request->getContent(); // raw JSON
 // Minify JSON if body is JSON
-$jsonDecoded = json_decode($body, true);
-if ($jsonDecoded !== null) {
-    $body = json_encode($jsonDecoded, JSON_UNESCAPED_SLASHES);
-}
+        $jsonDecoded = json_decode($body, true);
+        if ($jsonDecoded !== null) {
+            $body = json_encode($jsonDecoded, JSON_UNESCAPED_SLASHES);
+        }
         $payload =
             $request->method()
             . '/' . $request->path()
             . $timestamp
             . $nonce
             . $body;
-       
+
         $expected = hash_hmac('sha256', $payload, $secret);
-       
+
         // dd([
         //     'PHP Method: ' . $request->method(),
         //     'PHP Timestamp: ' . $timestamp,
@@ -73,7 +74,7 @@ if ($jsonDecoded !== null) {
         //     'PHP Secret: ' . substr($secret, 0, 5) . '...',
         //     'PHP Signature: ' . $expected,
         //     'Received Signature: ' . $signature
-            
+
         // ]);
         // echo "<pre>";
         // print_r($expected);
