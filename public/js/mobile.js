@@ -1,6 +1,5 @@
 let colorCounter = 1;
 $(document).ready(function () {
-
     $('.tab-btn').on('click', function (e) {
         e.preventDefault();
         const targetTab = $(this).data('tab');
@@ -64,5 +63,35 @@ $(document).ready(function () {
      $('select[name="competitors[]"]').select2({
         placeholder: "Select Status",
         width: "100%"
+    });
+
+    $('.quill-editor').each(function () {
+        const editor = this;
+        const textarea = $(editor).next('textarea')[0];
+
+        const quill = new Quill(editor, {
+            theme: 'snow',
+            modules: {
+                toolbar: [
+                    [{ font: [] }, { size: [] }],
+                    ['bold', 'italic', 'underline', 'strike'],
+                    [{ color: [] }, { background: [] }],
+                    [{ script: 'sub' }, { script: 'super' }],
+                    [{ header: 1 }, { header: 2 }, 'blockquote', 'code-block'],
+                    [{ list: 'ordered' }, { list: 'bullet' }, { indent: '-1' }, { indent: '+1' }],
+                    [{ direction: 'rtl' }, { align: [] }],
+                    ['link', 'image', 'video'],
+                    ['clean']
+                ]
+            }
+        });
+
+        // Load existing value
+        quill.root.innerHTML = textarea.value;
+
+        // Sync HTML back to textarea
+        quill.on('text-change', function () {
+            textarea.value = quill.root.innerHTML;
+        });
     });
 });

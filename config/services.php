@@ -35,4 +35,8 @@ return [
         ],
     ],
 
+    'api_clients' => [
+    'web_app' => env('API_CLIENT_SECRET'),
+],
+
 ];
