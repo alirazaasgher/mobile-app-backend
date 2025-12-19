@@ -22,29 +22,27 @@ class VerifyApiSignature
         $timestamp = $request->header('X-TIMESTAMP');
         $nonce = $request->header('X-NONCE');
         $signature = $request->header('X-SIGNATURE');
-
         if (!$clientId || !$timestamp || !$nonce || !$signature) {
             return response()->json([
                 'error' => 'Invalid API signature'
             ], 401);
         }
 
-        //⏱ Prevent replay (5 min)
-        // if (abs(time() - $timestamp) > 300) {
-        //     return response()->json([
-        //         'error' => 'Invalid API signature'
-        //     ], 401);
-        // }
+        if (abs(time() - $timestamp) > 300) {
+            return response()->json([
+                'error' => 'Invalid API signature'
+            ], 401);
+        }
 
-        //🔁 Nonce (one-time)
-        // if (Cache::has("nonce:$nonce")) {
-        //     return response()->json([
-        //         'error' => 'Invalid API signature'
-        //     ], 401);
-        // }
-        //Cache::put("nonce:$nonce", true, 300);
+        if (Cache::has("nonce:$nonce")) {
+            return response()->json([
+                'error' => 'Invalid API signature'
+            ], 401);
+        }
+        Cache::put("nonce:$nonce", true, 300);
 
         $secret = config('services.api_clients')[$clientId] ?? null;
+
         if (!$secret) {
             return response()->json([
                 'error' => 'Invalid API signature'
@@ -66,7 +64,17 @@ class VerifyApiSignature
 
         $expected = hash_hmac('sha256', $payload, $secret);
 
+        // dd([
+        //     'PHP Method: ' . $request->method(),
+        //     'PHP Timestamp: ' . $timestamp,
+        //     'PHP Nonce: ' . $nonce,
+        //     'PHP Body: ' . var_export($body, true),
+        //     'PHP Payload: ' . $payload,
+        //     'PHP Secret: ' . substr($secret, 0, 5) . '...',
+        //     'PHP Signature: ' . $expected,
+        //     'Received Signature: ' . $signature
 
+        // ]);
         // echo "<pre>";
         // print_r($expected);
         // echo "---";
