@@ -54,7 +54,7 @@ class MobileApiController extends Controller
             ->whereNotNull('release_date')
             ->orderBy('release_date', 'desc')
             ->whereNotIn('id', $usedPhoneIds)
-            ->take(10)
+            ->take(12)
             ->get();
         $usedPhoneIds = array_merge($usedPhoneIds, $latestMobiles->pluck('id')->toArray());
 
@@ -64,7 +64,7 @@ class MobileApiController extends Controller
             ->where('release_date', '>', now())
             ->orderBy('release_date', 'asc')
             ->whereNotIn('id', $usedPhoneIds)
-            ->take(10)
+            ->take(12)
             ->get();
         $usedPhoneIds = array_merge($usedPhoneIds, $upcomingMobiles->pluck('id')->toArray());
 
@@ -73,7 +73,7 @@ class MobileApiController extends Controller
             ->withListingData()
             ->orderBy('popularity_score', 'desc')
             ->whereNotIn('id', $usedPhoneIds)
-            ->take(10)
+            ->take(12)
             ->get();
         $usedPhoneIds = array_merge($usedPhoneIds, $popularMobiles->pluck('id')->toArray());
 
@@ -98,7 +98,7 @@ class MobileApiController extends Controller
                     }
                 })
                 ->whereNotIn('id', $usedPhoneIds)
-                ->take(10);
+                ->take(12);
 
             $mobilesByPriceRange[$key] = $query->get();
             $usedPhoneIds = array_merge($usedPhoneIds, $mobilesByPriceRange[$key]->pluck('id')->toArray());
