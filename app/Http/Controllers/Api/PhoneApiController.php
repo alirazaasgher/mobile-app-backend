@@ -87,6 +87,7 @@ class PhoneApiController extends Controller
         foreach ($priceRanges as $key => [$min, $max]) {
             $phones = Phone::active()
                 ->withListingData()
+                ->whereNotIn('id', $usedPhoneIds) // Exclude already used phones
                 ->whereHas('searchIndex', function ($q) use ($min, $max) {
                     $q->where('min_price_pkr', '>', 0);
 
@@ -104,6 +105,9 @@ class PhoneApiController extends Controller
                 ->get();
 
             $mobilesByPriceRange[$key] = $phones;
+
+            // Add these phones to used list to prevent repeats in next price ranges
+            $usedPhoneIds = array_merge($usedPhoneIds, $phones->pluck('id')->toArray());
         }
 
         // dd(
