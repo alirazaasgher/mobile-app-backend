@@ -73,7 +73,7 @@ class MobileController extends Controller
                 'max_visible' => 4,
                 'items' => [
                     ['key' => 'setup', 'label' => 'Setup', 'type' => 'text', 'placeholder' => 'Triple (50 MP + 10 MP + 12 MP)'],
-                    ['key' => 'main_sensor', 'label' => 'Main Sensor', 'type' => 'textarea', 'placeholder' => '50 MP, f/1.8, (wide), OIS, PDAF'],
+                    ['key' => 'main_sensor', 'label' => 'Main Sensor', 'type' => 'text', 'placeholder' => '50 MP, f/1.8, (wide), OIS, PDAF'],
                     ['key' => 'other_sensors', 'label' => 'Other Sensors', 'type' => 'text', 'placeholder' => '10 MP (telephoto 3x), 12 MP (ultrawide 120°)'],
                     ['key' => 'features', 'label' => 'Features', 'type' => 'text', 'placeholder' => 'LED flash, HDR, panorama'],
                     ['key' => 'video', 'label' => 'Video', 'type' => 'text', 'placeholder' => '8K@30fps, 4K@60fps, 1080p@240fps'],
@@ -260,7 +260,7 @@ class MobileController extends Controller
                 }
             }
 
-            
+
 
             $this->phoneService->saveSpecifications($phone, $updatedSpecs, function ($category) use ($request) {
                 return $request->input("searchable_text-$category");
