@@ -79,10 +79,13 @@ class MobileApiController extends Controller
 
         // Price Ranges
         $priceRanges = [
-            'under_10000' => [0, 10000],
-            '10000_to_20000' => [10000, 20000],
-            '20000_to_30000' => [20000, 30000],
-            'above_30000' => [30000, null],
+            'under_10000' => [0, 9999],
+            '10000_20000' => [10000, 19999],
+            '20000_30000' => [20000, 29999],
+            '30000_40000' => [30000, 39999],
+            '40000_50000' => [40000, 49999],
+            '50000_60000' => [50000, 59999],
+            'above_60000' => [60000, null],
         ];
 
         $mobilesByPriceRange = [];
@@ -90,19 +93,25 @@ class MobileApiController extends Controller
             $query = Phone::active()
                 ->withListingData()
                 ->whereHas('searchIndex', function ($q) use ($min, $max) {
-                    if (!is_null($min)) {
-                        $q->where('min_price', '>=', $min);
-                    }
+                    $q->where('min_price', '>=', $min);
+
                     if (!is_null($max)) {
-                        $q->where('max_price', '<=', $max);
+                        $q->where('min_price', '<=', $max);
                     }
                 })
                 ->whereNotIn('id', $usedPhoneIds)
-                ->take(12);
+                ->latest('updated_at')
+                ->limit(12);
 
-            $mobilesByPriceRange[$key] = $query->get();
-            $usedPhoneIds = array_merge($usedPhoneIds, $mobilesByPriceRange[$key]->pluck('id')->toArray());
+            $phones = $query->get();
+            $mobilesByPriceRange[$key] = $phones;
+            // prevent duplicates across ranges
+            $usedPhoneIds = array_merge(
+                $usedPhoneIds,
+                $phones->pluck('id')->toArray()
+            );
         }
+
 
         return response()->json([
             'success' => true,
