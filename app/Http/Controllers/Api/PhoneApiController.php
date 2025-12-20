@@ -73,29 +73,46 @@ class PhoneApiController extends Controller
          * Price Ranges
          */
         $priceRanges = [
-            'under_10000' => [0, 10000],
-            '10000_to_20000' => [10000, 20000],
-            '20000_to_30000' => [20000, 30000],
-            'above_30000' => [30000, null],
+            'under_10000' => [0, 9999],
+            '10000_20000' => [10000, 19999],
+            '20000_30000' => [20000, 29999],
+            '30000_40000' => [30000, 39999],
+            '40000_50000' => [40000, 49999],
+            '50000_60000' => [50000, 59999],
+            'above_60000' => [60000, null],
         ];
 
         $mobilesByPriceRange = [];
 
         foreach ($priceRanges as $key => [$min, $max]) {
-            $mobilesByPriceRange[$key] = (clone $baseQuery)
-                ->where('is_popular', 0)
-                ->whereNotIn('id', $usedPhoneIds)
+            $phones = Phone::active()
+                ->withListingData()
                 ->whereHas('searchIndex', function ($q) use ($min, $max) {
-                    if ($min !== null)
+                    $q->where('min_price_pkr', '>', 0);
+
+                    // Above 60k (open-ended range)
+                    if (is_null($max)) {
                         $q->where('min_price_pkr', '>=', $min);
-                    if ($max !== null)
-                        $q->where('max_price_pkr', '<=', $max);
+                    }
+                    // Normal ranges - categorize by minimum price
+                    else {
+                        $q->whereBetween('min_price_pkr', [$min, $max]);
+                    }
                 })
-                ->take(10)
+                ->latest('updated_at')
+                ->limit(12)
                 ->get();
 
-            $usedPhoneIds = array_merge($usedPhoneIds, $mobilesByPriceRange[$key]->pluck('id')->toArray());
+            $mobilesByPriceRange[$key] = $phones;
         }
+
+        // dd(
+        //     Phone::whereHas(
+        //         'searchIndex',
+        //         fn($q) =>
+        //         $q->where('min_price_pkr', '>=', 60000)
+        //     )->count()
+        // );
 
         return response()->json([
             'success' => true,
