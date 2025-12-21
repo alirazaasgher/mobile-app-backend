@@ -46,7 +46,7 @@ class MobileController extends Controller
                     ['key' => 'size', 'label' => 'Screen Size', 'type' => 'text', 'placeholder' => '6.83 inches'],
                     ['key' => 'resolution', 'label' => 'Resolution', 'type' => 'text', 'placeholder' => '2772 x 1280 (~447ppi)'],
                     ['key' => 'refresh_rate', 'label' => 'Refresh Rate', 'type' => 'text', 'placeholder' => '120Hz'],
-                    ['key' => 'pwm_dimming_frequency', 'label' => 'PWM Dimming Frequency', 'type' => 'text', 'placeholder' => '2160Hz'],
+                    ['key' => 'pwm_dimming_frequency', 'label' => 'PWM Frequency', 'type' => 'text', 'placeholder' => '2160Hz'],
                     ['key' => 'brightness', 'label' => 'Brightness', 'type' => 'text', 'placeholder' => 'Peak 3200 nits'],
                     ['key' => 'protection', 'label' => 'Protection', 'type' => 'text', 'placeholder' => 'Gorilla Glass 7i'],
                     ['key' => 'touch_sampling_rate', 'label' => 'Touch Sampling Rate', 'type' => 'text', 'placeholder' => '480Hz'],
