@@ -40,7 +40,7 @@ class PhoneApiController extends Controller
             ->where('is_popular', 0)
             ->whereNotNull('release_date')
             ->orderByDesc('release_date')
-            ->take(10)
+            ->take(12)
             ->get();
         $usedPhoneIds = $latestMobiles->pluck('id')->toArray();
 
@@ -51,7 +51,7 @@ class PhoneApiController extends Controller
             ->whereIn('status', ['rumored', 'upcoming'])
             ->whereNotIn('id', $usedPhoneIds)
             ->orderBy('release_date', 'asc')
-            ->take(10)
+            ->take(12)
             ->get();
 
         $usedPhoneIds = array_merge($usedPhoneIds, $upcomingMobiles->pluck('id')->toArray());
@@ -63,7 +63,7 @@ class PhoneApiController extends Controller
             ->where('is_popular', 1) // only popular
             ->whereNotIn('id', $usedPhoneIds)
             // ->orderByDesc('popularity_score')
-            ->take(10)
+            ->take(12)
             ->get();
 
         $usedPhoneIds = array_merge($usedPhoneIds, $popularMobiles->pluck('id')->toArray());
