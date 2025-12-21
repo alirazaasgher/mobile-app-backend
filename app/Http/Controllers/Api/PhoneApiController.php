@@ -29,49 +29,45 @@ class PhoneApiController extends Controller
      */
     public function index(Request $request): JsonResponse
     {
+        $cacheTTL = 43200;
         $usedPhoneIds = [];
-        $baseQuery = Phone::select('id', 'name', 'slug', 'release_date', 'primary_image', 'status', 'updated_at')->with(['searchIndex'])->active();
-        $usedPhoneIds = [];
+        $baseQuery = Phone::select('id', 'name', 'slug', 'release_date', 'primary_image', 'status', 'updated_at')
+            ->with(['searchIndex'])
+            ->active();
 
-        /**
-         * Latest Phones
-         */
-        $latestMobiles = (clone $baseQuery)
-            ->where('is_popular', 0)
-            ->whereNotNull('release_date')
-            ->orderByDesc('release_date')
-            ->take(12)
-            ->get();
+        // Cache latest mobiles
+        $latestMobiles = Cache::tags(['phones', 'latest'])->remember('latest_mobiles', $cacheTTL, function () use ($baseQuery) {
+            return (clone $baseQuery)
+                ->where('is_popular', 0)
+                ->whereNotNull('release_date')
+                ->orderByDesc('release_date')
+                ->take(12)
+                ->get();
+        });
         $usedPhoneIds = $latestMobiles->pluck('id')->toArray();
 
-        /**
-         * Upcoming Phones
-         */
-        $upcomingMobiles = (clone $baseQuery)
-            ->whereIn('status', ['rumored', 'upcoming'])
-            ->whereNotIn('id', $usedPhoneIds)
-            ->orderBy('release_date', 'asc')
-            ->take(12)
-            ->get();
-
+        // Cache upcoming mobiles
+        $upcomingMobiles = Cache::tags(['phones', 'upcoming'])->remember('upcoming_mobiles', $cacheTTL, function () use ($baseQuery, $usedPhoneIds) {
+            return (clone $baseQuery)
+                ->whereIn('status', ['rumored', 'upcoming'])
+                ->whereNotIn('id', $usedPhoneIds)
+                ->orderBy('release_date', 'asc')
+                ->take(12)
+                ->get();
+        });
         $usedPhoneIds = array_merge($usedPhoneIds, $upcomingMobiles->pluck('id')->toArray());
 
-        /**
-         * Popular Phones
-         */
-        $popularMobiles = (clone $baseQuery)
-            ->where('is_popular', 1) // only popular
-            ->whereNotIn('id', $usedPhoneIds)
-            // ->orderByDesc('popularity_score')
-            ->take(12)
-            ->get();
-
+        // Cache popular mobiles
+        $popularMobiles = Cache::tags(['phones', 'popular'])->remember('popular_mobiles', $cacheTTL, function () use ($baseQuery, $usedPhoneIds) {
+            return (clone $baseQuery)
+                ->where('is_popular', 1)
+                ->whereNotIn('id', $usedPhoneIds)
+                ->take(12)
+                ->get();
+        });
         $usedPhoneIds = array_merge($usedPhoneIds, $popularMobiles->pluck('id')->toArray());
 
-
-        /**
-         * Price Ranges
-         */
+        // Cache price ranges
         $priceRanges = [
             'under_10000' => [0, 9999],
             '10000_20000' => [10000, 19999],
@@ -83,42 +79,26 @@ class PhoneApiController extends Controller
         ];
 
         $mobilesByPriceRange = [];
-
         foreach ($priceRanges as $key => [$min, $max]) {
-            $phones = (clone $baseQuery)
-                ->when(!empty($usedPhoneIds), function ($q) use ($usedPhoneIds) {
-                    $q->whereNotIn('id', $usedPhoneIds);
-                })
-                ->whereHas('searchIndex', function ($q) use ($min, $max) {
-                    $q->where('min_price_pkr', '>', 0);
-
-                    // Above 60k
-                    if (is_null($max)) {
-                        $q->where('min_price_pkr', '>=', $min);
-                    }
-                    // Normal ranges (non-overlapping)
-                    else {
-                        $q->where('min_price_pkr', '>=', $min)
-                            ->where('min_price_pkr', '<', $max);
-                    }
-                })
-                ->latest('updated_at')
-                ->limit(12)
-                ->get();
-
-
-            $mobilesByPriceRange[$key] = $phones;
-            // Add these phones to used list to prevent repeats in next price ranges
-            $usedPhoneIds = array_merge($usedPhoneIds, $phones->pluck('id')->toArray());
+            $mobilesByPriceRange[$key] = Cache::tags(['phones', 'price-range', $key])->remember("price_range_{$key}", $cacheTTL, function () use ($baseQuery, $usedPhoneIds, $min, $max) {
+                return (clone $baseQuery)
+                    ->when(!empty($usedPhoneIds), function ($q) use ($usedPhoneIds) {
+                        $q->whereNotIn('id', $usedPhoneIds);
+                    })
+                    ->whereHas('searchIndex', function ($q) use ($min, $max) {
+                        $q->where('min_price_pkr', '>', 0);
+                        if (is_null($max)) {
+                            $q->where('min_price_pkr', '>=', $min);
+                        } else {
+                            $q->where('min_price_pkr', '>=', $min)
+                                ->where('min_price_pkr', '<', $max);
+                        }
+                    })
+                    ->latest('updated_at')
+                    ->limit(12)
+                    ->get();
+            });
         }
-
-        // dd(
-        //     Phone::whereHas(
-        //         'searchIndex',
-        //         fn($q) =>
-        //         $q->where('min_price_pkr', '>=', 60000)
-        //     )->count()
-        // );
 
         return response()->json([
             'success' => true,
