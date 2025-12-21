@@ -85,17 +85,7 @@ class PhoneApiController extends Controller
         $mobilesByPriceRange = [];
 
         foreach ($priceRanges as $key => [$min, $max]) {
-            $phones = Phone::select(
-                'id',
-                'name',
-                'slug',
-                'release_date',
-                'primary_image',
-                'status',
-                'updated_at'
-            )
-                ->with('searchIndex')
-                ->active()
+            $phones = (clone $baseQuery)
                 ->when(!empty($usedPhoneIds), function ($q) use ($usedPhoneIds) {
                     $q->whereNotIn('id', $usedPhoneIds);
                 })
