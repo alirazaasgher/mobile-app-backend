@@ -191,7 +191,7 @@ class Phone extends Model
                         'refresh_rate' => $this->extractNumber($s['display']['refresh_rate'] ?? null),
                     ],
                     'camera' => [
-                        'main' => getShortCamera($s['main_camera']['setup'] ?? null),
+                        'main' => getShortCamera($s['main_camera'] ?? null),
                         'front' => getShortCamera($s['selfie_camera']['setup'] ?? null),
                         'main_video' => getVideoHighlight($s['main_camera']['video'] ?? null),
                         'front_video' => getVideoHighlight($s['selfie_camera']['video'] ?? null),
