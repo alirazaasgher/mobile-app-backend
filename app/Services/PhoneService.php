@@ -361,9 +361,9 @@ class PhoneService
      *
      * Returns arrays: [ram_list, storage_list, price_list]
      */
-    public function syncVariants($phone, array $incomingSpecs, array $pricePKR, array $priceUSD,array $ramType, array $storageType): array
+    public function syncVariants($phone, array $incomingSpecs, array $pricePKR, array $priceUSD): array
     {
-       
+
         $ram_list = $storage_list = $price_list = [];
 
         // Normalize incoming as map: key => ['ram'=>..., 'storage'=>..., 'price'=>...]
@@ -379,8 +379,15 @@ class PhoneService
             $ramTypeArray = $ramType[$spec] ?? null;
             $storageTypeArray = $storageType[$spec] ?? null;
             $key = strtolower($ram . '/' . $storage);
-            $incomingMap[$key] = ['ram' => $ram, 'storage' => $storage, 'pkr_price' => $pricePKRArray,
-                                'usd_price' => $priceUSDArray,'ram_type_id ' => $ramTypeArray,'storage_type_id' => $storageTypeArray, 'raw' => $spec];
+            $incomingMap[$key] = [
+                'ram' => $ram,
+                'storage' => $storage,
+                'pkr_price' => $pricePKRArray,
+                'usd_price' => $priceUSDArray,
+                'ram_type_id ' => $ramTypeArray,
+                'storage_type_id' => $storageTypeArray,
+                'raw' => $spec
+            ];
             $ram_list[] = $ram;
             $storage_list[] = $storage;
             $price_list[] = [
@@ -392,7 +399,7 @@ class PhoneService
 
         // Existing variants keyed by ram/storage
         $existing = $phone->variants()->get();
-       
+
         $existingMap = [];
         foreach ($existing as $ev) {
             $key = strtolower(trim($ev->ram) . '/' . trim($ev->storage));
@@ -403,20 +410,20 @@ class PhoneService
             if (isset($incomingMap[$key])) {
                 $incoming = $incomingMap[$key];
                 // if price changed or ram/storage changed (unlikely), update
-                
-             $needsUpdate =
-    (trim($ev->ram) !== $incoming['ram']) ||
-    (trim($ev->storage) !== $incoming['storage']) ||
-    ($ev->pkr_price != $incoming['pkr_price']) ||
-    ($ev->usd_price != $incoming['usd_price']) ||
-    ($ev->ram_type_id != ($incoming['ram_type_id'] ?? null)) ||
-    ($ev->storage_type_id != ($incoming['storage_type_id'] ?? null));
+
+                $needsUpdate =
+                    (trim($ev->ram) !== $incoming['ram']) ||
+                    (trim($ev->storage) !== $incoming['storage']) ||
+                    ($ev->pkr_price != $incoming['pkr_price']) ||
+                    ($ev->usd_price != $incoming['usd_price']);
+                // ($ev->ram_type_id != ($incoming['ram_type_id'] ?? null)) ||
+                // ($ev->storage_type_id != ($incoming['storage_type_id'] ?? null));
                 if ($needsUpdate) {
                     $ev->update([
                         'ram' => $incoming['ram'],
                         'storage' => $incoming['storage'],
-                        'ram_type_id' => $incoming['ram_type_id'] ?? null,
-                        'storage_type_id' => $incoming['storage_type_id'] ?? null,
+                        // 'ram_type_id' => $incoming['ram_type_id'] ?? null,
+                        // 'storage_type_id' => $incoming['storage_type_id'] ?? null,
                         'pkr_price' => $incoming['pkr_price'],
                         'usd_price' => $incoming['usd_price'],
                     ]);
@@ -428,7 +435,7 @@ class PhoneService
                 $ev->delete();
             }
         }
- 
+
 
         // Remaining incomingMap items are new -> insert
         foreach ($incomingMap as $key => $data) {
@@ -436,12 +443,11 @@ class PhoneService
                 'phone_id' => $phone->id,
                 'ram' => $data['ram'],
                 'storage' => $data['storage'],
-                'ram_type_id' => $incoming['ram_type_id'] ?? null,
-                'storage_type_id' => $incoming['storage_type_id'] ?? null,
+                // 'ram_type_id' => $incoming['ram_type_id'] ?? null,
+                // 'storage_type_id' => $incoming['storage_type_id'] ?? null,
                 'pkr_price' => $data['pkr_price'],
                 'usd_price' => $data['usd_price'],
             ]);
-
         }
 
         // Ensure lists are unique and normalized for memory building
@@ -503,9 +509,68 @@ class PhoneService
      */
     public function buildMemorySpec(array $ram_list, array $storage_list, ?string $ram_type, ?string $storage_type, $sd_card)
     {
+        // ---------- RAM ----------
+        $ramValues = [];
+
+        $ramValues = array_unique(array_map('intval', $ram_list));
+
+        $ram = '';
+        if (!empty($ramValues)) {
+            $ram = implode(' / ', $ramValues) . ' GB';
+            if (!empty($ram_type)) {
+                $ram .= ' ' . $ram_type;
+            }
+        }
+
+        // ---------- STORAGE ----------
+        $gbValues = [];
+        $tbValues = [];
+
+        // Normalize storage values
+        foreach ($storage_list as $value) {
+            if (empty($value)) continue;
+
+            $value = strtolower(trim($value));
+
+            if (preg_match('/([\d.]+)/', $value, $m)) {
+                $number = (float) $m[1];
+
+                if (str_contains($value, 'tb') || $number >= 1024) {
+                    // Convert GB >= 1024 to TB
+                    $tbValues[] = ($number >= 1024 ? $number / 1024 : $number) . ' TB';
+                } else {
+                    $gbValues[] = (int) $number;
+                }
+            }
+        }
+
+        // Remove duplicates
+        $gbValues = array_unique($gbValues);
+        $tbValues = array_unique($tbValues);
+
+        // Build storage string
+        $storageParts = [];
+
+        // Join GB values with "/"
+        if (!empty($gbValues)) {
+            $storageParts[] = implode(' / ', $gbValues) . ' GB';
+        }
+
+        // Append TB values
+        if (!empty($tbValues)) {
+            $storageParts = array_merge($storageParts, $tbValues);
+        }
+
+        $storage = implode(' / ', $storageParts);
+
+        // Append storage type
+        if (!empty($storage_type)) {
+            $storage .= ' ' . $storage_type;
+        }
+
         return [
-            'RAM' => implode(' / ', array_unique(array_filter($ram_list))) . ($ram_type ? ' ' . $ram_type : ''),
-            'Storage' => implode(' / ', array_unique(array_filter($storage_list))) . ($storage_type ? " ($storage_type)" : ''),
+            'RAM' => $ram,
+            'Storage' => $storage,
             'Card Slot' => $sd_card,
             'expandable' => 0,
             'max_visible' => 4
@@ -581,5 +646,20 @@ class PhoneService
             }
         }
         return $out;
+    }
+
+    protected function normalizeStorage($value)
+    {
+        $value = strtolower(trim($value));
+
+        if (str_contains($value, 'tb')) {
+            return ['value' => (float) $value * 1024, 'unit' => 'TB'];
+        }
+
+        if (str_contains($value, 'gb')) {
+            return ['value' => (float) $value, 'unit' => 'GB'];
+        }
+
+        return ['value' => (float) $value, 'unit' => 'GB']; // fallback
     }
 }

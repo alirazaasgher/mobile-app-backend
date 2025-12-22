@@ -19,7 +19,7 @@ class PhoneSearchIndex extends Model
         'refresh_rate_max', 'display_type', 'has_ultrawide_camera', 'has_telephoto_camera',
         'has_macro_camera', 'video_recording_max', 'build_material', 'ip_rating',
         'weight_grams', 'color_count', 'storage_option_count', 'is_available',
-        'popularity_score', 'avg_rating', 'total_reviews', 'search_content'
+        'popularity_score', 'avg_rating', 'total_reviews', 'search_content','storage_type','ran_type','sd_card'
     ];
 
     protected $casts = [

@@ -420,16 +420,16 @@ $network = ['technology', '2G bands', '3G bands', '4G bands', '5G bands', 'speed
             @php
             $optionValue = $option['value'];
             $isChecked = in_array($optionValue, $selectedSpecs);
-            $existingVariant = collect($mobile->variants ?? [])->first(function ($v) use ($optionValue) {
+            /*$existingVariant = collect($mobile->variants ?? [])->first(function ($v) use ($optionValue) {
             [$ram, $storage] = explode('/', $optionValue);
             return $v['ram'] == $ram && $v['storage'] == $storage;
-            });
+            });*/
             $modifierValueUSD = old("variants.{$variantIndex}.price_modifier.{$optionValue}", $existingVariant['usd_price'] ?? $option['modifier']);
             $modifierValuePKR = old("variants.{$variantIndex}.price_modifier.{$optionValue}", $existingVariant['pkr_price'] ?? $option['modifier']);
             $badgeClass = $badgeColors[$option['badge']] ?? 'bg-gray-100 text-gray-700';
 
-            $ramTypeSelected = $existingVariant['ram_type_id'] ?? null;
-            $storageTypeSelected = $existingVariant['storage_type_id'] ?? null;
+            //$ramTypeSelected = $existingVariant['ram_type_id'] ?? null;
+            //$storageTypeSelected = $existingVariant['storage_type_id'] ?? null;
             @endphp
 
             <label
@@ -448,33 +448,7 @@ $network = ['technology', '2G bands', '3G bands', '4G bands', '5G bands', 'speed
                     </span>
                   </div>
 
-                  <!-- RAM Type Select -->
-                  <div class="flex items-center space-x-2 mb-2">
-                    <label class="text-xs font-medium text-gray-600 whitespace-nowrap">RAM Type:</label>
-                    <select name="variants[ram_type][{{ $optionValue }}]"
-                      class="border border-gray-300 rounded-md text-sm px-2 py-1 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                      <option value="">Please Select</option>
-                      @foreach($ramTypes as $ramType)
-                      <option value="{{ $ramType->id }}" {{ $ramTypeSelected == $ramType->id ? 'selected' : '' }}>
-                        {{ $ramType->name }}
-                      </option>
-                      @endforeach
-                    </select>
-                  </div>
 
-                  <!-- Storage Type Select -->
-                  <div class="flex items-center space-x-2 mb-3">
-                    <label class="text-xs font-medium text-gray-600 whitespace-nowrap">Storage Type:</label>
-                    <select name="variants[storage_type][{{ $optionValue }}]"
-                      class="border border-gray-300 rounded-md text-sm px-2 py-1 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                      <option value="">Please Select</option>
-                      @foreach($storageTypes as $storageType)
-                      <option value="{{ $storageType->id }}" {{ $storageTypeSelected == $storageType->id ? 'selected' : '' }}>
-                        {{ $storageType->name }}
-                      </option>
-                      @endforeach
-                    </select>
-                  </div>
 
                   <div class="flex items-center space-x-2 mt-3">
                     <label class="text-xs font-medium text-gray-600 whitespace-nowrap">Price Adjustment:</label>
@@ -502,6 +476,49 @@ $network = ['technology', '2G bands', '3G bands', '4G bands', '5G bands', 'speed
             @endforeach
           </div>
           @endforeach
+          @php
+          $storageTypeSelected = $mobile->searchIndex['storage_type'];
+          $ramTypeSelected = $mobile->searchIndex['ram_type'];
+          $sdCardSelected = $mobile->searchIndex['sd_card']
+          @endphp
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label class="block font-medium">RAM Type:</label>
+              <select name="ram_type"
+                class="border rounded w-full p-2">
+                <option value="">Please Select</option>
+                @foreach($ramTypes as $ramType)
+                <option value="{{ $ramType->name }}" {{ old('ram_type', $ramTypeSelected ?? '') ==  $ramType->name ? 'selected' : '' }}>
+                  {{ $ramType->name }}
+                </option>
+                @endforeach
+              </select>
+            </div>
+            <div>
+              <label class="block font-medium">Storage Type:</label>
+              <select name="storage_type"
+                class="border rounded w-full p-2">
+                <option value="">Please Select</option>
+
+                @foreach($storageTypes as $storageType)
+                <option value="{{ $storageType->name }}" {{ old('storage_type', $storageTypeSelected ?? '') ==  $storageType->name ? 'selected' : '' }}>
+                  {{ $storageType->name }}
+                </option>
+                @endforeach
+              </select>
+            </div>
+          </div>
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label class="block font-medium">SD Card</label>
+              <select name="sd_card" class="border rounded w-full p-2">
+                <option value="">Select Status</option>
+                <option value="1" {{ old('status', $sdCardSelected ?? '') == '1' ? 'selected' : '' }}>Yes</option>
+                <option value="0" {{ old('status', $sdCardSelected ?? '') == '0' ? 'selected' : '' }}>NO
+                </option>
+              </select>
+            </div>
+          </div>
         </div>
       </div>
     </div>

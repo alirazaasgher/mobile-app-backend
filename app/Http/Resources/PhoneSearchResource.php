@@ -34,11 +34,12 @@ class PhoneSearchResource extends JsonResource
         // Find original storage value safely
         $minIndex = $minNumeric !== null ? array_search($minNumeric, $numericValues, true) : false;
         $minStorage = $minIndex !== false ? $storageOptions[$minIndex] : null;
-
         $data = [
             'ram' => !empty($ramOptions) ? min($ramOptions) : null,
             'storage' => $minStorage,
             'min_price_usd' => $this->min_price_usd,
+            'storage_type' => $this->storage_type,
+            'ram_type' => $this->ram_type
         ];
         if (!$this->fromCompare) {
             $data['specs_grid'] = json_decode($this->specs_grid, true);

@@ -1,19 +1,21 @@
 <!DOCTYPE html>
 <html>
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Panel</title>
-    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+    <link href="{{ asset('css/select2.css') }}" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
-    <link href="https://cdn.jsdelivr.net/npm/summernote@0.8.20/dist/summernote.min.css" rel="stylesheet">
-<link href="https://cdn.quilljs.com/1.3.7/quill.snow.css" rel="stylesheet">
-<script src="https://cdn.quilljs.com/1.3.7/quill.min.js"></script>
- 
+    <script src="{{ asset('js/jquery.js') }}"></script>
+    <script src="{{ asset('js/select2.js') }}"></script>
+    <link href="{{ asset('css/summernote.min.css') }}" rel="stylesheet">
+    <link href="{{ asset('css/quill_snow.css') }}" rel="stylesheet">
+    <script src="{{ asset('js/quill.js') }}"></script>
+
     <script src="{{ asset('js/mobile.js') }}"></script>
 </head>
+
 <body class="flex bg-gray-100 min-h-screen">
     <!-- Sidebar -->
     @include('admin.layouts.sidebar')
@@ -28,4 +30,5 @@
         </main>
     </div>
 </body>
+
 </html>

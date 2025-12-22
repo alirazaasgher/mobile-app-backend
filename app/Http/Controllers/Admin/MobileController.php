@@ -25,17 +25,16 @@ class MobileController extends Controller
         $storage_type = StorageType::all();
         $allMobiles = Phone::all();
         $specificationTemplates = [
-            'design' => [
+            'build' => [
                 'expandable' => true,
                 'max_visible' => 4,
                 'items' => [
                     ['key' => 'dimensions', 'label' => 'Dimensions', 'type' => 'text', 'placeholder' => '162.8 x 77.6 x 8.2 mm'],
                     ['key' => 'weight', 'label' => 'Weight', 'type' => 'text', 'placeholder' => '169 g'],
                     ['key' => 'build', 'label' => 'Build Material', 'type' => 'text', 'placeholder' => 'Glass front (Gorilla Glass), glass back, aluminum frame'],
-                    ['key' => 'durability', 'label' => 'Durability', 'type' => 'text', 'placeholder' => 'IP68 dust/water resistant, MIL-STD-810H certified'],
+                    ['key' => 'durability', 'label' => 'Durability (IP rating)', 'type' => 'text', 'placeholder' => 'IP68 dust/water resistant, MIL-STD-810H certified'],
                     ['key' => 'sim', 'label' => 'SIM Support', 'type' => 'text', 'placeholder' => 'Dual SIM (Nano-SIM, eSIM, dual stand-by)'],
                 ]
-
             ],
 
             'display' => [
@@ -45,6 +44,7 @@ class MobileController extends Controller
                     ['key' => 'type', 'label' => 'Type', 'type' => 'text', 'placeholder' => 'AMOLED, HDR10+'],
                     ['key' => 'size', 'label' => 'Screen Size', 'type' => 'text', 'placeholder' => '6.83 inches'],
                     ['key' => 'resolution', 'label' => 'Resolution', 'type' => 'text', 'placeholder' => '2772 x 1280 (~447ppi)'],
+                    ['key' => 'aspect_ratio', 'label' => 'Aspect Ratio', 'type' => 'text', 'placeholder' => '19.5:9'],
                     ['key' => 'refresh_rate', 'label' => 'Refresh Rate', 'type' => 'text', 'placeholder' => '120Hz'],
                     ['key' => 'pwm_frequency', 'label' => 'PWM Frequency', 'type' => 'text', 'placeholder' => '2160Hz'],
                     ['key' => 'brightness', 'label' => 'Brightness', 'type' => 'text', 'placeholder' => 'Peak 3200 nits'],
@@ -63,7 +63,7 @@ class MobileController extends Controller
                     ['key' => 'chipset', 'label' => 'Chipset', 'type' => 'text', 'placeholder' => 'Qualcomm Snapdragon 8 Gen 3 (4 nm)'],
                     ['key' => 'cpu', 'label' => 'CPU', 'type' => 'text', 'placeholder' => 'Octa-core (1x3.3 GHz X4)'],
                     ['key' => 'gpu', 'label' => 'GPU', 'type' => 'text', 'placeholder' => 'Adreno 750'],
-                    ['key' => 'architecture', 'label' => 'CPU Architecture', 'type' => 'text', 'placeholder' => '64-bit, ARMv9'],
+                    ['key' => 'cpu_architecture', 'label' => 'CPU Architecture', 'type' => 'text', 'placeholder' => '64-bit, ARMv9'],
                     ['key' => 'cooling', 'label' => 'Cooling System', 'type' => 'text', 'placeholder' => 'Vapor chamber, AI thermal control'],
                     ['key' => 'benchmark', 'label' => 'Benchmark Scores', 'type' => 'text', 'placeholder' => 'AnTuTu: 1,250,000 / Geekbench: 2200 (S) • 7200 (M)'],
                 ]
@@ -75,7 +75,7 @@ class MobileController extends Controller
                 'items' => [
                     ['key' => 'setup', 'label' => 'Setup', 'type' => 'text', 'placeholder' => 'Triple (50 MP + 10 MP + 12 MP)'],
                     ['key' => 'main_sensor', 'label' => 'Main Sensor', 'type' => 'text', 'placeholder' => '50 MP, f/1.8, (wide), OIS, PDAF'],
-                    ['key' => 'other_sensors', 'label' => 'Other Sensors', 'type' => 'text', 'placeholder' => '10 MP (telephoto 3x), 12 MP (ultrawide 120°)'],
+                    ['key' => 'other_sensors', 'label' => 'Other Sensors', 'type' => 'textarea', 'placeholder' => '10 MP (telephoto 3x), 12 MP (ultrawide 120°)'],
                     ['key' => 'features', 'label' => 'Features', 'type' => 'text', 'placeholder' => 'LED flash, HDR, panorama'],
                     ['key' => 'video', 'label' => 'Video', 'type' => 'text', 'placeholder' => '8K@30fps, 4K@60fps, 1080p@240fps'],
                 ]
@@ -110,7 +110,7 @@ class MobileController extends Controller
                 'max_visible' => 4,
                 'items' => [
                     ['key' => 'technology', 'label' => 'Technology', 'type' => 'text', 'placeholder' => 'GSM / HSPA / LTE / 5G'],
-                    ['key' => 'bands', 'label' => 'Supported Bands', 'type' => 'text', 'placeholder' => '2G / 3G / 4G / 5G bands'],
+                    ['key' => 'supported_bands', 'label' => 'Supported Bands', 'type' => 'textarea', 'placeholder' => '2G: GSM 850/900/1800/1900, 3G: WCDMA 1/2/5/8'],
                     ['key' => 'speed', 'label' => 'Speed', 'type' => 'text', 'placeholder' => 'HSPA, LTE-A, 5G (SA/NSA)'],
                 ]
             ],
@@ -121,7 +121,7 @@ class MobileController extends Controller
                 'items' => [
                     ['key' => 'wifi', 'label' => 'Wi-Fi', 'type' => 'text', 'placeholder' => 'Wi-Fi 6E (802.11 a/b/g/n/ac/6e), dual-band'],
                     ['key' => 'bluetooth', 'label' => 'Bluetooth', 'type' => 'text', 'placeholder' => '5.3, A2DP, LE'],
-                    ['key' => 'gps', 'label' => 'Positioning', 'type' => 'text', 'placeholder' => 'GPS, GLONASS, GALILEO, BDS, QZSS'],
+                    ['key' => 'positioning', 'label' => 'Positioning', 'type' => 'text', 'placeholder' => 'GPS, GLONASS, GALILEO, BDS, QZSS'],
                     ['key' => 'nfc', 'label' => 'NFC', 'type' => 'select', 'options' => ['Yes', 'No']],
                     ['key' => 'infrared', 'label' => 'Infrared Port', 'type' => 'select', 'options' => ['Yes', 'No']],
                     ['key' => 'usb', 'label' => 'USB Type', 'type' => 'text', 'placeholder' => 'USB Type-C 3.2, OTG, DisplayPort'],
@@ -145,17 +145,12 @@ class MobileController extends Controller
                 'items' => [
                     ['key' => 'fingerprint', 'label' => 'Fingerprint Sensor', 'type' => 'text', 'placeholder' => 'Under display, ultrasonic'],
                     ['key' => 'face_unlock', 'label' => 'Face Unlock', 'type' => 'text', 'placeholder' => '2D / 3D facial recognition'],
-                    ['key' => 'extras', 'label' => 'Other Security', 'type' => 'text', 'placeholder' => 'Knox, Secure Folder, Privacy Dashboard'],
-                    [
-                        'key' => 'software_updates',
-                        'label' => 'Software & Updates',
-                        'type' => 'text',
-                        'placeholder' => 'Android 14, 4 years major + 5 years security updates'
-                    ],
+                    ['key' => 'other_security_features', 'label' => 'Other Security', 'type' => 'text', 'placeholder' => 'Knox, Secure Folder, Privacy Dashboard'],
+                    ['key' => 'software_updates', 'label' => 'Software & Updates', 'type' => 'text', 'placeholder' => 'Android 14, 4 years major + 5 years security updates'],
                 ]
             ],
 
-            'Features' => [
+            'Sensors' => [
                 'expandable' => false,
                 'max_visible' => 4,
                 'items' => [
@@ -201,6 +196,8 @@ class MobileController extends Controller
         ]);
         $deleted = $request->input('action') === 'draft' ? 1 : 0;
         $storage_type = $request->input('storage_type');
+        $ram_type = $request->input('ram_type');
+        $sd_card = $request->input('sd_card');
         DB::beginTransaction();
         try {
             // primary image
@@ -224,9 +221,9 @@ class MobileController extends Controller
             $variantsSpecs = $validated['variants']['specs'] ?? [];
             $priceModifiersUSD = $validated['variants']['price_modifier_usd'] ?? [];
             $priceModifiersPKR = $validated['variants']['price_modifier_pkr'] ?? [];
-            $ramType = $validated['variants']['ram_type'] ?? null;
-            $storageType = $validated['variants']['storage_type'] ?? null;
-            [$ram_list, $storage_list, $price_list] = $this->phoneService->syncVariants($phone, $variantsSpecs, $priceModifiersPKR, $priceModifiersUSD, $ramType, $storageType);
+            // $ramType = $validated['variants']['ram_type'] ?? null;
+            // $storageType = $validated['variants']['storage_type'] ?? null;
+            [$ram_list, $storage_list, $price_list] = $this->phoneService->syncVariants($phone, $variantsSpecs, $priceModifiersPKR, $priceModifiersUSD);
 
             // colors & images
             $variantsColors = $validated['variants']['colors'] ?? [];
@@ -246,9 +243,9 @@ class MobileController extends Controller
             $memorySpec = $this->phoneService->buildMemorySpec(
                 $ram_list,
                 $storage_list,
-                $request->input('ram_type'),
-                $request->input('storage_type'),
-                $request->input('sd_card')
+                $storage_type,
+                $ram_type,
+                $sd_card
             );
 
             // merge memory into specifications (insert after 'performance')
@@ -269,7 +266,7 @@ class MobileController extends Controller
 
 
             // search index
-            update_phone_search_index($storage_type, $ram_list, $storage_list, $price_list, $available_colors, $updatedSpecs, $validated, $phone->id);
+            update_phone_search_index($storage_type, $ram_type, $sd_card, $ram_list, $storage_list, $price_list, $available_colors, $updatedSpecs, $validated, $phone->id);
 
             DB::commit();
             $message = $deleted === 'draft' ? 'Phone saved as draft!' : 'Phone published successfully!';
@@ -286,8 +283,18 @@ class MobileController extends Controller
 
     public function edit($id)
     {
-        $mobile = Phone::with(['competitors', 'variants', 'colors', 'specifications'])->findOrFail($id);
-
+        $mobile = Phone::with([
+            'competitors',
+            'variants',
+            'colors',
+            'specifications',
+            'searchIndex' => function ($q) {
+                $q->select('phone_id', 'storage_type', 'ram_type', 'sd_card'); // only required columns
+            }
+        ])->findOrFail($id);
+        // echo "<pre>";
+        // print_r($mobile->toArray());
+        // exit;
         $mobile->specifications = collect($mobile->specifications)->keyBy('category');
         $existingCompetitors = $mobile->competitors->pluck('id')->toArray();
         return view('admin.mobiles.create', compact('mobile', 'existingCompetitors'));
@@ -296,6 +303,9 @@ class MobileController extends Controller
     public function update(Request $request, $id)
     {
 
+        // echo "<pre>";
+        // print_r($request->all());
+        // exit;
         $validated = $request->validate([
             'brand' => 'required|string',
             'name' => 'required|string|max:255',
@@ -310,6 +320,8 @@ class MobileController extends Controller
         $phone = Phone::findOrFail($id);
         $deleted = $request->input('action') === 'draft' ? 1 : 0;
         $storage_type = $request->input('storage_type');
+        $ram_type = $request->input('ram_type');
+        $sd_card = $request->input('sd_card');
         DB::beginTransaction();
         try {
             $primaryPath = $this->phoneService->handlePrimaryImage($request->file('primary_image'));
@@ -333,9 +345,9 @@ class MobileController extends Controller
             $variantsSpecs = $validated['variants']['specs'] ?? [];
             $priceModifiersUSD = $validated['variants']['price_modifier_usd'] ?? null;
             $priceModifiersPKR = $validated['variants']['price_modifier_pkr'] ?? null;
-            $ramType = $validated['variants']['ram_type'] ?? null;
-            $storageType = $validated['variants']['storage_type'] ?? null;
-            [$ram_list, $storage_list, $price_list] = $this->phoneService->syncVariants($phone, $variantsSpecs, $priceModifiersPKR, $priceModifiersUSD, $ramType, $storageType);
+            // $ramType = $validated['variants']['ram_type'] ?? null;
+            // $storageType = $validated['variants']['storage_type'] ?? null;
+            [$ram_list, $storage_list, $price_list] = $this->phoneService->syncVariants($phone, $variantsSpecs, $priceModifiersPKR, $priceModifiersUSD);
 
             // colors & images (preserve old unless deleted)
             $variantsColors = $validated['variants']['colors'] ?? [];
@@ -355,9 +367,9 @@ class MobileController extends Controller
             $memorySpec = $this->phoneService->buildMemorySpec(
                 $ram_list,
                 $storage_list,
-                $request->input('ram_type'),
+                $ram_type,
                 $storage_type,
-                $request->input('sd_card')
+                $sd_card == "1" ? "YES" : "NO"
             );
 
 
@@ -375,7 +387,7 @@ class MobileController extends Controller
             }, true);
 
 
-            update_phone_search_index($storage_type, $ram_list, $storage_list, $price_list, $available_colors, $updatedSpecs, $validated, $id);
+            update_phone_search_index($storage_type, $ram_type, $sd_card, $ram_list, $storage_list, $price_list, $available_colors, $updatedSpecs, $validated, $id);
             // search index (if published)
 
             DB::commit();

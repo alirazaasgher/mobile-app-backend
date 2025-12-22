@@ -5,6 +5,8 @@ use Carbon\Carbon;
 
 function update_phone_search_index(
     $storage_type,
+    $ram_type,
+    $sd_card,
     $ramOptions,
     $storageOptions,
     $priceList,
@@ -67,18 +69,7 @@ function update_phone_search_index(
 
     $capacity = preg_replace('/[^0-9]/', '', $specMap['battery']['capacity']);
     $selfieCam = $specMap['Selfie Camera (MP)'] ?? null;
-    $mainCam = getShortCamera($specMap['main_camera']['setup'] ?? null);
-    // Search content
-    // $searchContent = implode(' ', [
-    //     $validated['name'],
-    //     $chipset,
-    //     $os,
-    //     $sizeInInches,
-    //     $battery,
-    //     // $mainCam,
-    //     // $selfieCam,
-    // ]);
-
+    $mainCam = getShortCamera($specMap['main_camera'] ?? null);
     $shortChipset = getShortChipset($chipset);
     $cpuString = $specMap['performance']['cpu'];
     $cpuType = "";
@@ -104,6 +95,8 @@ function update_phone_search_index(
             'ram_options' => json_encode(value: array_map('intval', $ramOptions)),
             'storage_options' => json_encode(array_map('intval', $storageOptions)),
             'storage_type' => $storage_type,
+            'ram_type' => $ram_type,
+            'sd_card' => $sd_card,
             'available_colors' => json_encode($availableColors),
             'screen_size_inches' => $sizeInInches,
             'battery_capacity_mah' => $capacity,
@@ -272,7 +265,7 @@ function build_specs_grid($sizeInInches, $specMap, $shortChipset, $cpuType, $mai
     $reverceCharging = $specMap['battery']['reverse'] ?? '';
     $convertWirlessCharging = null;
     $convertReverceCharging = null;
-    $chargingSpec = shortChargingSpec($chargingSpec,$wirlessCharging,$reverceCharging);
+    $chargingSpec = shortChargingSpec($chargingSpec, $wirlessCharging, $reverceCharging);
     return [
         [
             "key" => "display",
@@ -467,52 +460,130 @@ function getGlassProtectionShort($build)
     return implode(', ', array_unique($out));
 }
 
-function getShortCamera($mainCam)
+function getShortCamera($cameraData, $style = 'compact')
 {
-    if ($mainCam && strpos($mainCam, ',') !== false) {
-        $camera = strtolower($mainCam);
-        $parts = array_map('trim', explode(',', $camera));
-        $labelsPriority = [
-            'ultrawide' => '(UW)',
-            'ultra wide' => '(UW)',
-            'telephoto' => 'Telephoto',
-            'macro' => 'Macro',
-            'depth' => 'Depth',
-            'periscope' => 'Periscope Telephoto',
-        ];
+    if (!is_array($cameraData)) return '';
 
-        $final = [];
-        // First camera → always the first MP
-        preg_match('/(\d+(\.\d+)?)\s*mp/i', $parts[0], $mpMatch);
-        $final[] = $mpMatch[1] . 'MP';
-        // Second camera → choose based on priority
-        $second = null;
-        foreach ($labelsPriority as $key => $labelName) {
-            foreach ($parts as $part) {
-                if (strpos($part, $key) !== false) {
-                    preg_match('/(\d+(\.\d+)?)\s*mp/i', $part, $mpMatch);
-                    if ($mpMatch) {
-                        $second = $mpMatch[1] . 'MP ' . $labelName;
-                        break 2;
-                    }
-                }
+    $setup = $cameraData['setup'] ?? '';
+    if (empty($setup)) return '';
+
+    $labels = [
+        'periscope telephoto' => 'Periscope',
+        'periscope' => 'Periscope',
+        'telephoto' => 'Telephoto',
+        'ultrawide' => 'UW',
+        'ultra wide' => 'UW',
+        'ultra-wide' => 'UW',
+        'wide' => 'Main',
+        'macro' => 'Macro',
+        'depth' => 'Depth',
+    ];
+
+    $parts = array_map('trim', explode(',', strtolower($setup)));
+    $cameras = [];
+
+    foreach ($parts as $part) {
+        if (empty($part)) continue;
+
+        // Extract MP
+        preg_match('/(\d+)\s*mp/i', $part, $mpMatch);
+        $mp = $mpMatch ? $mpMatch[1] . 'MP' : '';
+
+        // Find label
+        $label = '';
+        foreach ($labels as $key => $shortLabel) {
+            if (strpos($part, $key) !== false) {
+                $label = $shortLabel;
+                break;
             }
         }
-        // If no priority label found, take second camera if exists
-        if (!$second && isset($parts[1])) {
-            preg_match('/(\d+(\.\d+)?)\s*mp/i', $parts[1], $mpMatch);
-            $second = $mpMatch ? $mpMatch[1] . 'MP' : null;
+
+        if ($mp && $label) {
+            $cameras[] = $mp . ' (' . $label . ')';
         }
-        if ($second) {
-            $final[] = $second;
-        }
-        $mainCam = implode(' + ', $final);
     }
 
-    return $mainCam;
+    if (empty($cameras)) return '';
+
+    switch ($style) {
+        case 'compact':
+            // Triple 50MP Main + 48MP Periscope + 48MP UW
+            $count = count($cameras);
+            $countName = ['Single', 'Dual', 'Triple', 'Quad', 'Penta'][$count - 1] ?? $count;
+            return $countName . ' ' . implode(' + ', $cameras);
+
+        case 'simple':
+            // 50MP Main + 48MP Periscope + 48MP UW (no count prefix)
+            return implode(' + ', $cameras);
+
+        case 'detailed':
+            // Triple Camera: 50MP Main, 48MP Periscope, 48MP UW
+            $count = count($cameras);
+            $countName = ['Single', 'Dual', 'Triple', 'Quad', 'Penta'][$count - 1] ?? $count;
+            return $countName . ' Camera: ' . implode(', ', $cameras);
+
+        case 'badge':
+            // 50MP • 48MP • 48MP with camera types
+            return implode(' • ', $cameras);
+    }
+
+    return implode(' + ', $cameras);
 }
 
-function shortChargingSpec($chargingSpec,$wirlessCharging,$reverceCharging)
+// Alternative: Get individual highlight badges
+function getCameraBadges($cameraData)
+{
+    $badges = [];
+
+    // Main MP badge
+    if (!empty($cameraData['main_sensor'])) {
+        preg_match('/(\d+)\s*MP/i', $cameraData['main_sensor'], $match);
+        if ($match) {
+            $badges[] = [
+                'text' => $match[1] . 'MP',
+                'type' => 'primary',
+                'icon' => '📷'
+            ];
+        }
+    }
+
+    // Zoom badge
+    if (!empty($cameraData['other_sensors'])) {
+        preg_match('/(\d+)x\s*optical/i', $cameraData['other_sensors'], $match);
+        if ($match) {
+            $badges[] = [
+                'text' => $match[1] . 'x Zoom',
+                'type' => 'success',
+                'icon' => '🔍'
+            ];
+        }
+    }
+
+    // OIS badge
+    if (stripos($cameraData['main_sensor'] ?? '', 'OIS') !== false) {
+        $badges[] = [
+            'text' => 'OIS',
+            'type' => 'info',
+            'icon' => '📹'
+        ];
+    }
+
+    // Video badge
+    if (!empty($cameraData['video'])) {
+        if (stripos($cameraData['video'], '8K') !== false) {
+            $badges[] = [
+                'text' => '8K',
+                'type' => 'warning',
+                'icon' => '🎥'
+            ];
+        }
+    }
+
+    return $badges;
+}
+
+
+function shortChargingSpec($chargingSpec, $wirlessCharging, $reverceCharging)
 {
     $fastCharging = null;
     $convertWirlessCharging = null;
@@ -548,30 +619,30 @@ function shortChargingSpec($chargingSpec,$wirlessCharging,$reverceCharging)
     ];
 }
 
-  function format_ip_rating($text)
-    {
-        if (!$text) return null;
+function format_ip_rating($text)
+{
+    if (!$text) return null;
 
-        // Extract IP rating
-        preg_match('/IP\s?(\d{2})/i', $text, $ip);
+    // Extract IP rating
+    preg_match('/IP\s?(\d{2})/i', $text, $ip);
 
-        // Extract depth (meters)
-        preg_match('/maximum depth of (\d+(\.\d+)?) meters?/i', $text, $depth);
+    // Extract depth (meters)
+    preg_match('/maximum depth of (\d+(\.\d+)?) meters?/i', $text, $depth);
 
-        // Extract time (minutes)
-        preg_match('/up to (\d+)\s*minutes?/i', $text, $time);
+    // Extract time (minutes)
+    preg_match('/up to (\d+)\s*minutes?/i', $text, $time);
 
-        if (empty($ip)) return null;
+    if (empty($ip)) return null;
 
-        $parts = ['IP' . $ip[1]];
+    $parts = ['IP' . $ip[1]];
 
-        if (!empty($depth[1])) {
-            $parts[] = "Maximum depth {$depth[1]} meters";
-        }
-
-        if (!empty($time[1])) {
-            $parts[] = "up to {$time[1]} minutes";
-        }
-
-        return implode(', ', $parts);
+    if (!empty($depth[1])) {
+        $parts[] = "Maximum depth {$depth[1]} meters";
     }
+
+    if (!empty($time[1])) {
+        $parts[] = "up to {$time[1]} minutes";
+    }
+
+    return implode(', ', $parts);
+}

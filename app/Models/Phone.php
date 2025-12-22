@@ -266,25 +266,4 @@ class Phone extends Model
         // "IOS 26" -> "iOS 26"
         return trim(explode(',', $value)[0]);
     }
-
-    private function shortSim($value)
-    {
-        if (!$value)
-            return null;
-        // Count SIM types
-        $types = [];
-        if (stripos($value, 'Nano-SIM') !== false)
-            $types[] = 'Nano-SIM';
-        if (stripos($value, 'eSIM') !== false)
-            $types[] = 'eSIM';
-        return implode(' + ', array_unique($types)) ?: $value;
-    }
-
-    private function extractVersion($value)
-    {
-        if (!$value)
-            return null;
-        preg_match('/v?([\d.]+)/', $value, $matches);
-        return $matches[1] ?? null;
-    }
 }

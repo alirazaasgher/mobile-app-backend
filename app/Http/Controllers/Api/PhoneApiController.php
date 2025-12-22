@@ -127,8 +127,8 @@ class PhoneApiController extends Controller
             'colors',
             'colors.images',
             'variants' => function ($query) {
-                $query->with(['ram_type:id,name', 'storage_type:id,name'])
-                    ->orderBy('storage')
+                // ->with(['ram_type:id,name', 'storage_type:id,name'])
+                $query->orderBy('storage')
                     ->orderBy('pkr_price');
             },
             // Competitors only need minimal info: id, name, slug, primary_image, brand_id
@@ -184,7 +184,6 @@ class PhoneApiController extends Controller
             ->select('phones.*') // keep full Phone model for resource
             ->limit(6)
             ->get();
-
 
         //dd($similarMobiles->toSql(), $similarMobiles->getBindings());
         // ->get(['id', 'name', 'slug', 'primary_image', 'brand_id']);
