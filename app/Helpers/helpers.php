@@ -514,7 +514,7 @@ function getShortCamera($cameraData, $style = 'compact')
             // Triple 50MP Main + 48MP Periscope + 48MP UW
             $count = count($cameras);
             $countName = ['Single', 'Dual', 'Triple', 'Quad', 'Penta'][$count - 1] ?? $count;
-            return $countName . ' ' . implode(' + ', $cameras);
+            return implode(' + ', $cameras);
 
         case 'simple':
             // 50MP Main + 48MP Periscope + 48MP UW (no count prefix)
