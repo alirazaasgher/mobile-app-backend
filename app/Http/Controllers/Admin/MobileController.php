@@ -33,7 +33,7 @@ class MobileController extends Controller
                     ['key' => 'weight', 'label' => 'Weight', 'type' => 'text', 'placeholder' => '169 g'],
                     ['key' => 'build', 'label' => 'Build Material', 'type' => 'text', 'placeholder' => 'Glass front (Gorilla Glass), glass back, aluminum frame'],
                     ['key' => 'durability', 'label' => 'Durability (IP rating)', 'type' => 'text', 'placeholder' => 'IP68 dust/water resistant, MIL-STD-810H certified'],
-                    ['key' => 'sim', 'label' => 'SIM Support', 'type' => 'text', 'placeholder' => 'Dual SIM (Nano-SIM, eSIM, dual stand-by)'],
+                    ['key' => 'sim', 'label' => 'SIM Support', 'type' => 'textarea', 'placeholder' => 'Dual SIM (Nano-SIM, eSIM, dual stand-by)'],
                 ]
             ],
 
