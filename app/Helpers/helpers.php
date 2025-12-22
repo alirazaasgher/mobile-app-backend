@@ -476,7 +476,7 @@ function getShortCamera($cameraData, $style = 'compact')
         'ultrawide' => 'UW',
         'ultra wide' => 'UW',
         'ultra-wide' => 'UW',
-        'wide' => 'Main',
+        'wide' => 'M',
         'macro' => 'Macro',
         'depth' => 'Depth',
     ];
