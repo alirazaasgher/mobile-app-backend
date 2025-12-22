@@ -501,6 +501,8 @@ function getShortCamera($mainCam)
         }
         $mainCam = implode(' + ', $final);
     }
+
+    return $mainCam;
 }
 
 // Alternative: Get individual highlight badges
