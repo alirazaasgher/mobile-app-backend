@@ -382,10 +382,11 @@ class MobileController extends Controller
                     $updatedSpecs['memory'] = $memorySpec;
                 }
             }
+
             $this->phoneService->saveSpecifications($phone, $updatedSpecs, function ($category) use ($request) {
                 return $request->input("searchable_text-$category");
             }, true);
-
+            
 
             update_phone_search_index($storage_type, $ram_type, $sd_card, $ram_list, $storage_list, $price_list, $available_colors, $updatedSpecs, $validated, $id);
             // search index (if published)

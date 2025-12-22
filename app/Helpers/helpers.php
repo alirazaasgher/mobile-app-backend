@@ -47,14 +47,14 @@ function update_phone_search_index(
     $refreshRateHz = $matches[1] ?? 60;
 
     // IP rating / durability
-    $ipRating = $specMap['design']['durability'] ?? null;
+    $ipRating = $specMap['build']['durability'] ?? null;
 
     if ($ipRating) {
         preg_match('/IP\d{2}/i', $ipRating, $matches);
         $onlyIp = $matches[0] ?? null;
     }
     // Weight
-    $weight = $specMap['design']['weight'] ?? null;
+    $weight = $specMap['build']['weight'] ?? null;
     preg_match('/([\d.]+)\s*g/i', $weight, $matches);
     $weightGs = $matches[1] ?? null;
 
@@ -176,8 +176,8 @@ function build_top_specs($specMap, $os, $date, $mainCam, $main_camera_video)
 
     $date = !empty($date) ? Carbon::parse($date)->format('j F, Y') : null;
 
-    $build = $specMap['design']['build'];
-    $durability = $specMap['design']['durability'];
+    $build = $specMap['build']['build'];
+    $durability = $specMap['build']['durability'];
 
     $glassProtection = null;
     $ipRating = null;
@@ -462,10 +462,12 @@ function getGlassProtectionShort($build)
 
 function getShortCamera($cameraData, $style = 'compact')
 {
-    if (!is_array($cameraData)) return '';
+    if (!is_array($cameraData))
+        return '';
 
     $setup = $cameraData['setup'] ?? '';
-    if (empty($setup)) return '';
+    if (empty($setup))
+        return '';
 
     $labels = [
         'periscope telephoto' => 'Periscope',
@@ -483,7 +485,8 @@ function getShortCamera($cameraData, $style = 'compact')
     $cameras = [];
 
     foreach ($parts as $part) {
-        if (empty($part)) continue;
+        if (empty($part))
+            continue;
 
         // Extract MP
         preg_match('/(\d+)\s*mp/i', $part, $mpMatch);
@@ -503,7 +506,8 @@ function getShortCamera($cameraData, $style = 'compact')
         }
     }
 
-    if (empty($cameras)) return '';
+    if (empty($cameras))
+        return '';
 
     switch ($style) {
         case 'compact':
@@ -621,7 +625,8 @@ function shortChargingSpec($chargingSpec, $wirlessCharging, $reverceCharging)
 
 function format_ip_rating($text)
 {
-    if (!$text) return null;
+    if (!$text)
+        return null;
 
     // Extract IP rating
     preg_match('/IP\s?(\d{2})/i', $text, $ip);
@@ -632,7 +637,8 @@ function format_ip_rating($text)
     // Extract time (minutes)
     preg_match('/up to (\d+)\s*minutes?/i', $text, $time);
 
-    if (empty($ip)) return null;
+    if (empty($ip))
+        return null;
 
     $parts = ['IP' . $ip[1]];
 

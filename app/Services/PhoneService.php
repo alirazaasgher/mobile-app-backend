@@ -615,9 +615,7 @@ class PhoneService
                 ]
             );
 
-            // echo "<pre>";
-            // print_r();
-            // exit;
+          
             // foreach ($categorySpecs as $k => $v) {
             //     if (!in_array($k, ['expandable', 'max_visible'])) {
             //         $mergedSpecs[$k] = $v;
