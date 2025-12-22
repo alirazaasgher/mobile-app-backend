@@ -368,7 +368,7 @@ class PhoneService
 
         // Normalize incoming as map: key => ['ram'=>..., 'storage'=>..., 'price'=>...]
         $incomingMap = [];
-        foreach ($incomingSpecs as  $spec) {
+        foreach ($incomingSpecs as $spec) {
             $parts = array_map('trim', explode('/', $spec));
 
             $ram = $parts[0] ?? '';
@@ -528,7 +528,8 @@ class PhoneService
 
         // Normalize storage values
         foreach ($storage_list as $value) {
-            if (empty($value)) continue;
+            if (empty($value))
+                continue;
 
             $value = strtolower(trim($value));
 
@@ -615,7 +616,6 @@ class PhoneService
                 ]
             );
 
-          
             // foreach ($categorySpecs as $k => $v) {
             //     if (!in_array($k, ['expandable', 'max_visible'])) {
             //         $mergedSpecs[$k] = $v;
