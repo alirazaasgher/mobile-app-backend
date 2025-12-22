@@ -507,71 +507,69 @@ class PhoneService
     /**
      * Build memory spec array.
      */
-    public function buildMemorySpec(array $ram_list, array $storage_list, ?string $ram_type, ?string $storage_type, $sd_card)
+    public function buildMemorySpec(string $ram_type, $sd_card)
     {
         // ---------- RAM ----------
-        $ramValues = [];
+        // $ramValues = [];
+        // $ramValues = array_unique(array_map('intval', $ram_list));
 
-        $ramValues = array_unique(array_map('intval', $ram_list));
+        // $ram = '';
+        // if (!empty($ramValues)) {
+        //     $ram = implode(' / ', $ramValues) . ' GB';
+        //     if (!empty($ram_type)) {
+        //         $ram .= ' ' . $ram_type;
+        //     }
+        // }
 
-        $ram = '';
-        if (!empty($ramValues)) {
-            $ram = implode(' / ', $ramValues) . ' GB';
-            if (!empty($ram_type)) {
-                $ram .= ' ' . $ram_type;
-            }
-        }
+        // // ---------- STORAGE ----------
+        // $gbValues = [];
+        // $tbValues = [];
 
-        // ---------- STORAGE ----------
-        $gbValues = [];
-        $tbValues = [];
+        // // Normalize storage values
+        // foreach ($storage_list as $value) {
+        //     if (empty($value))
+        //         continue;
 
-        // Normalize storage values
-        foreach ($storage_list as $value) {
-            if (empty($value))
-                continue;
+        //     $value = strtolower(trim($value));
 
-            $value = strtolower(trim($value));
+        //     if (preg_match('/([\d.]+)/', $value, $m)) {
+        //         $number = (float) $m[1];
 
-            if (preg_match('/([\d.]+)/', $value, $m)) {
-                $number = (float) $m[1];
+        //         if (str_contains($value, 'tb') || $number >= 1024) {
+        //             // Convert GB >= 1024 to TB
+        //             $tbValues[] = ($number >= 1024 ? $number / 1024 : $number) . ' TB';
+        //         } else {
+        //             $gbValues[] = (int) $number;
+        //         }
+        //     }
+        // }
 
-                if (str_contains($value, 'tb') || $number >= 1024) {
-                    // Convert GB >= 1024 to TB
-                    $tbValues[] = ($number >= 1024 ? $number / 1024 : $number) . ' TB';
-                } else {
-                    $gbValues[] = (int) $number;
-                }
-            }
-        }
+        // // Remove duplicates
+        // $gbValues = array_unique($gbValues);
+        // $tbValues = array_unique($tbValues);
 
-        // Remove duplicates
-        $gbValues = array_unique($gbValues);
-        $tbValues = array_unique($tbValues);
+        // // Build storage string
+        // $storageParts = [];
 
-        // Build storage string
-        $storageParts = [];
+        // // Join GB values with "/"
+        // if (!empty($gbValues)) {
+        //     $storageParts[] = implode(' / ', $gbValues) . ' GB';
+        // }
 
-        // Join GB values with "/"
-        if (!empty($gbValues)) {
-            $storageParts[] = implode(' / ', $gbValues) . ' GB';
-        }
+        // // Append TB values
+        // if (!empty($tbValues)) {
+        //     $storageParts = array_merge($storageParts, $tbValues);
+        // }
 
-        // Append TB values
-        if (!empty($tbValues)) {
-            $storageParts = array_merge($storageParts, $tbValues);
-        }
+        // $storage = implode(' / ', $storageParts);
 
-        $storage = implode(' / ', $storageParts);
-
-        // Append storage type
-        if (!empty($storage_type)) {
-            $storage .= ' ' . $storage_type;
-        }
+        // // Append storage type
+        // if (!empty($storage_type)) {
+        //     $storage .= ' ' . $storage_type;
+        // }
 
         return [
-            'RAM' => $ram,
-            'Storage' => $storage,
+            'RAM Type' => $ram_type,
             'Card Slot' => $sd_card,
             'expandable' => 0,
             'max_visible' => 4

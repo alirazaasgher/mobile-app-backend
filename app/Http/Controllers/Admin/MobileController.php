@@ -241,9 +241,9 @@ class MobileController extends Controller
 
             // memory spec
             $memorySpec = $this->phoneService->buildMemorySpec(
-                $ram_list,
-                $storage_list,
-                $storage_type,
+                // $ram_list,
+                // $storage_list,
+                // $storage_type,
                 $ram_type,
                 $sd_card
             );
