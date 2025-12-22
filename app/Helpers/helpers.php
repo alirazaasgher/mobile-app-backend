@@ -462,42 +462,45 @@ function getGlassProtectionShort($build)
 
 function getShortCamera($mainCam)
 {
-    // Mapping keywords → short labels
-    $labels = [
-        'wide' => '(Wide)',
-        'telephoto' => '(Telephoto)',
-        'periscope' => '(Periscope)',
-        'ultrawide' => '(UW)',
-        'ultra wide' => '(UW)',
-        'macro' => '(Macro)',
-        'depth' => '(Depth)',
-    ];
+    if ($mainCam && strpos($mainCam, ',') !== false) {
+        $camera = strtolower($mainCam);
+        $parts = array_map('trim', explode(',', $camera));
+        $labelsPriority = [
+            'ultrawide' => '(UW)',
+            'ultra wide' => '(UW)',
+            'telephoto' => 'Telephoto',
+            'macro' => 'Macro',
+            'depth' => 'Depth',
+            'periscope' => 'Periscope Telephoto',
+        ];
 
-    if (!$mainCam)
-        return '';
-
-    // Split cameras
-    $parts = array_map('trim', explode(',', strtolower($mainCam)));
-    $final = [];
-
-    foreach ($parts as $part) {
-        // Extract MP
-        preg_match('/(\d+(\.\d+)?)\s*mp/i', $part, $mpMatch);
-        $mp = $mpMatch ? $mpMatch[1] . 'MP' : '';
-
-        // Detect keyword for label
-        $label = '';
-        foreach ($labels as $key => $shortLabel) {
-            if (strpos($part, $key) !== false) {
-                $label = $shortLabel;
-                break;
+        $final = [];
+        // First camera → always the first MP
+        preg_match('/(\d+(\.\d+)?)\s*mp/i', $parts[0], $mpMatch);
+        $final[] = $mpMatch[1] . 'MP';
+        // Second camera → choose based on priority
+        $second = null;
+        foreach ($labelsPriority as $key => $labelName) {
+            foreach ($parts as $part) {
+                if (strpos($part, $key) !== false) {
+                    preg_match('/(\d+(\.\d+)?)\s*mp/i', $part, $mpMatch);
+                    if ($mpMatch) {
+                        $second = $mpMatch[1] . 'MP ' . $labelName;
+                        break 2;
+                    }
+                }
             }
         }
-
-        $final[] = trim($mp . ' ' . $label);
+        // If no priority label found, take second camera if exists
+        if (!$second && isset($parts[1])) {
+            preg_match('/(\d+(\.\d+)?)\s*mp/i', $parts[1], $mpMatch);
+            $second = $mpMatch ? $mpMatch[1] . 'MP' : null;
+        }
+        if ($second) {
+            $final[] = $second;
+        }
+        $mainCam = implode(' + ', $final);
     }
-
-    return implode(' + ', $final);
 }
 
 // Alternative: Get individual highlight badges
