@@ -406,12 +406,14 @@
               <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 @foreach($options as $option)
                   @php
+
                     $optionValue = $option['value'];
                     $isChecked = in_array($optionValue, $selectedSpecs);
-                    /*$existingVariant = collect($mobile->variants ?? [])->first(function ($v) use ($optionValue) {
+                    $existingVariant = collect($mobile->variants ?? [])->first(function ($v) use ($optionValue) {
                     [$ram, $storage] = explode('/', $optionValue);
+
                     return $v['ram'] == $ram && $v['storage'] == $storage;
-                    });*/
+                    });
                     $modifierValueUSD = old("variants.{$variantIndex}.price_modifier.{$optionValue}", $existingVariant['usd_price'] ?? $option['modifier']);
                     $modifierValuePKR = old("variants.{$variantIndex}.price_modifier.{$optionValue}", $existingVariant['pkr_price'] ?? $option['modifier']);
                     $badgeClass = $badgeColors[$option['badge']] ?? 'bg-gray-100 text-gray-700';
