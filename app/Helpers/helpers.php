@@ -68,8 +68,7 @@ function update_phone_search_index(
     // Extract commonly used specs
     $capacity = preg_replace('/[^0-9]/', '', $specMap['battery']['capacity']);
     $selfieCam = $specMap['Selfie Camera (MP)'] ?? null;
-    $mainCam = getShortCamera($specMap['main_camera']['step'] ?? null);
-    //$mainCam = getShortCamera($specMap['selefe_camera'] ?? null);
+    $mainCam = getShortCamera($specMap['main_camera']['setup'] ?? null);
     $shortChipset = getShortChipset($chipset);
     $cpuString = $specMap['performance']['cpu'];
     $cpuType = "";
@@ -466,12 +465,14 @@ function getShortCamera($mainCam)
         $camera = strtolower($mainCam);
         $parts = array_map('trim', explode(',', $camera));
         $labelsPriority = [
+            'wide' => 'Wide',
             'ultrawide' => '(UW)',
             'ultra wide' => '(UW)',
             'telephoto' => 'Telephoto',
             'macro' => 'Macro',
             'depth' => 'Depth',
             'periscope' => 'Periscope Telephoto',
+
         ];
 
         $final = [];
