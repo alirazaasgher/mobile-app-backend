@@ -245,7 +245,7 @@ class MobileController extends Controller
                 // $storage_list,
                 // $storage_type,
                 $ram_type,
-                $sd_card
+                $sd_card == "1" ? "YES" : "NO"
             );
 
             // merge memory into specifications (insert after 'performance')
@@ -365,10 +365,8 @@ class MobileController extends Controller
 
             // memory spec injected after performance
             $memorySpec = $this->phoneService->buildMemorySpec(
-                $ram_list,
-                $storage_list,
+
                 $ram_type,
-                $storage_type,
                 $sd_card == "1" ? "YES" : "NO"
             );
 
