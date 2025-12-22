@@ -66,10 +66,10 @@ function update_phone_search_index(
     $release_date = $validated['release_date'];
 
     // Extract commonly used specs
-
     $capacity = preg_replace('/[^0-9]/', '', $specMap['battery']['capacity']);
     $selfieCam = $specMap['Selfie Camera (MP)'] ?? null;
-    $mainCam = getShortCamera($specMap['main_camera'] ?? null);
+    $mainCam = getShortCamera($specMap['main_camera']['step'] ?? null);
+    //$mainCam = getShortCamera($specMap['selefe_camera'] ?? null);
     $shortChipset = getShortChipset($chipset);
     $cpuString = $specMap['performance']['cpu'];
     $cpuType = "";
@@ -460,39 +460,32 @@ function getGlassProtectionShort($build)
     return implode(', ', array_unique($out));
 }
 
-function getShortCamera($cameraData, $style = 'compact')
+function getShortCamera($mainCam)
 {
-    if (!is_array($cameraData))
-        return '';
-
-    $setup = $cameraData['setup'] ?? '';
-    if (empty($setup))
-        return '';
-
+    // Mapping keywords → short labels
     $labels = [
-        'periscope telephoto' => 'Periscope',
-        'periscope' => 'Periscope',
-        'telephoto' => 'Telephoto',
-        'ultrawide' => 'UW',
-        'ultra wide' => 'UW',
-        'ultra-wide' => 'UW',
-        'wide' => 'M',
-        'macro' => 'Macro',
-        'depth' => 'Depth',
+        'wide' => '(Wide)',
+        'telephoto' => '(Telephoto)',
+        'periscope' => '(Periscope)',
+        'ultrawide' => '(UW)',
+        'ultra wide' => '(UW)',
+        'macro' => '(Macro)',
+        'depth' => '(Depth)',
     ];
 
-    $parts = array_map('trim', explode(',', strtolower($setup)));
-    $cameras = [];
+    if (!$mainCam)
+        return '';
+
+    // Split cameras
+    $parts = array_map('trim', explode(',', strtolower($mainCam)));
+    $final = [];
 
     foreach ($parts as $part) {
-        if (empty($part))
-            continue;
-
         // Extract MP
-        preg_match('/(\d+)\s*mp/i', $part, $mpMatch);
+        preg_match('/(\d+(\.\d+)?)\s*mp/i', $part, $mpMatch);
         $mp = $mpMatch ? $mpMatch[1] . 'MP' : '';
 
-        // Find label
+        // Detect keyword for label
         $label = '';
         foreach ($labels as $key => $shortLabel) {
             if (strpos($part, $key) !== false) {
@@ -501,37 +494,10 @@ function getShortCamera($cameraData, $style = 'compact')
             }
         }
 
-        if ($mp && $label) {
-            $cameras[] = $mp . ' (' . $label . ')';
-        }
+        $final[] = trim($mp . ' ' . $label);
     }
 
-    if (empty($cameras))
-        return '';
-
-    switch ($style) {
-        case 'compact':
-            // Triple 50MP Main + 48MP Periscope + 48MP UW
-            $count = count($cameras);
-            $countName = ['Single', 'Dual', 'Triple', 'Quad', 'Penta'][$count - 1] ?? $count;
-            return implode(' + ', $cameras);
-
-        case 'simple':
-            // 50MP Main + 48MP Periscope + 48MP UW (no count prefix)
-            return implode(' + ', $cameras);
-
-        case 'detailed':
-            // Triple Camera: 50MP Main, 48MP Periscope, 48MP UW
-            $count = count($cameras);
-            $countName = ['Single', 'Dual', 'Triple', 'Quad', 'Penta'][$count - 1] ?? $count;
-            return $countName . ' Camera: ' . implode(', ', $cameras);
-
-        case 'badge':
-            // 50MP • 48MP • 48MP with camera types
-            return implode(' • ', $cameras);
-    }
-
-    return implode(' + ', $cameras);
+    return implode(' + ', $final);
 }
 
 // Alternative: Get individual highlight badges
