@@ -29,7 +29,7 @@ class MobileController extends Controller
                 'expandable' => true,
                 'max_visible' => 4,
                 'items' => [
-                    ['key' => 'dimensions', 'label' => 'Dimensions', 'type' => 'text', 'placeholder' => '162.8 x 77.6 x 8.2 mm'],
+                    ['key' => 'dimensions', 'label' => 'Dimensions', 'type' => 'textarea', 'placeholder' => '162.8 x 77.6 x 8.2 mm'],
                     ['key' => 'weight', 'label' => 'Weight', 'type' => 'text', 'placeholder' => '169 g'],
                     ['key' => 'build', 'label' => 'Build Material', 'type' => 'text', 'placeholder' => 'Glass front (Gorilla Glass), glass back, aluminum frame'],
                     ['key' => 'durability', 'label' => 'Durability (IP rating)', 'type' => 'text', 'placeholder' => 'IP68 dust/water resistant, MIL-STD-810H certified'],
