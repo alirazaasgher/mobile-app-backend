@@ -171,9 +171,12 @@ class Phone extends Model
     {
         $s = $this->specifications->keyBy('category')
             ->map(fn($spec) => json_decode($spec->specifications, true) ?: []);
-        $variants = $this->variants;
-        $ramValues = $variants->pluck('ram')->filter()->unique()->sort()->values()->toArray();
-        $storageValues = $variants->pluck('storage')->filter()->unique()->values()->toArray();
+        $memoryVariants = $this->variants
+            ->map(function ($v) {
+                return $v->ram . 'GB / ' . $v->storage . (is_numeric($v->storage) ? 'GB' : '');
+            })
+            ->values()
+            ->toArray();
         try {
             $chargingSpec = $s['battery']['charging_speed'] ?? '';
             $wirlessCharging = $s['battery']['wireless'] ?? '';
@@ -201,8 +204,7 @@ class Phone extends Model
                     ],
                     'performance' => [
                         'chipset' => getShortChipset($s['performance']['chipset'] ?? null),
-                        'ram' => !empty($ramValues) ? implode(' / ', $ramValues) . ' GB' : null,
-                        'storage' => !empty($storageValues) ? implode(' / ', $storageValues) : null,
+                        'memory' => implode(', ', $memoryVariants)
                     ],
                     'software' => [
                         'os' => $this->shortOS($s['performance']['os'] ?? null),
