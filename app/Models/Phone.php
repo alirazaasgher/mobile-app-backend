@@ -57,7 +57,7 @@ class Phone extends Model
     {
         $spec = $this->specifications
             ->firstWhere('category', $category)
-            ?->specifications ?? [];
+                ?->specifications ?? [];
 
         return json_decode($spec, true) ?: [];
     }
@@ -171,6 +171,9 @@ class Phone extends Model
     {
         $s = $this->specifications->keyBy('category')
             ->map(fn($spec) => json_decode($spec->specifications, true) ?: []);
+        $variants = $this->variants;
+        $ramValues = $variants->pluck('ram')->filter()->unique()->sort()->values()->toArray();
+        $storageValues = $variants->pluck('storage')->filter()->unique()->values()->toArray();
         try {
             $chargingSpec = $s['battery']['charging_speed'] ?? '';
             $wirlessCharging = $s['battery']['wireless'] ?? '';
@@ -198,8 +201,8 @@ class Phone extends Model
                     ],
                     'performance' => [
                         'chipset' => getShortChipset($s['performance']['chipset'] ?? null),
-                        'ram' => $this->extractNumber($s['memory']['RAM'] ?? null),
-                        'storage' => $this->shortStorage($s['memory']['Storage'] ?? null),
+                        'ram' => !empty($ramValues) ? implode(' / ', $ramValues) . ' GB' : null,
+                        'storage' => !empty($storageValues) ? implode(' / ', $storageValues) : null,
                     ],
                     'software' => [
                         'os' => $this->shortOS($s['performance']['os'] ?? null),

@@ -523,7 +523,7 @@ class PhoneApiController extends Controller
             'brand:id,name',           // only id and name
             'searchIndex',
             'specifications',
-            'competitors'           // include compare_specs in resource
+            'competitors',        // include compare_specs in resource
         ])
             ->whereIn('slug', $slugs)
             ->get();
