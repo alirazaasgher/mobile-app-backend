@@ -512,7 +512,7 @@ class PhoneService
         $short = [];
 
         foreach ($ram_list as $i => $ram) {
-            $short[] = $ram . '/' . $storage_list[$i];
+            $short[] = $ram . 'GB/' . (is_numeric($storage_list[$i]) ? $storage_list[$i] . 'GB' : $storage_list[$i]);
         }
         // echo "<pre>";
         // print_r($short);
