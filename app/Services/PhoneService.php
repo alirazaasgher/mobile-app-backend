@@ -507,8 +507,18 @@ class PhoneService
     /**
      * Build memory spec array.
      */
-    public function buildMemorySpec(string $ram_type, $sd_card)
+    public function buildMemorySpec($ram_list, $storage_list, $storage_type, $ram_type, $sd_card)
     {
+        $short = [];
+
+        foreach ($ram_list as $i => $ram) {
+            $short[] = $ram . '/' . $storage_list[$i];
+        }
+        // echo "<pre>";
+        // print_r($short);
+        // echo "---";
+        // print_r($storage_list);
+        // exit;
         // ---------- RAM ----------
         // $ramValues = [];
         // $ramValues = array_unique(array_map('intval', $ram_list));
@@ -570,6 +580,8 @@ class PhoneService
 
         return [
             'RAM Type' => $ram_type,
+            'Storage Type' => $storage_type,
+            'Memory' => json_encode($short),
             'Card Slot' => $sd_card,
             'expandable' => 0,
             'max_visible' => 4
