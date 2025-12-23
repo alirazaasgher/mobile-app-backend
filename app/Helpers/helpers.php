@@ -68,12 +68,10 @@ function update_phone_search_index(
     // Extract commonly used specs
     $capacity = preg_replace('/[^0-9]/', '', $specMap['battery']['capacity']);
     $selfieCam = $specMap['selfie_camera']['setup'] ?? null;
-    $selfieCammp = preg_match('/\((\d+)\s*MP\)/', (string)$selfieCam, $matches) ? $matches[1] : '';
+    $selfieCammp = preg_match('/\((\d+)\s*MP\)/', (string) $selfieCam, $matches) ? $matches[1] : '';
     $mainCam = $specMap['main_camera']['setup'] ?? null;
     $mainCam = getShortCamera($mainCam);
-    // echo "<pre>";
-    // print_r($mainCam);
-    // exit;
+
     $shortChipset = getShortChipset($chipset);
     $cpuString = $specMap['performance']['cpu'];
     $cpuType = "";
@@ -475,13 +473,13 @@ function getShortCamera(string $mainCam): string
 
     $map = [
         'periscope telephoto' => 'Periscope',
-        'telephoto'           => 'Telephoto',
-        'ultra-wide'          => 'Ultrawide',
-        'ultrawide'           => 'Ultrawide',
-        'ultra wide'          => 'Ultrawide',
-        'wide'                => 'Wide',
-        'macro'               => 'Macro',
-        'depth'               => 'Depth',
+        'telephoto' => 'Telephoto',
+        'ultra-wide' => 'Ultrawide',
+        'ultrawide' => 'Ultrawide',
+        'ultra wide' => 'Ultrawide',
+        'wide' => 'Wide',
+        'macro' => 'Macro',
+        'depth' => 'Depth',
     ];
 
     $cameras = [];
@@ -493,7 +491,7 @@ function getShortCamera(string $mainCam): string
 
         $mp_value = (float) $mp[1];
         $label = '';
-        
+
         foreach ($map as $key => $short) {
             if (str_contains($part, $key)) {
                 $label = $short;
@@ -507,14 +505,18 @@ function getShortCamera(string $mainCam): string
         }
 
         $cameras[] = [
-            'text'  => $label ? "{$mp[1]}MP($label)" : "{$mp[1]}MP",
-            'mp'    => $mp_value,
-            'label' => $label ?:'Wide',
+            'text' => $label ? "{$mp[1]}MP($label)" : "{$mp[1]}MP",
+            'mp' => $mp_value,
+            'label' => $label ?: 'Wide',
         ];
     }
 
     if (empty($cameras)) {
         return $mainCam;
+    }
+    // If exactly 2 cameras, return both
+    if (count($cameras) === 2) {
+        return implode(',', array_column($cameras, 'text'));
     }
 
     // Start with main camera
