@@ -117,7 +117,7 @@ class MobileController extends Controller
 
             'connectivity' => [
                 'expandable' => true,
-                'max_visible' => 4,
+                'max_visible' => 0,
                 'items' => [
                     ['key' => 'wifi', 'label' => 'Wi-Fi', 'type' => 'text', 'placeholder' => 'Wi-Fi 6E (802.11 a/b/g/n/ac/6e), dual-band'],
                     ['key' => 'bluetooth', 'label' => 'Bluetooth', 'type' => 'text', 'placeholder' => '5.3, A2DP, LE'],
