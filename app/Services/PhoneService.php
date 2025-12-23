@@ -581,7 +581,7 @@ class PhoneService
         return [
             'RAM Type' => $ram_type,
             'Storage Type' => $storage_type,
-            'Memory' => json_encode($short),
+            'Memory' => implode(', ', $short),
             'Card Slot' => $sd_card,
             'expandable' => 0,
             'max_visible' => 4
