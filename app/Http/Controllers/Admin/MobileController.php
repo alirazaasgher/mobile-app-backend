@@ -107,7 +107,7 @@ class MobileController extends Controller
 
             'network' => [
                 'expandable' => true,
-                'max_visible' => 4,
+                'max_visible' => 0,
                 'items' => [
                     ['key' => 'technology', 'label' => 'Technology', 'type' => 'text', 'placeholder' => 'GSM / HSPA / LTE / 5G'],
                     ['key' => 'supported_bands', 'label' => 'Supported Bands', 'type' => 'textarea', 'placeholder' => '2G: GSM 850/900/1800/1900, 3G: WCDMA 1/2/5/8'],
@@ -117,7 +117,7 @@ class MobileController extends Controller
 
             'connectivity' => [
                 'expandable' => true,
-                'max_visible' => 0,
+                'max_visible' => 4,
                 'items' => [
                     ['key' => 'wifi', 'label' => 'Wi-Fi', 'type' => 'text', 'placeholder' => 'Wi-Fi 6E (802.11 a/b/g/n/ac/6e), dual-band'],
                     ['key' => 'bluetooth', 'label' => 'Bluetooth', 'type' => 'text', 'placeholder' => '5.3, A2DP, LE'],
