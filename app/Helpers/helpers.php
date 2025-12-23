@@ -67,8 +67,13 @@ function update_phone_search_index(
 
     // Extract commonly used specs
     $capacity = preg_replace('/[^0-9]/', '', $specMap['battery']['capacity']);
-    $selfieCam = $specMap['Selfie Camera (MP)'] ?? null;
-    $mainCam = getShortCamera($specMap['main_camera']['setup'] ?? null);
+    $selfieCam = $specMap['selfie_camera']['setup'] ?? null;
+    $selfieCammp = preg_match('/\((\d+)\s*MP\)/', (string)$selfieCam, $matches) ? $matches[1] : '';
+    $mainCam = $specMap['main_camera']['setup'] ?? null;
+    $mainCam = getShortCamera($mainCam);
+    // echo "<pre>";
+    // print_r($mainCam);
+    // exit;
     $shortChipset = getShortChipset($chipset);
     $cpuString = $specMap['performance']['cpu'];
     $cpuType = "";
@@ -76,9 +81,10 @@ function update_phone_search_index(
         preg_match('/^[^(]+/', $cpuString, $match);
         $cpuType = trim($match[0]);
     }
-
+    $setup = isset($specMap['main_camera']['setup']) && !empty($specMap['main_camera']['setup'])
+        ? explode(" ", $specMap['main_camera']['setup'])[0]
+        : '';
     $main_camera_video = getVideoHighlight($specMap['main_camera']['video']);
-
     $topSpecs = build_top_specs($specMap, $os, $release_date, $mainCam, $main_camera_video);
     $specsGrid = build_specs_grid($sizeInInches, $specMap, $shortChipset, $cpuType, $mainCam, $main_camera_video);
     DB::table('phone_search_indices')->updateOrInsert(
@@ -99,8 +105,8 @@ function update_phone_search_index(
             'available_colors' => json_encode($availableColors),
             'screen_size_inches' => $sizeInInches,
             'battery_capacity_mah' => $capacity,
-            'main_camera_mp' => $mainCam,
-            'selfie_camera_mp' => $selfieCam,
+            'main_camera_mp' => $setup,
+            'selfie_camera_mp' => $selfieCammp,
             'os' => $os,
             'chipset' => $chipset,
             'has_5g' => $has5G,
@@ -459,51 +465,83 @@ function getGlassProtectionShort($build)
     return implode(', ', array_unique($out));
 }
 
-function getShortCamera($mainCam)
+function getShortCamera(string $mainCam): string
 {
-    if ($mainCam && strpos($mainCam, ',') !== false) {
-        $camera = strtolower($mainCam);
-        $parts = array_map('trim', explode(',', $camera));
-        $labelsPriority = [
-            'wide' => 'Wide',
-            'ultrawide' => '(UW)',
-            'ultra wide' => '(UW)',
-            'telephoto' => 'Telephoto',
-            'macro' => 'Macro',
-            'depth' => 'Depth',
-            'periscope' => 'Periscope Telephoto',
-
-        ];
-
-        $final = [];
-        // First camera → always the first MP
-        preg_match('/(\d+(\.\d+)?)\s*mp/i', $parts[0], $mpMatch);
-        $final[] = $mpMatch[1] . 'MP';
-        // Second camera → choose based on priority
-        $second = null;
-        foreach ($labelsPriority as $key => $labelName) {
-            foreach ($parts as $part) {
-                if (strpos($part, $key) !== false) {
-                    preg_match('/(\d+(\.\d+)?)\s*mp/i', $part, $mpMatch);
-                    if ($mpMatch) {
-                        $second = $mpMatch[1] . 'MP ' . $labelName;
-                        break 2;
-                    }
-                }
-            }
-        }
-        // If no priority label found, take second camera if exists
-        if (!$second && isset($parts[1])) {
-            preg_match('/(\d+(\.\d+)?)\s*mp/i', $parts[1], $mpMatch);
-            $second = $mpMatch ? $mpMatch[1] . 'MP' : null;
-        }
-        if ($second) {
-            $final[] = $second;
-        }
-        $mainCam = implode(' + ', $final);
+    if (!$mainCam || !str_contains($mainCam, ',')) {
+        return $mainCam;
     }
 
-    return $mainCam;
+    $parts = array_map('trim', explode(',', strtolower($mainCam)));
+
+    $map = [
+        'periscope telephoto' => 'Periscope',
+        'telephoto'           => 'Telephoto',
+        'ultra-wide'          => 'Ultrawide',
+        'ultrawide'           => 'Ultrawide',
+        'ultra wide'          => 'Ultrawide',
+        'wide'                => 'Wide',
+        'macro'               => 'Macro',
+        'depth'               => 'Depth',
+    ];
+
+    $cameras = [];
+
+    foreach ($parts as $part) {
+        if (!preg_match('/(\d+(?:\.\d+)?)\s*mp/', $part, $mp)) {
+            continue;
+        }
+
+        $mp_value = (float) $mp[1];
+        $label = '';
+        
+        foreach ($map as $key => $short) {
+            if (str_contains($part, $key)) {
+                $label = $short;
+                break;
+            }
+        }
+
+        // Skip macro and depth sensors
+        if (in_array($label, ['Macro', 'Depth'])) {
+            continue;
+        }
+
+        $cameras[] = [
+            'text'  => $label ? "{$mp[1]}MP($label)" : "{$mp[1]}MP",
+            'mp'    => $mp_value,
+            'label' => $label ?:'Wide',
+        ];
+    }
+
+    if (empty($cameras)) {
+        return $mainCam;
+    }
+
+    // Start with main camera
+    $result = [$cameras[0]];
+
+    // Check for premium secondary cameras (≥48MP)
+    foreach ($cameras as $camera) {
+        if ($camera['label'] === 'Wide') {
+            continue; // Skip main, already added
+        }
+
+        // Add Periscope (always premium)
+        if ($camera['label'] === 'Periscope') {
+            $result[] = $camera;
+            continue;
+        }
+
+        // Add Telephoto or Ultrawide only if ≥48MP
+        if (in_array($camera['label'], ['Telephoto', 'Ultrawide']) && $camera['mp'] >= 48) {
+            $result[] = $camera;
+        }
+    }
+
+    // Limit to maximum 3 cameras
+    $result = array_slice($result, 0, 3);
+
+    return implode(',', array_column($result, 'text'));
 }
 
 // Alternative: Get individual highlight badges

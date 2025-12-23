@@ -57,7 +57,7 @@ class Phone extends Model
     {
         $spec = $this->specifications
             ->firstWhere('category', $category)
-                ?->specifications ?? [];
+            ?->specifications ?? [];
 
         return json_decode($spec, true) ?: [];
     }
@@ -191,8 +191,8 @@ class Phone extends Model
                         'refresh_rate' => $this->extractNumber($s['display']['refresh_rate'] ?? null),
                     ],
                     'camera' => [
-                        'main' => getShortCamera($s['main_camera']['setup'] ?? null),
-                        'front' => getShortCamera($s['selfie_camera']['setup'] ?? null),
+                        'main' => $s['main_camera']['setup'] ?? null,
+                        'front' => $s['selfie_camera']['setup'] ?? null,
                         'main_video' => getVideoHighlight($s['main_camera']['video'] ?? null),
                         'front_video' => getVideoHighlight($s['selfie_camera']['video'] ?? null),
                     ],
@@ -224,13 +224,6 @@ class Phone extends Model
             return null;
         preg_match('/\d+/', $value, $matches);
         return $matches[0] ?? null;
-    }
-
-    private function toBool($value)
-    {
-        if (!$value)
-            return null;
-        return strtolower($value) === 'yes' || strtolower($value) === 'true';
     }
 
     private function extractSize($value)
