@@ -431,7 +431,9 @@ function getGlassProtectionShort($build)
     $text = strtolower($build);
     $out = [];
 
-    // Front glass protections
+    /* ---------- FRONT ---------- */
+
+    // Known front glass protections
     $glassTypes = [
         '/gorilla\s+glass\s*(victus\s*\+?|victus\s*2|[a-z0-9+]+)?/i',
         '/ceramic\s+shield/i',
@@ -444,7 +446,6 @@ function getGlassProtectionShort($build)
         '/quartz\s+glass/i',
     ];
 
-    /* ---------- FRONT ---------- */
     foreach ($glassTypes as $regex) {
         if (preg_match($regex, $build, $m)) {
             $out[] = ucfirst(trim($m[0])) . ' (front)';
@@ -452,10 +453,7 @@ function getGlassProtectionShort($build)
         }
     }
 
-    if (
-        stripos($text, 'glass front') !== false &&
-        empty($out)
-    ) {
+    if (stripos($text, 'glass front') !== false && !preg_match('/gorilla|ceramic|dragon|sapphire|kunlun|shield/i', $build)) {
         $out[] = 'Glass front';
     }
 
@@ -466,10 +464,12 @@ function getGlassProtectionShort($build)
     /* ---------- BACK ---------- */
     $backMaterials = [];
 
+    // Glass back
     if (stripos($text, 'glass back') !== false) {
         $backMaterials[] = 'Glass back';
     }
 
+    // Fiber-reinforced plastic back
     if (
         stripos($text, 'fiber-reinforced plastic back') !== false ||
         stripos($text, 'fibre-reinforced plastic back') !== false
@@ -477,6 +477,12 @@ function getGlassProtectionShort($build)
         $backMaterials[] = 'Fiber-reinforced plastic back';
     }
 
+    // Silicone / polymer / leather type
+    if (preg_match('/(silicone\s+polymer\s*(\([^)]+\))?|eco\s+leather)/i', $build, $m)) {
+        $backMaterials[] = ucfirst(trim($m[0])) . ' back';
+    }
+
+    // Plain plastic back
     if (stripos($text, 'plastic back') !== false && empty($backMaterials)) {
         $backMaterials[] = 'Plastic back';
     }
@@ -485,8 +491,17 @@ function getGlassProtectionShort($build)
         $out[] = implode(' / ', array_unique($backMaterials));
     }
 
+    /* ---------- FRAME ---------- */
+    if (preg_match('/(plastic|aluminum|aluminium|stainless steel|titanium|carbon fiber)/i', $build, $m)) {
+        $frame = ucfirst(trim($m[0])) . ' frame';
+        if (!in_array($frame, $out)) {
+            $out[] = $frame;
+        }
+    }
+
     return implode(', ', array_unique($out));
 }
+
 
 
 
