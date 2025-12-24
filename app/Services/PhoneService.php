@@ -579,10 +579,10 @@ class PhoneService
         // }
 
         return [
-            'RAM Type' => $ram_type,
-            'Storage Type' => $storage_type,
-            'Memory' => implode(', ', $short),
-            'Card Slot' => $sd_card,
+            'ram_type' => $ram_type,
+            'storage_type' => $storage_type,
+            'memory' => implode(', ', $short),
+            'card_slot' => $sd_card,
             'expandable' => 0,
             'max_visible' => 4
         ];

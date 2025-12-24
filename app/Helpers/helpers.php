@@ -47,12 +47,8 @@ function update_phone_search_index(
     $refreshRateHz = $matches[1] ?? 60;
 
     // IP rating / durability
-    $ipRating = $specMap['build']['durability'] ?? null;
-
-    if ($ipRating) {
-        preg_match('/IP\d{2}/i', $ipRating, $matches);
-        $onlyIp = $matches[0] ?? null;
-    }
+    $ipRating = $specMap['build']['ip_rating'] ?? null;
+    $ipRating = shortIPRating($ipRating);
     // Weight
     $weight = $specMap['build']['weight'] ?? null;
     preg_match('/([\d.]+)\s*g/i', $weight, $matches);
@@ -68,22 +64,20 @@ function update_phone_search_index(
     // Extract commonly used specs
     $capacity = preg_replace('/[^0-9]/', '', $specMap['battery']['capacity']);
     $selfieCam = $specMap['selfie_camera']['setup'] ?? null;
-    $selfieCammp = preg_match('/\((\d+)\s*MP\)/', (string) $selfieCam, $matches) ? $matches[1] : '';
+    $selfieCammp = preg_match('/\(\s*(\d+)\s*mp\s*\)/i', (string) $selfieCam, $matches)
+    ? $matches[1]
+    : '';
     $mainCam = $specMap['main_camera']['setup'] ?? null;
     $mainCam = getShortCamera($mainCam);
 
     $shortChipset = getShortChipset($chipset);
     $cpuString = $specMap['performance']['cpu'];
-    $cpuType = "";
-    if ($cpuString) {
-        preg_match('/^[^(]+/', $cpuString, $match);
-        $cpuType = trim($match[0]);
-    }
+    $cpuType =cpuType($cpuString);
     $setup = isset($specMap['main_camera']['setup']) && !empty($specMap['main_camera']['setup'])
         ? explode(" ", $specMap['main_camera']['setup'])[0]
         : '';
     $main_camera_video = getVideoHighlight($specMap['main_camera']['video']);
-    $topSpecs = build_top_specs($specMap, $os, $release_date, $mainCam, $main_camera_video);
+    $topSpecs = build_top_specs($specMap, $os, $release_date, $mainCam, $main_camera_video, $ipRating);
     $specsGrid = build_specs_grid($sizeInInches, $specMap, $shortChipset, $cpuType, $mainCam, $main_camera_video);
     DB::table('phone_search_indices')->updateOrInsert(
         ['phone_id' => $phoneId],
@@ -173,23 +167,11 @@ function filterSpecs(array $arr): array
     return $out;
 }
 
-function build_top_specs($specMap, $os, $date, $mainCam, $main_camera_video)
+function build_top_specs($specMap, $os, $date, $mainCam, $main_camera_video, $ipRating)
 {
     $fornt_camera_video = getVideoHighlight($specMap['selfie_camera']['video']);
 
     $date = !empty($date) ? Carbon::parse($date)->format('j F, Y') : null;
-
-    $build = $specMap['build']['build'];
-    $durability = $specMap['build']['durability'];
-
-    $glassProtection = null;
-    $ipRating = null;
-    $glassProtection = getGlassProtectionShort($build);
-    // Matches IP ratings like IP68, IP67, IP54, IPX8, etc.
-    if (preg_match('/IP(?:\d|X){2}/i', $durability, $match)) {
-        $ipRating = strtoupper($match[0]) . ' Water Resistant';
-    }
-
     $updates = $specMap['security']['software_updates'] ?? "";
     if ($updates) {
         $shortUpdates = str_ireplace('updates', '', $updates);
@@ -663,4 +645,31 @@ function format_ip_rating($text)
     }
 
     return implode(', ', $parts);
+}
+
+function shortIPRating($ipRating) {
+    if (empty($ipRating)) return null;
+    
+    // Extract all IP codes (IP67, IP68, etc.)
+    if (preg_match_all('/IP\d{2}/i', $ipRating, $matches)) {
+        $ratings = array_map('strtoupper', $matches[0]);
+        
+        // Remove duplicates and return
+        $ratings = array_unique($ratings);
+        
+        // If multiple ratings, join with slash
+        return implode('/', $ratings); // "IP67/IP68"
+    }
+    
+    return $ipRating;
+}
+
+function cpuType($cpuString){
+     $cpuType = "";
+    if ($cpuString) {
+        preg_match('/^[^(]+/', $cpuString, $match);
+        $cpuType = trim($match[0]);
+    }
+
+    return $cpuType;
 }

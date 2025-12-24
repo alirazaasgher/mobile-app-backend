@@ -57,7 +57,7 @@ class Phone extends Model
     {
         $spec = $this->specifications
             ->firstWhere('category', $category)
-                ?->specifications ?? [];
+            ?->specifications ?? [];
 
         return json_decode($spec, true) ?: [];
     }
@@ -171,12 +171,6 @@ class Phone extends Model
     {
         $s = $this->specifications->keyBy('category')
             ->map(fn($spec) => json_decode($spec->specifications, true) ?: []);
-        $memoryVariants = $this->variants
-            ->map(function ($v) {
-                return $v->ram . 'GB / ' . $v->storage . (is_numeric($v->storage) ? 'GB' : '');
-            })
-            ->values()
-            ->toArray();
         try {
             $chargingSpec = $s['battery']['charging_speed'] ?? '';
             $wirlessCharging = $s['battery']['wireless'] ?? '';
@@ -184,31 +178,49 @@ class Phone extends Model
             $chargingSpec = shortChargingSpec($chargingSpec, $wirlessCharging, $reverceCharging);
             return [
                 'key' => [
-                    'battery' => [
-                        'capacity' => $s['battery']['capacity'] ?? null,
-                        'Fast' => $chargingSpec['fastCharging'] ?? null,
-                        'Wirless' => $chargingSpec['convertWirlessCharging'] ?? null,
-                        'Reverce' => $chargingSpec['convertReverceCharging'] ?? null,
-                    ],
                     'display' => [
                         'size' => $this->extractSize($s['display']['size'] ?? null),
                         'type' => getShortDisplay($s['display']['type'] ?? null),
                         'resolution' => $this->shortResolution($s['display']['resolution'] ?? null),
                         'refresh_rate' => $this->extractNumber($s['display']['refresh_rate'] ?? null),
                     ],
+                    'performance' => [
+                        'chipset' => getShortChipset($s['performance']['chipset'] ?? null),
+                        'cpu' => cpuType($s['performance']['cpu']) ?? null,
+                        'gpu' => $s['performance']['gpu'] ?? null,
+
+                    ],
+                    'memory' => $s['memory'],
                     'camera' => [
                         'main' => $s['main_camera']['setup'] ?? null,
                         'front' => $s['selfie_camera']['setup'] ?? null,
                         'main_video' => getVideoHighlight($s['main_camera']['video'] ?? null),
                         'front_video' => getVideoHighlight($s['selfie_camera']['video'] ?? null),
                     ],
-                    'performance' => [
-                        'chipset' => getShortChipset($s['performance']['chipset'] ?? null),
-                        'memory' => implode(', ', $memoryVariants)
+                    'battery' => [
+                        'capacity' => $s['battery']['capacity'] ?? null,
+                        'Fast' => $chargingSpec['fastCharging'] ?? null,
+                        'Wirless' => $chargingSpec['convertWirlessCharging'] ?? null,
+                        'Reverce' => $chargingSpec['convertReverceCharging'] ?? null,
                     ],
+
                     'software' => [
                         'os' => $this->shortOS($s['performance']['os'] ?? null),
                         'updates' => $s['performance']['update_policy'] ?? null,
+                    ],
+
+                    'build' => [
+                        'dimensions' => $s['build']['dimensions'] ?? null,
+                        'weight' => $s['build']['weight'] ?? null,
+                        'build' => getGlassProtectionShort($s['build']['build']) ?? null,
+                        'ip_rating' => shortIPRating($s['build']['ip_rating']) ?? null,
+                    ],
+
+                    'features' => [
+                        'nfc' => $s['connectivity']['nfc'] ?? null,
+                        'stereo_speakers' => $s['audio']['stereo'] ?? null,
+                        '3.5mm_jack' => $s['audio']['3.5mm_jack'] ?? null,
+                        // '5g' => $s['connectivity']['5g'] ?? null,
                     ],
                 ],
                 'expandable' => $s
