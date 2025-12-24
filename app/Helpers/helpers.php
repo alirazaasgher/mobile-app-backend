@@ -428,137 +428,68 @@ function getGlassProtectionShort($build)
         return null;
     }
 
-    $text = strtolower($build);
-    $out = [];
+    $parts = [];
 
     /* ---------- FRONT ---------- */
-    $glassTypes = [
-        '/corning\s+gorilla\s+armor\s*\d*/i',
-        '/gorilla\s+glass\s*victus\s+ceramic\s*\d*/i',
-        '/gorilla\s+glass\s*victus\s*\+?/i',
-        '/gorilla\s+glass\s*victus\s*\d*/i',
-        '/gorilla\s+glass\s*\d*[a-z]*/i',
-        '/ceramic\s+shield\s*\d*/i',
-        '/dragon\s+crystal\s+glass\s*\d*/i',
-        '/crystal\s*shield\s*glass/i',
-        '/sapphire(\s+crystal)?/i',
-        '/kunlun\s+glass/i',
-        '/shield\s+glass/i',
-        '/aluminosilicate\s+glass/i',
-        '/hardened\s+glass/i',
-        '/quartz\s+glass/i',
-    ];
+    preg_match_all('/
+        (glass|plastic)\s+front           # type of front
+        (?:\s*\(([^)]+)\))?               # optional material inside ()
+        \s*(?:\((folded|unfolded)\))?     # optional folded/unfolded
+    /ix', $build, $matches, PREG_SET_ORDER);
 
-    foreach ($glassTypes as $regex) {
-        if (preg_match($regex, $build, $m)) {
-            $glassName = ucwords(strtolower(trim($m[0])));
-            $out[] = 'Glass front (' . $glassName . ')';
-            break;
-        }
-    }
-
-    // Fallback generic front
-    if (empty($out)) {
-        if (preg_match('/glass front/i', $build)) {
-            $out[] = 'Glass front';
-        } elseif (preg_match('/plastic front/i', $build)) {
-            $out[] = 'Plastic front';
-        }
+    foreach ($matches as $m) {
+        $material = isset($m[2]) && $m[2] ? $m[2] : ucfirst(strtolower($m[1]));
+        $parts[] = trim($material) . ' (front)';
     }
 
     /* ---------- BACK ---------- */
-    $backMaterials = [];
+    // Handle alternative backs like "glass back or plastic back" or "aluminum alloy back / glass back"
+    preg_match_all('/
+        (glass|plastic|aluminum alloy|fiber-reinforced plastic|eco leather|silicone polymer) back   # back type
+        (?:\s*\(([^)]+)\))?                                                                        # optional material detail
+        (?:\s*(?:or|\/)\s*(glass|plastic|aluminum alloy|fiber-reinforced plastic|eco leather|silicone polymer) back)? # optional alternative
+    /ix', $build, $matches, PREG_SET_ORDER);
 
-    // Check for parenthetical back material (like Gorilla Glass Victus 2)
-    if (preg_match('/glass back\s*\(([^)]+)\)/i', $build, $m)) {
-        $backGlassType = ucwords(strtolower(trim($m[1])));
-        $backMaterials[] = 'Glass back (' . $backGlassType . ')';
-    }
+    foreach ($matches as $m) {
+        $mainBack = isset($m[2]) && $m[2] ? $m[2] : ucfirst(strtolower($m[1]));
+        $parts[] = trim($mainBack) . ' (back)';
 
-    // Check for eco leather / silicone polymer
-    if (preg_match('/silicone\s+polymer\s*\(([^)]+)\)/i', $build, $m)) {
-        $leatherType = ucwords(strtolower(trim($m[1])));
-        $backMaterials[] = 'Silicone polymer (' . $leatherType . ') back';
-    } elseif (preg_match('/eco\s+leather/i', $build)) {
-        $backMaterials[] = 'Eco leather back';
-    }
-
-    // Check for ceramic-glass fiber-reinforced polymer
-    if (preg_match('/ceramic-glass fiber-reinforced polymer back/i', $build)) {
-        $backMaterials[] = 'Ceramic-glass fiber-reinforced polymer back';
-    }
-
-    // Check for fiber-reinforced plastic
-    if (preg_match('/fiber-reinforced plastic back|fibre-reinforced plastic back/i', $build)) {
-        if (!in_array('Ceramic-glass fiber-reinforced polymer back', $backMaterials)) {
-            $backMaterials[] = 'Fiber-reinforced plastic back';
+        if (isset($m[3]) && $m[3]) {
+            $parts[] = ucfirst(strtolower($m[3])) . ' (back)';
         }
     }
 
-    // Handle "or" and "/" separators for back materials
-    if (preg_match('/(aluminum alloy back|glass back(?!\s*\())\s*[\/]\s*(glass back|aluminum alloy back)/i', $build, $m)) {
-        $parts = preg_split('/\s*[\/]\s*/', $m[0]);
-        foreach ($parts as $part) {
-            $backMaterials[] = ucwords(strtolower(trim($part)));
-        }
-    } elseif (preg_match('/(plastic back|glass back(?!\s*\())\s+or\s+(glass back|plastic back)/i', $build, $m)) {
-        $parts = preg_split('/\s+or\s+/', $m[0]);
-        foreach ($parts as $part) {
-            $backMaterials[] = ucwords(strtolower(trim($part)));
-        }
-    }
-
-    // Standard back materials (if not already captured)
-    if (empty($backMaterials)) {
-        if (preg_match('/glass back(?!\s*\()/i', $build)) {
-            $backMaterials[] = 'Glass back';
-        } elseif (preg_match('/plastic back/i', $build)) {
-            $backMaterials[] = 'Plastic back';
-        } elseif (preg_match('/aluminum alloy back/i', $build)) {
-            $backMaterials[] = 'Aluminum alloy back';
-        }
-    }
-
-    // Add back materials with proper separator
-    if (!empty($backMaterials)) {
-        if (count($backMaterials) > 1 && (stripos($build, ' or ') !== false || stripos($build, '/') !== false)) {
-            $out[] = implode(' / ', array_unique($backMaterials));
-        } else {
-            foreach ($backMaterials as $bm) {
-                $out[] = $bm;
-            }
-        }
+    // Handle special polymer back
+    if (preg_match('/ceramic-glass.*polymer back/i', $build)) {
+        $parts[] = 'Ceramic-glass fiber-reinforced polymer (back)';
     }
 
     /* ---------- FRAME ---------- */
-    $frameFound = false;
-    $framePatterns = [
-        '/titanium\s+hinge\s+housing/i' => 'Titanium hinge housing',
-        '/titanium\s+frame\s*\([^)]+\)/i' => function ($m) {
-            return ucwords(strtolower(trim($m[0]))); },
-        '/titanium\s+frame/i' => 'Titanium frame',
-        '/stainless steel\s+frame/i' => 'Stainless steel frame',
-        '/aluminum alloy\s+frame/i' => 'Aluminum alloy frame',
-        '/aluminium\s+frame/i' => 'Aluminium frame',
-        '/aluminum\s+frame/i' => 'Aluminum frame',
-        '/carbon fiber\s+frame/i' => 'Carbon fiber frame',
-        '/plastic\s+frame/i' => 'Plastic frame',
-    ];
+    preg_match_all('/
+        (titanium|aluminum alloy|aluminum|aluminium|stainless steel|plastic) frame   # frame type
+        (?:\s*\(([^)]+)\))?                                                           # optional details
+    /ix', $build, $matches, PREG_SET_ORDER);
 
-    foreach ($framePatterns as $regex => $replacement) {
-        if (preg_match($regex, $build, $m)) {
-            if (is_callable($replacement)) {
-                $out[] = $replacement($m);
-            } else {
-                $out[] = $replacement;
-            }
-            $frameFound = true;
-            break;
+    foreach ($matches as $m) {
+        $frame = ucfirst(strtolower($m[1]));
+        if (!empty($m[2])) {
+            $frame .= ' (' . strtolower($m[2]) . ')';
         }
+        $parts[] = $frame . ' frame';
     }
 
-    return implode(', ', array_unique($out));
+    // Special mention: Titanium hinge housing
+    if (preg_match('/titanium\s+hinge\s+housing/i', $build)) {
+        $parts[] = 'Titanium hinge housing';
+    }
+
+    // Remove duplicates and clean
+    $parts = array_unique($parts);
+    $parts = array_map('trim', $parts);
+
+    return !empty($parts) ? implode(', ', $parts) : null;
 }
+
 
 
 
