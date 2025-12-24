@@ -438,13 +438,13 @@ function getGlassProtectionShort($build)
         '/gorilla\s+glass\s*(victus\s*\+?|victus\s*2|[a-z0-9+]+)?/i',
         '/ceramic\s+shield/i',
         '/dragon\s+crystal\s+glass\s*\d*/i',
+        '/crystal\s+shield\s+glass/i',  // <-- move up
         '/sapphire(\s+crystal)?/i',
         '/kunlun\s+glass/i',
-        '/shield\s+glass/i',
+        '/shield\s+glass/i',            // <-- general pattern later
         '/aluminosilicate\s+glass/i',
         '/hardened\s+glass/i',
         '/quartz\s+glass/i',
-        '/crystal\s+shield\s+glass/i',  // <-- new
     ];
 
     foreach ($glassTypes as $regex) {
