@@ -671,19 +671,38 @@ function shortIPRating($ipRating)
         return null;
     }
 
-    // Match all IP ratings (IP66, IP68, IP69K, etc.)
+    $ratings = [];
+
+    // First, match standard IP ratings (IP66, IP68, IP69K, etc.)
     if (preg_match_all('/IP\d{2}K?/i', $ipRating, $matches)) {
-        $ratings = array_map('strtoupper', $matches[0]);
-
-        // Remove duplicates
-        $ratings = array_unique($ratings);
-
-        // Join with '/'
-        return implode('/', $ratings);
+        $ratings = array_merge($ratings, $matches[0]);
     }
 
-    // If no IP pattern found, just return the original text
-    return $ipRating;
+    // Then, match shorthand formats like "IP66/68/69" or "IP66/68/69K"
+    if (preg_match('/IP(\d{2}(?:\/\d{2}K?)+)/i', $ipRating, $matches)) {
+        // Extract the base "IP" and all the numbers
+        preg_match_all('/\d{2}K?/', $matches[1], $numbers);
+
+        foreach ($numbers[0] as $num) {
+            $ratings[] = 'IP' . $num;
+        }
+    }
+
+    if (empty($ratings)) {
+        return null;
+    }
+
+    // Normalize to uppercase
+    $ratings = array_map('strtoupper', $ratings);
+
+    // Remove duplicates while preserving order
+    $ratings = array_values(array_unique($ratings));
+
+    // Sort ratings for consistency
+    sort($ratings, SORT_NATURAL);
+
+    // Join with '/'
+    return implode('/', $ratings);
 }
 
 
