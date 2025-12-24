@@ -444,7 +444,11 @@ function getGlassProtectionShort($build)
         '/aluminosilicate\s+glass/i',
         '/hardened\s+glass/i',
         '/quartz\s+glass/i',
+        '/crystal\s+shield\s+glass/i',       // <-- new
+        '/gorilla\s+glass\s*victus\s*3/i',   // <-- new
+        '/dragon\s+trail\s+glass/i',         // <-- new
     ];
+
 
     foreach ($glassTypes as $regex) {
         if (preg_match($regex, $build, $m)) {
