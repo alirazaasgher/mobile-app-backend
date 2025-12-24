@@ -57,7 +57,7 @@ class Phone extends Model
     {
         $spec = $this->specifications
             ->firstWhere('category', $category)
-            ?->specifications ?? [];
+                ?->specifications ?? [];
 
         return json_decode($spec, true) ?: [];
     }
@@ -212,7 +212,7 @@ class Phone extends Model
                     'build' => [
                         'dimensions' => $s['build']['dimensions'] ?? null,
                         'weight' => $s['build']['weight'] ?? null,
-                        'build' => getGlassProtectionShort($s['build']['build']) ?? null,
+                        'build' => $s['build']['build'] ?? null,
                         'ip_rating' => shortIPRating($s['build']['ip_rating']) ?? null,
                     ],
 
