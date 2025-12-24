@@ -428,45 +428,58 @@ function getGlassProtectionShort($build)
         return null;
     }
 
-    $buildLower = strtolower($build);
+    $text = strtolower($build);
     $out = [];
 
-    // Known glass protections (extendable list)
+    // Known front glass protections
     $glassTypes = [
-        'gorilla glass' => '/gorilla\s+glass\s*(victus\s*\+?|victus\s*2|[a-z0-9+]+)?/i',
-        'ceramic shield' => '/ceramic\s+shield/i',
-        'dragon crystal glass' => '/dragon\s+crystal\s+glass\s*\d*/i',
-        'sapphire glass' => '/sapphire(\s+crystal)?/i',
-        'kunlun glass' => '/kunlun\s+glass/i',
-        'shield glass' => '/shield\s+glass/i',
-        'aluminosilicate' => '/aluminosilicate\s+glass/i',
-        'hardened glass' => '/hardened\s+glass/i',
-        'quartz glass' => '/quartz\s+glass/i',
+        '/gorilla\s+glass\s*(victus\s*\+?|victus\s*2|[a-z0-9+]+)?/i',
+        '/ceramic\s+shield/i',
+        '/dragon\s+crystal\s+glass\s*\d*/i',
+        '/sapphire(\s+crystal)?/i',
+        '/kunlun\s+glass/i',
+        '/shield\s+glass/i',
+        '/aluminosilicate\s+glass/i',
+        '/hardened\s+glass/i',
+        '/quartz\s+glass/i',
     ];
 
-    // Detect front protection
+    /* ---------- FRONT ---------- */
+
+    // Named front protection
     foreach ($glassTypes as $regex) {
         if (preg_match($regex, $build, $m)) {
             $out[] = ucfirst(trim($m[0])) . ' (front)';
-            break; // only one front protection
+            break;
         }
     }
 
-    // Fallback: plain glass front
+    // Plain glass front
     if (
-        stripos($buildLower, 'glass front') !== false &&
-        empty($out)
+        stripos($text, 'glass front') !== false &&
+        !preg_match('/gorilla\s+glass|ceramic\s+shield|dragon\s+crystal|sapphire|kunlun|shield\s+glass/i', $build)
     ) {
         $out[] = 'Glass front';
     }
 
-    // Glass back
-    if (stripos($buildLower, 'glass back') !== false) {
+    // Plastic front
+    if (stripos($text, 'plastic front') !== false) {
+        $out[] = 'Plastic front';
+    }
+
+    /* ---------- BACK ---------- */
+
+    if (stripos($text, 'glass back') !== false) {
         $out[] = 'Glass back';
+    }
+
+    if (stripos($text, 'plastic back') !== false) {
+        $out[] = 'Plastic back';
     }
 
     return implode(', ', array_unique($out));
 }
+
 
 function getShortCamera(string $mainCam): string
 {
