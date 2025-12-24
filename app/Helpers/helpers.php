@@ -65,14 +65,14 @@ function update_phone_search_index(
     $capacity = preg_replace('/[^0-9]/', '', $specMap['battery']['capacity']);
     $selfieCam = $specMap['selfie_camera']['setup'] ?? null;
     $selfieCammp = preg_match('/\(\s*(\d+)\s*mp\s*\)/i', (string) $selfieCam, $matches)
-    ? $matches[1]
-    : '';
+        ? $matches[1]
+        : '';
     $mainCam = $specMap['main_camera']['setup'] ?? null;
     $mainCam = getShortCamera($mainCam);
 
     $shortChipset = getShortChipset($chipset);
     $cpuString = $specMap['performance']['cpu'];
-    $cpuType =cpuType($cpuString);
+    $cpuType = cpuType($cpuString);
     $setup = isset($specMap['main_camera']['setup']) && !empty($specMap['main_camera']['setup'])
         ? explode(" ", $specMap['main_camera']['setup'])[0]
         : '';
@@ -177,6 +177,7 @@ function build_top_specs($specMap, $os, $date, $mainCam, $main_camera_video, $ip
         $shortUpdates = str_ireplace('updates', '', $updates);
         $shortUpdates = trim($shortUpdates);
     }
+    $glassProtection = getGlassProtectionShort($specMap['build']['build']);
 
     return [
         [
@@ -647,25 +648,28 @@ function format_ip_rating($text)
     return implode(', ', $parts);
 }
 
-function shortIPRating($ipRating) {
-    if (empty($ipRating)) return null;
-    
+function shortIPRating($ipRating)
+{
+    if (empty($ipRating))
+        return null;
+
     // Extract all IP codes (IP67, IP68, etc.)
     if (preg_match_all('/IP\d{2}/i', $ipRating, $matches)) {
         $ratings = array_map('strtoupper', $matches[0]);
-        
+
         // Remove duplicates and return
         $ratings = array_unique($ratings);
-        
+
         // If multiple ratings, join with slash
         return implode('/', $ratings); // "IP67/IP68"
     }
-    
+
     return $ipRating;
 }
 
-function cpuType($cpuString){
-     $cpuType = "";
+function cpuType($cpuString)
+{
+    $cpuType = "";
     if ($cpuString) {
         preg_match('/^[^(]+/', $cpuString, $match);
         $cpuType = trim($match[0]);
