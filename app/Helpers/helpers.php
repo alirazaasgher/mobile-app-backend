@@ -424,23 +424,45 @@ function getVideoHighlight($video)
 
 function getGlassProtectionShort($build)
 {
-    $out = [];
-
-    // Gorilla Glass / Ceramic Shield
-    if (preg_match('/(Gorilla\s+Glass\s+[A-Za-z0-9+]+|Ceramic\s+Shield)/i', $build, $m)) {
-        $out[] = trim($m[0]) . " (front)";
+    if (empty($build)) {
+        return null;
     }
 
-    // Glass front
-    if (stripos($build, 'glass front') !== false) {
-        if (!preg_match('/Gorilla|Ceramic/i', $build)) {
-            $out[] = "Glass front";
+    $buildLower = strtolower($build);
+    $out = [];
+
+    // Known glass protections (extendable list)
+    $glassTypes = [
+        'gorilla glass' => '/gorilla\s+glass\s*(victus\s*\+?|victus\s*2|[a-z0-9+]+)?/i',
+        'ceramic shield' => '/ceramic\s+shield/i',
+        'dragon crystal glass' => '/dragon\s+crystal\s+glass\s*\d*/i',
+        'sapphire glass' => '/sapphire(\s+crystal)?/i',
+        'kunlun glass' => '/kunlun\s+glass/i',
+        'shield glass' => '/shield\s+glass/i',
+        'aluminosilicate' => '/aluminosilicate\s+glass/i',
+        'hardened glass' => '/hardened\s+glass/i',
+        'quartz glass' => '/quartz\s+glass/i',
+    ];
+
+    // Detect front protection
+    foreach ($glassTypes as $regex) {
+        if (preg_match($regex, $build, $m)) {
+            $out[] = ucfirst(trim($m[0])) . ' (front)';
+            break; // only one front protection
         }
     }
 
+    // Fallback: plain glass front
+    if (
+        stripos($buildLower, 'glass front') !== false &&
+        empty($out)
+    ) {
+        $out[] = 'Glass front';
+    }
+
     // Glass back
-    if (stripos($build, 'glass back') !== false) {
-        $out[] = "Glass back";
+    if (stripos($buildLower, 'glass back') !== false) {
+        $out[] = 'Glass back';
     }
 
     return implode(', ', array_unique($out));
@@ -616,36 +638,6 @@ function shortChargingSpec($chargingSpec, $wirlessCharging, $reverceCharging)
         'convertWirlessCharging' => $convertWirlessCharging,
         'convertReverceCharging' => $convertReverceCharging
     ];
-}
-
-function format_ip_rating($text)
-{
-    if (!$text)
-        return null;
-
-    // Extract IP rating
-    preg_match('/IP\s?(\d{2})/i', $text, $ip);
-
-    // Extract depth (meters)
-    preg_match('/maximum depth of (\d+(\.\d+)?) meters?/i', $text, $depth);
-
-    // Extract time (minutes)
-    preg_match('/up to (\d+)\s*minutes?/i', $text, $time);
-
-    if (empty($ip))
-        return null;
-
-    $parts = ['IP' . $ip[1]];
-
-    if (!empty($depth[1])) {
-        $parts[] = "Maximum depth {$depth[1]} meters";
-    }
-
-    if (!empty($time[1])) {
-        $parts[] = "up to {$time[1]} minutes";
-    }
-
-    return implode(', ', $parts);
 }
 
 function shortIPRating($ipRating)
