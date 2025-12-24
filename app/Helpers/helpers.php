@@ -434,7 +434,7 @@ function getGlassProtectionShort($build)
     preg_match_all('#
         (glass|plastic)\s+front           # type of front
         (?:\s*\(([^)]+)\))?               # optional material inside ()
-        \s*(?:\((folded|unfolded)\))?     # optional folded/unfolded
+        (?:\s*\((folded|unfolded)\))?     # optional folded/unfolded
     #ix', $build, $matches, PREG_SET_ORDER);
 
     foreach ($matches as $m) {
@@ -444,9 +444,9 @@ function getGlassProtectionShort($build)
 
     /* ---------- BACK ---------- */
     preg_match_all('#
-        (glass|plastic|aluminum alloy|fiber-reinforced plastic|eco leather|silicone polymer) back   # back type
-        (?:\s*\(([^)]+)\))?                                                                        # optional material detail
-        (?:\s*(?:or|/)\s*(glass|plastic|aluminum alloy|fiber-reinforced plastic|eco leather|silicone polymer) back)? # optional alternative
+        (glass|plastic|aluminum[ ]alloy|fiber-reinforced[ ]plastic|eco[ ]leather|silicone[ ]polymer)[ ]back   # back type
+        (?:\s*\(([^)]+)\))?                                                                                    # optional material detail
+        (?:\s*(?:or|/)\s*(glass|plastic|aluminum[ ]alloy|fiber-reinforced[ ]plastic|eco[ ]leather|silicone[ ]polymer)[ ]back)? # optional alternative
     #ix', $build, $matches, PREG_SET_ORDER);
 
     foreach ($matches as $m) {
@@ -459,14 +459,14 @@ function getGlassProtectionShort($build)
     }
 
     // Special polymer back
-    if (preg_match('#ceramic-glass.*polymer back#i', $build)) {
+    if (preg_match('#ceramic-glass.*polymer[ ]back#i', $build)) {
         $parts[] = 'Ceramic-glass fiber-reinforced polymer (back)';
     }
 
     /* ---------- FRAME ---------- */
     preg_match_all('#
-        (titanium|aluminum alloy|aluminum|aluminium|stainless steel|plastic) frame   # frame type
-        (?:\s*\(([^)]+)\))?                                                           # optional details
+        (titanium|aluminum[ ]alloy|aluminum|aluminium|stainless[ ]steel|plastic)[ ]frame   # frame type
+        (?:\s*\(([^)]+)\))?                                                                 # optional details
     #ix', $build, $matches, PREG_SET_ORDER);
 
     foreach ($matches as $m) {
@@ -488,7 +488,6 @@ function getGlassProtectionShort($build)
 
     return !empty($parts) ? implode(', ', $parts) : null;
 }
-
 
 
 
