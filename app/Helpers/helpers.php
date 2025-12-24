@@ -671,18 +671,21 @@ function shortIPRating($ipRating)
         return null;
     }
 
-    // Match IP ratings including optional K (IP67, IP68, IP69K)
+    // Match all IP ratings (IP66, IP68, IP69K, etc.)
     if (preg_match_all('/IP\d{2}K?/i', $ipRating, $matches)) {
         $ratings = array_map('strtoupper', $matches[0]);
 
         // Remove duplicates
         $ratings = array_unique($ratings);
 
+        // Join with '/'
         return implode('/', $ratings);
     }
 
+    // If no IP pattern found, just return the original text
     return $ipRating;
 }
+
 
 
 function cpuType($cpuString)
