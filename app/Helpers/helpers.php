@@ -433,7 +433,7 @@ function getGlassProtectionShort($build)
 
     /* ---------- FRONT ---------- */
 
-    // Known front glass protections
+    // Known front glass protections (added Crystal Shield Glass)
     $glassTypes = [
         '/gorilla\s+glass\s*(victus\s*\+?|victus\s*2|[a-z0-9+]+)?/i',
         '/ceramic\s+shield/i',
@@ -444,20 +444,18 @@ function getGlassProtectionShort($build)
         '/aluminosilicate\s+glass/i',
         '/hardened\s+glass/i',
         '/quartz\s+glass/i',
-        '/crystal\s+shield\s+glass/i',       // <-- new
-        '/gorilla\s+glass\s*victus\s*3/i',   // <-- new
-        '/dragon\s+trail\s+glass/i',         // <-- new
+        '/crystal\s+shield\s+glass/i',  // <-- new
     ];
-
 
     foreach ($glassTypes as $regex) {
         if (preg_match($regex, $build, $m)) {
+            // Replace "Glass front (...)" with just the name + (front)
             $out[] = ucfirst(trim($m[0])) . ' (front)';
             break;
         }
     }
 
-    if (stripos($text, 'glass front') !== false && !preg_match('/gorilla|ceramic|dragon|sapphire|kunlun|shield/i', $build)) {
+    if (stripos($text, 'glass front') !== false && !preg_match('/gorilla|ceramic|dragon|sapphire|kunlun|shield|crystal/i', $build)) {
         $out[] = 'Glass front';
     }
 
@@ -468,12 +466,10 @@ function getGlassProtectionShort($build)
     /* ---------- BACK ---------- */
     $backMaterials = [];
 
-    // Glass back
     if (stripos($text, 'glass back') !== false) {
         $backMaterials[] = 'Glass back';
     }
 
-    // Fiber-reinforced plastic back
     if (
         stripos($text, 'fiber-reinforced plastic back') !== false ||
         stripos($text, 'fibre-reinforced plastic back') !== false
@@ -481,12 +477,10 @@ function getGlassProtectionShort($build)
         $backMaterials[] = 'Fiber-reinforced plastic back';
     }
 
-    // Silicone / polymer / leather type
     if (preg_match('/(silicone\s+polymer\s*(\([^)]+\))?|eco\s+leather)/i', $build, $m)) {
         $backMaterials[] = ucfirst(trim($m[0])) . ' back';
     }
 
-    // Plain plastic back
     if (stripos($text, 'plastic back') !== false && empty($backMaterials)) {
         $backMaterials[] = 'Plastic back';
     }
@@ -505,6 +499,7 @@ function getGlassProtectionShort($build)
 
     return implode(', ', array_unique($out));
 }
+
 
 
 
