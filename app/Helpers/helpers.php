@@ -431,7 +431,7 @@ function getGlassProtectionShort($build)
     $text = strtolower($build);
     $out = [];
 
-    // Known front glass protections
+    // Front glass protections
     $glassTypes = [
         '/gorilla\s+glass\s*(victus\s*\+?|victus\s*2|[a-z0-9+]+)?/i',
         '/ceramic\s+shield/i',
@@ -445,8 +445,6 @@ function getGlassProtectionShort($build)
     ];
 
     /* ---------- FRONT ---------- */
-
-    // Named front protection
     foreach ($glassTypes as $regex) {
         if (preg_match($regex, $build, $m)) {
             $out[] = ucfirst(trim($m[0])) . ' (front)';
@@ -454,31 +452,42 @@ function getGlassProtectionShort($build)
         }
     }
 
-    // Plain glass front
     if (
         stripos($text, 'glass front') !== false &&
-        !preg_match('/gorilla\s+glass|ceramic\s+shield|dragon\s+crystal|sapphire|kunlun|shield\s+glass/i', $build)
+        empty($out)
     ) {
         $out[] = 'Glass front';
     }
 
-    // Plastic front
     if (stripos($text, 'plastic front') !== false) {
         $out[] = 'Plastic front';
     }
 
     /* ---------- BACK ---------- */
+    $backMaterials = [];
 
     if (stripos($text, 'glass back') !== false) {
-        $out[] = 'Glass back';
+        $backMaterials[] = 'Glass back';
     }
 
-    if (stripos($text, 'plastic back') !== false) {
-        $out[] = 'Plastic back';
+    if (
+        stripos($text, 'fiber-reinforced plastic back') !== false ||
+        stripos($text, 'fibre-reinforced plastic back') !== false
+    ) {
+        $backMaterials[] = 'Fiber-reinforced plastic back';
+    }
+
+    if (stripos($text, 'plastic back') !== false && empty($backMaterials)) {
+        $backMaterials[] = 'Plastic back';
+    }
+
+    if (!empty($backMaterials)) {
+        $out[] = implode(' / ', array_unique($backMaterials));
     }
 
     return implode(', ', array_unique($out));
 }
+
 
 
 function getShortCamera(string $mainCam): string
