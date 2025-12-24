@@ -650,22 +650,23 @@ function format_ip_rating($text)
 
 function shortIPRating($ipRating)
 {
-    if (empty($ipRating))
+    if (empty($ipRating)) {
         return null;
+    }
 
-    // Extract all IP codes (IP67, IP68, etc.)
-    if (preg_match_all('/IP\d{2}/i', $ipRating, $matches)) {
+    // Match IP ratings including optional K (IP67, IP68, IP69K)
+    if (preg_match_all('/IP\d{2}K?/i', $ipRating, $matches)) {
         $ratings = array_map('strtoupper', $matches[0]);
 
-        // Remove duplicates and return
+        // Remove duplicates
         $ratings = array_unique($ratings);
 
-        // If multiple ratings, join with slash
-        return implode('/', $ratings); // "IP67/IP68"
+        return implode('/', $ratings);
     }
 
     return $ipRating;
 }
+
 
 function cpuType($cpuString)
 {
