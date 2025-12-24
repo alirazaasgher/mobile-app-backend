@@ -431,11 +431,11 @@ function getGlassProtectionShort($build)
     $parts = [];
 
     /* ---------- FRONT ---------- */
-    preg_match_all('/
+    preg_match_all('#
         (glass|plastic)\s+front           # type of front
         (?:\s*\(([^)]+)\))?               # optional material inside ()
         \s*(?:\((folded|unfolded)\))?     # optional folded/unfolded
-    /ix', $build, $matches, PREG_SET_ORDER);
+    #ix', $build, $matches, PREG_SET_ORDER);
 
     foreach ($matches as $m) {
         $material = isset($m[2]) && $m[2] ? $m[2] : ucfirst(strtolower($m[1]));
@@ -443,12 +443,11 @@ function getGlassProtectionShort($build)
     }
 
     /* ---------- BACK ---------- */
-    // Handle alternative backs like "glass back or plastic back" or "aluminum alloy back / glass back"
-    preg_match_all('/
+    preg_match_all('#
         (glass|plastic|aluminum alloy|fiber-reinforced plastic|eco leather|silicone polymer) back   # back type
         (?:\s*\(([^)]+)\))?                                                                        # optional material detail
-        (?:\s*(?:or|\/)\s*(glass|plastic|aluminum alloy|fiber-reinforced plastic|eco leather|silicone polymer) back)? # optional alternative
-    /ix', $build, $matches, PREG_SET_ORDER);
+        (?:\s*(?:or|/)\s*(glass|plastic|aluminum alloy|fiber-reinforced plastic|eco leather|silicone polymer) back)? # optional alternative
+    #ix', $build, $matches, PREG_SET_ORDER);
 
     foreach ($matches as $m) {
         $mainBack = isset($m[2]) && $m[2] ? $m[2] : ucfirst(strtolower($m[1]));
@@ -459,16 +458,16 @@ function getGlassProtectionShort($build)
         }
     }
 
-    // Handle special polymer back
-    if (preg_match('/ceramic-glass.*polymer back/i', $build)) {
+    // Special polymer back
+    if (preg_match('#ceramic-glass.*polymer back#i', $build)) {
         $parts[] = 'Ceramic-glass fiber-reinforced polymer (back)';
     }
 
     /* ---------- FRAME ---------- */
-    preg_match_all('/
+    preg_match_all('#
         (titanium|aluminum alloy|aluminum|aluminium|stainless steel|plastic) frame   # frame type
         (?:\s*\(([^)]+)\))?                                                           # optional details
-    /ix', $build, $matches, PREG_SET_ORDER);
+    #ix', $build, $matches, PREG_SET_ORDER);
 
     foreach ($matches as $m) {
         $frame = ucfirst(strtolower($m[1]));
@@ -478,8 +477,8 @@ function getGlassProtectionShort($build)
         $parts[] = $frame . ' frame';
     }
 
-    // Special mention: Titanium hinge housing
-    if (preg_match('/titanium\s+hinge\s+housing/i', $build)) {
+    // Titanium hinge housing
+    if (preg_match('#titanium\s+hinge\s+housing#i', $build)) {
         $parts[] = 'Titanium hinge housing';
     }
 
@@ -489,6 +488,7 @@ function getGlassProtectionShort($build)
 
     return !empty($parts) ? implode(', ', $parts) : null;
 }
+
 
 
 
