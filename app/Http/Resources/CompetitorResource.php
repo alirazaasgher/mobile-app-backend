@@ -12,10 +12,11 @@ class CompetitorResource extends JsonResource
         return [
             'id' => $this->id,
             'slug' => $this->slug,
+            'brand' => $this->brand,
             'name' => $this->name,
             'primary_image' => $this->primary_image ? $baseUrl . '/storage/' . ltrim($this->primary_image, '/')
                 : null,
-            'searchIndex' => new PhoneSearchResource($this->whenLoaded('searchIndex'),hideDetails: true),    
+            'searchIndex' => new PhoneSearchResource($this->whenLoaded('searchIndex'), hideDetails: true),
         ];
     }
 }

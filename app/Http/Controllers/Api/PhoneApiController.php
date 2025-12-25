@@ -133,7 +133,7 @@ class PhoneApiController extends Controller
             },
             // Competitors only need minimal info: id, name, slug, primary_image, brand_id
             'competitors' => function ($q) {
-                $q->select('phones.id', 'phones.name', 'brand_id', 'phones.slug', 'phones.primary_image') // minimal fields
+                $q->select('phones.id', 'phones.name', 'phones.slug', 'phones.primary_image') // minimal fields
                     ->with('searchIndex'); // eager load searchIndex
             }
         ])
