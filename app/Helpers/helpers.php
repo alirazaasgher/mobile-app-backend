@@ -177,10 +177,10 @@ function build_top_specs($specMap, $os, $date, $mainCam, $main_camera_video, $ip
         $shortUpdates = str_ireplace('updates', '', $updates);
         $shortUpdates = trim($shortUpdates);
     }
-    $glassProtection = getGlassProtectionShort($specMap['build']['build']);
-    echo "<pre>";
-    print_r($glassProtection);
-    exit;
+    //$glassProtection = getGlassProtectionShort($specMap['build']['build']);
+    // echo "<pre>";
+    // print_r($glassProtection);
+    // exit;
 
     return [
         [
