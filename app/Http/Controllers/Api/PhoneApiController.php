@@ -31,8 +31,8 @@ class PhoneApiController extends Controller
     {
         $cacheTTL = 43200;
         $usedPhoneIds = [];
-        $baseQuery = Phone::select('id','name', 'slug', 'release_date', 'primary_image', 'status', 'updated_at')
-            ->with(['searchIndex','brand:id,name'])
+        $baseQuery = Phone::select('id', 'name', 'slug', 'release_date', 'primary_image', 'status', 'updated_at')
+            ->with(['searchIndex', 'brand:id,name'])
             ->active();
 
         // Cache latest mobiles
@@ -426,7 +426,7 @@ class PhoneApiController extends Controller
 
             // If no filters, return mixed phones
             if (empty(array_filter($filters))) {
-                $query->select('id','brand:id,name', 'name', 'slug', 'release_date', 'primary_image', 'status', 'updated_at')
+                $query->select('id', 'brand', 'name', 'slug', 'release_date', 'primary_image', 'status', 'updated_at')
                     ->orderBy('release_date', 'desc')
                     ->inRandomOrder();
             }
