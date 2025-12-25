@@ -31,7 +31,7 @@ class PhoneApiController extends Controller
     {
         $cacheTTL = 43200;
         $usedPhoneIds = [];
-        $baseQuery = Phone::select('id', 'name', 'slug', 'release_date', 'primary_image', 'status', 'updated_at')
+        $baseQuery = Phone::select('id', 'name', 'brand_id', 'slug', 'release_date', 'primary_image', 'status', 'updated_at')
             ->with(['searchIndex', 'brand:id,name'])
             ->active();
 
@@ -152,7 +152,7 @@ class PhoneApiController extends Controller
         $priceRange = [$minPrice * 0.85, $maxPrice * 1.15];
         $avgPrice = ($phone->searchIndex->min_price_pkr + $phone->searchIndex->max_price_pkr) / 2;
 
-        $similarMobiles = Phone::with('searchIndex')
+        $similarMobiles = Phone::with(['searchIndex', 'brand:id,name'])
             ->join('phone_search_indices as psi', 'phones.id', '=', 'psi.phone_id')
             ->where('phones.id', '!=', $phone->id)
             ->when(!empty($competitorIds), fn($q) => $q->whereNotIn('phones.id', $competitorIds))
