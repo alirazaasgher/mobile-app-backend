@@ -31,8 +31,8 @@ class PhoneApiController extends Controller
     {
         $cacheTTL = 43200;
         $usedPhoneIds = [];
-        $baseQuery = Phone::select('id','brand:id,name', 'name', 'slug', 'release_date', 'primary_image', 'status', 'updated_at')
-            ->with(['searchIndex'])
+        $baseQuery = Phone::select('id','name', 'slug', 'release_date', 'primary_image', 'status', 'updated_at')
+            ->with(['searchIndex','brand:id,name'])
             ->active();
 
         // Cache latest mobiles
