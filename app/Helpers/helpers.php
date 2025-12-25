@@ -71,6 +71,9 @@ function update_phone_search_index(
     $mainCam = getShortCamera($mainCam);
 
     $shortChipset = getShortChipset($chipset);
+    echo "<pre>";
+    print_r($shortChipset);
+    exit;
     $cpuString = $specMap['performance']['cpu'];
     $cpuType = cpuType($cpuString);
     $setup = isset($specMap['main_camera']['setup']) && !empty($specMap['main_camera']['setup'])
@@ -287,39 +290,48 @@ function getShortChipset($chipset)
         return null;
     }
 
-    // If already short (chipset + 1-2 words + optional nm), return as-is
-    if (preg_match('/^(Snapdragon|Dimensity|A\d+|Exynos|Tensor|Kirin)\s+[\w\+\-]+(?:\s+[\w\+\-]+)?(?:\s*\(\d+\s*nm\))?$/i', $chipset)) {
-        return $chipset;
+    // Extract nm process once
+    $nm = null;
+    if (preg_match('/\((\d+\s*nm)\)/i', $chipset, $nmMatch)) {
+        $nm = $nmMatch[1];
     }
 
-    // Extract nm if present
-    preg_match('/\((\d+\s*nm)\)/i', $chipset, $nmMatch);
-    $nm = $nmMatch[1] ?? null;
-
-    // Extract main chipset keyword and following words
-    if (preg_match('/\b(Snapdragon|Dimensity|A\d+|Exynos|Tensor|Kirin)\s+([\w\+\-]+(?:\s+[\w\+\-]+)?)/i', $chipset, $chipMatch)) {
-        $chip = $chipMatch[1];
-        $suffix = $chipMatch[2];
-
-        // Stop at common filler words
-        $suffix = preg_replace('/\s+(Mobile|Platform|Processor|for|with|Edition|Series).*/i', '', $suffix);
-
-        $shortChip = $chip . ' ' . trim($suffix);
-    } elseif (preg_match('/\b(Snapdragon|Dimensity|A\d+|Exynos|Tensor|Kirin)\b/i', $chipset, $chipMatch)) {
-        // Just the chipset name without suffix
-        $shortChip = $chipMatch[1];
-    } else {
-        // No recognized chipset, return first 2-3 words
-        preg_match('/^(\S+(?:\s+\S+){0,2})/', $chipset, $fallbackMatch);
-        $shortChip = $fallbackMatch[1] ?? $chipset;
+    // Check if already short format (Brand + Chipset + Model + optional nm)
+    // Examples: "Google Tensor G5 (3 nm)", "MediaTek Dimensity 6300"
+    if (preg_match('/^(Google|MediaTek|Apple|Samsung|Huawei|Qualcomm)\s+(Snapdragon|Dimensity|A\d+|Exynos|Tensor|Kirin)\s+[\w\+\-]+(?:\s+[\w\+\-]+)?(?:\s*\(\d+\s*nm\))?$/i', $chipset)) {
+        return $chipset; // Already short, return as-is
     }
 
-    // Append nm if available and not already present
-    if ($nm && !preg_match('/\(\d+\s*nm\)/i', $shortChip)) {
-        $shortChip .= " ($nm)";
+    // Apple A-series (special handling)
+    if (preg_match('/\bApple\s+(A\d+(?:\s+\w+)?)/i', $chipset, $m)) {
+        $result = 'Apple ' . trim($m[1]);
+        return $nm && !str_contains($result, 'nm') ? "$result ($nm)" : $result;
     }
 
-    return $shortChip;
+    // Main chipset extraction - capture up to 4 words after chipset name
+    if (preg_match('/\b(Snapdragon|Dimensity|A\d+|Exynos|Tensor|Kirin)\s+([\w\+\-]+(?:\s+[\w\+\-]+){0,3})/i', $chipset, $m)) {
+        $chip = $m[1];
+        $suffix = $m[2];
+
+        // Remove common filler words (but NOT manufacturer names at this stage)
+        $suffix = preg_replace('/\s+(Mobile|Platform|Processor|for|with|Edition|Series|Galaxy).*$/i', '', $suffix);
+
+        $result = "$chip " . trim($suffix);
+        return $nm && !str_contains($result, 'nm') ? "$result ($nm)" : $result;
+    }
+
+    // Just chipset name without suffix
+    if (preg_match('/\b(Snapdragon|Dimensity|A\d+|Exynos|Tensor|Kirin)\b/i', $chipset, $m)) {
+        $result = $m[1];
+        return $nm ? "$result ($nm)" : $result;
+    }
+
+    // Fallback: first 2-3 words
+    if (preg_match('/^(\S+(?:\s+\S+){0,2})/', $chipset, $m)) {
+        return $m[1];
+    }
+
+    return $chipset;
 }
 
 function getShortDisplay($type)
