@@ -64,9 +64,12 @@ function update_phone_search_index(
     // Extract commonly used specs
     $capacity = preg_replace('/[^0-9]/', '', $specMap['battery']['capacity']);
     $selfieCam = $specMap['selfie_camera']['setup'] ?? null;
-    $selfieCammp = preg_match('/\(\s*(\d+)\s*mp\s*\)/i', (string) $selfieCam, $matches)
-        ? $matches[1]
-        : '';
+    if ($selfieCam) {
+        $selfieCammp = preg_match('/\(\s*(\d+)\s*mp\s*\)/i', (string) $selfieCam, $matches)
+            ? $matches[1]
+            : '';
+    }
+
     $mainCam = $specMap['main_camera']['setup'] ?? null;
     $mainCam = getShortCamera($mainCam);
 
