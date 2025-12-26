@@ -203,12 +203,12 @@ class MobileController extends Controller
         try {
             // primary image
             $primaryPath = $this->phoneService->handlePrimaryImage($request->file('primary_image'));
-
+            $brandName = Brand::find($validated['brand'])->name ?? 'unknown';
             // create phone
             $phone = Phone::create([
                 'brand_id' => $validated['brand'],
                 'name' => $validated['name'],
-                'slug' => Str::slug($validated['name']),
+                'slug' => Str::slug($brandName . ' ' . $validated['name']), // Brand + Name
                 'tagline' => $validated['tagline'] ?? null,
                 'primary_image' => $primaryPath,
                 'release_date' => $validated['release_date'] ?? null,
@@ -325,9 +325,11 @@ class MobileController extends Controller
         $sd_card = $request->input('sd_card');
         DB::beginTransaction();
         try {
+            $brandName = Brand::find($validated['brand'])->name ?? 'unknown';
             $primaryPath = $this->phoneService->handlePrimaryImage($request->file('primary_image'));
             $updateData = [
                 'brand_id' => $validated['brand'],
+                'slug' => Str::slug($brandName . ' ' . $validated['name']), // Brand + Name
                 'tagline' => $validated['tagline'] ?? null,
                 'release_date' => $validated['release_date'] ?? null,
                 'announced_date' => $request->input('announced_date') ?? null,
