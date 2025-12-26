@@ -101,7 +101,7 @@ function update_phone_search_index(
             'screen_size_inches' => $sizeInInches,
             'battery_capacity_mah' => $capacity,
             'main_camera_mp' => $setup,
-            'selfie_camera_mp' => $selfieCammp ?? '',
+            'selfie_camera_mp' => $selfieCammp ?? 0,
             'os' => $os,
             'chipset' => $chipset,
             'has_5g' => $has5G,
