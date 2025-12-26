@@ -42,6 +42,7 @@ class PhoneResource extends JsonResource
         }
         if ($request->query('details') || $request->routeIs('phones.show')) {
             $data['competitors'] = CompetitorResource::collection($this->whenLoaded('competitors'));
+            $data['description'] = $this->description;
         }
 
         return $data;
