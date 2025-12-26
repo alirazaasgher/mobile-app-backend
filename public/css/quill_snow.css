@@ -850,6 +850,7 @@
   box-sizing: border-box;
   font-family: 'Helvetica Neue', 'Helvetica', 'Arial', sans-serif;
   padding: 8px;
+  z-index: 10;
 }
 .ql-toolbar.ql-snow .ql-formats {
   margin-right: 15px;
@@ -942,4 +943,6 @@
 }
 .ql-container.ql-snow {
   border: 1px solid #ccc;
+  position: relative;
+    z-index: 1;
 }

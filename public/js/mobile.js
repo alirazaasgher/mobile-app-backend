@@ -1,34 +1,36 @@
 let colorCounter = 1;
 $(document).ready(function () {
-    $('.tab-btn').on('click', function (e) {
+    $(".tab-btn").on("click", function (e) {
         e.preventDefault();
-        const targetTab = $(this).data('tab');
+        const targetTab = $(this).data("tab");
 
         // Remove active state from all tabs
-        $('.tab-btn')
-            .removeClass('border-blue-600 text-blue-600 bg-blue-50')
-            .addClass('border-transparent text-gray-600')
-            .attr('aria-selected', 'false');
+        $(".tab-btn")
+            .removeClass("border-blue-600 text-blue-600 bg-blue-50")
+            .addClass("border-transparent text-gray-600")
+            .attr("aria-selected", "false");
 
         // Add active state to clicked tab
         $(this)
-            .addClass('border-blue-600 text-blue-600 bg-blue-50')
-            .removeClass('border-transparent text-gray-600')
-            .attr('aria-selected', 'true');
+            .addClass("border-blue-600 text-blue-600 bg-blue-50")
+            .removeClass("border-transparent text-gray-600")
+            .attr("aria-selected", "true");
 
         // Hide all tab contents
-        $('.tab-content').addClass('hidden');
+        $(".tab-content").addClass("hidden");
 
         // Show target tab content
-        $('#tab-' + targetTab).removeClass('hidden');
+        $("#tab-" + targetTab).removeClass("hidden");
     });
-    document.getElementById('variants-wrapper').addEventListener('click', function (e) {
-        if (e.target.classList.contains('remove-variant')) {
-            e.target.closest('.variant-row').remove();
-        }
-    });
+    document
+        .getElementById("variants-wrapper")
+        .addEventListener("click", function (e) {
+            if (e.target.classList.contains("remove-variant")) {
+                e.target.closest(".variant-row").remove();
+            }
+        });
 
-    $(document).on('click', '#addColorBtn', function () {
+    $(document).on("click", "#addColorBtn", function () {
         colorCounter++;
         const colorId = `color_${colorCounter}`;
         const colorSlug = colorId.toLowerCase();
@@ -36,7 +38,7 @@ $(document).ready(function () {
         const html = `
         <div class="color-option-row flex items-center space-x-2 w-full border p-2 rounded" id="${colorId}">
             <input type="checkbox" name="variants[colors][]" value="${colorSlug}" class="rounded flex-shrink-0" checked>
-            
+
             <div class="color-preview w-4 h-4 rounded-full border flex-shrink-0" style="background-color: #000000"></div>
 
             <input type="text" name="variants[color_names][${colorSlug}]" placeholder="Color Name"
@@ -54,43 +56,51 @@ $(document).ready(function () {
         </div>
     `;
 
-        $('#color-options-container').append(html);
+        $("#color-options-container").append(html);
     });
 
-    $(document).on('click', '.remove-color', function () {
-        $(this).closest('.color-option-row').remove();
+    $(document).on("click", ".remove-color", function () {
+        $(this).closest(".color-option-row").remove();
     });
-     $('select[name="competitors[]"]').select2({
+    $('select[name="competitors[]"]').select2({
         placeholder: "Select Status",
-        width: "100%"
+        width: "100%",
     });
 
-    $('.quill-editor').each(function () {
+    $(".quill-editor").each(function () {
         const editor = this;
-        const textarea = $(editor).next('textarea')[0];
+        const targetId = $(editor).data("target"); // Get the target textarea ID
+        const textarea = $("#" + targetId)[0]; // Find textarea by ID
 
         const quill = new Quill(editor, {
-            theme: 'snow',
+            theme: "snow",
             modules: {
                 toolbar: [
                     [{ font: [] }, { size: [] }],
-                    ['bold', 'italic', 'underline', 'strike'],
+                    ["bold", "italic", "underline", "strike"],
                     [{ color: [] }, { background: [] }],
-                    [{ script: 'sub' }, { script: 'super' }],
-                    [{ header: 1 }, { header: 2 }, 'blockquote', 'code-block'],
-                    [{ list: 'ordered' }, { list: 'bullet' }, { indent: '-1' }, { indent: '+1' }],
-                    [{ direction: 'rtl' }, { align: [] }],
-                    ['link', 'image', 'video'],
-                    ['clean']
-                ]
-            }
+                    [{ script: "sub" }, { script: "super" }],
+                    [{ header: 1 }, { header: 2 }, "blockquote", "code-block"],
+                    [
+                        { list: "ordered" },
+                        { list: "bullet" },
+                        { indent: "-1" },
+                        { indent: "+1" },
+                    ],
+                    [{ direction: "rtl" }, { align: [] }],
+                    ["link", "image", "video"],
+                    ["clean"],
+                ],
+            },
         });
 
         // Load existing value
-        quill.root.innerHTML = textarea.value;
+        if (textarea && textarea.value) {
+            quill.root.innerHTML = textarea.value;
+        }
 
         // Sync HTML back to textarea
-        quill.on('text-change', function () {
+        quill.on("text-change", function () {
             textarea.value = quill.root.innerHTML;
         });
     });
