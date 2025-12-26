@@ -67,7 +67,7 @@ function update_phone_search_index(
     if ($selfieCam) {
         $selfieCammp = preg_match('/\(\s*(\d+)\s*mp\s*\)/i', (string) $selfieCam, $matches)
             ? $matches[1]
-            : '';
+            : 0;
     }
 
     $mainCam = $specMap['main_camera']['setup'] ?? null;
