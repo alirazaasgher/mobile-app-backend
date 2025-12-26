@@ -177,10 +177,10 @@ function build_top_specs($specMap, $os, $date, $mainCam, $main_camera_video, $ip
         $shortUpdates = str_ireplace('updates', '', $updates);
         $shortUpdates = trim($shortUpdates);
     }
-    //$glassProtection = getGlassProtectionShort($specMap['build']['build']);
-    // echo "<pre>";
-    // print_r($glassProtection);
-    // exit;
+    $glassProtection = getGlassProtectionShort($specMap['build']['build']);
+    echo "<pre>";
+    print_r($glassProtection);
+    exit;
 
     return [
         [
@@ -440,92 +440,135 @@ function getGlassProtectionShort($build)
         return null;
     }
 
-    $parts = [];
+    $front = [];
+    $back  = [];
+    $frame = [];
+
+    // Common materials pattern
+    $materials = 'glass|plastic|aluminum\s+alloy|fiber-reinforced\s+plastic|' .
+                 'eco\s+leather|silicone\s+polymer|ceramic-glass\s+fiber-reinforced\s+polymer';
+                 
 
     /* ---------- FRONT ---------- */
-    preg_match_all('~
-        (glass|plastic)\s+front
-        (?:\s*\(([^)]+)\))?
-        (?:\s*\((folded|unfolded)\))?
-    ~ix', $build, $matches, PREG_SET_ORDER);
-
-    foreach ($matches as $m) {
-        $material = !empty($m[2])
-            ? trim($m[2])
-            : ucfirst(strtolower($m[1]));
-
-        $parts[] = $material . ' (front)';
+    if (preg_match_all('~(glass|plastic)\s+front(?:\s*\(([^)]+)\))?~ix', $build, $matches, PREG_SET_ORDER)) {
+        foreach ($matches as $m) {
+            $material = !empty($m[2]) ? trim($m[2]) : ucfirst(strtolower($m[1]));
+            $front[] = $material . ' (Front)';
+        }
     }
 
     /* ---------- BACK ---------- */
-    preg_match_all('~
-        (glass|plastic|aluminum\s+alloy|fiber-reinforced\s+plastic|eco\s+leather|silicone\s+polymer)
-        (?:\s*\(([^)]+)\))?
-        \s+back
-        (?:\s*(?:or|/)\s*
-            (glass|plastic|aluminum\s+alloy|fiber-reinforced\s+plastic|eco\s+leather|silicone\s+polymer)
-            \s+back
-        )?
-    ~ix', $build, $matches, PREG_SET_ORDER);
-
+    if (preg_match_all("~($materials)(?:\s*\(([^)]+)\))?\s+back(?:\s*\(([^)]+)\))?(?:\s*(?:or|/)\s*($materials)(?:\s*\(([^)]+)\))?\s+back(?:\s*\(([^)]+)\))?)?~ix", 
+    $build, $matches, PREG_SET_ORDER)) {
+    
     foreach ($matches as $m) {
-        $mainBack = !empty($m[2])
-            ? ucfirst(strtolower($m[2]))
-            : ucfirst(strtolower($m[1]));
-
-        $parts[] = $mainBack . ' (back)';
-
+        $backMaterials = [];
+        
+        // First back material
+        // Check if there's branding in parentheses within the material (m[2]) or after "back" (m[3])
         if (!empty($m[3])) {
-            $parts[] = ucfirst(strtolower($m[3])) . ' (back)';
+            $backMaterials[] = ucfirst(trim($m[3]));
+        } elseif (!empty($m[2])) {
+            $backMaterials[] = ucfirst(trim($m[2]));
+        } else {
+            $backMaterials[] = ucfirst(strtolower($m[1]));
         }
+        
+        // Second back material (if exists)
+        if (!empty($m[4])) {
+            if (!empty($m[6])) {
+                $backMaterials[] = ucfirst(trim($m[6]));
+            } elseif (!empty($m[5])) {
+                $backMaterials[] = ucfirst(trim($m[5]));
+            } else {
+                $backMaterials[] = ucfirst(strtolower($m[4]));
+            }
+        }
+        
+        $back[] = implode(' or ', $backMaterials) . ' (Back)';
     }
+}
 
     /* ---------- FRAME ---------- */
-    preg_match_all('~
-        (titanium|aluminum\s+alloy|aluminum|aluminium|stainless\s+steel|plastic)\s+frame
-        (?:\s*\(([^)]+)\))?
-    ~ix', $build, $matches, PREG_SET_ORDER);
-
-    foreach ($matches as $m) {
-        $frame = ucfirst(strtolower($m[1]));
-        if (!empty($m[2])) {
-            $frame .= ' (' . strtolower($m[2]) . ')';
-        }
-        $parts[] = $frame . ' frame';
-    }
-
-    /* ---------- SMART NORMALIZATION ---------- */
-
-    // Copy branded front glass to back if back is generic glass
-    $frontGlass = null;
-    foreach ($parts as $p) {
-        if (preg_match('/^(Gorilla Glass|Ceramic Shield|Dragontrail|Victus[^()]*)[^()]*\(front\)$/i', $p)) {
-            $frontGlass = preg_replace('/\s+\(front\)$/i', '', $p);
-            break;
+    if (preg_match_all('~(titanium|aluminum\s+alloy|aluminum|aluminium|stainless\s+steel|plastic)\s+frame(?:\s*\(([^)]+)\))?~ix', 
+        $build, $matches, PREG_SET_ORDER)) {
+        
+        foreach ($matches as $m) {
+            $material = ucfirst(strtolower(str_replace('aluminium', 'aluminum', $m[1])));
+            if (!empty($m[2])) {
+                $material .= ' (' . trim($m[2]) . ')';
+            }
+            $frame[] = $material . ' Frame';
         }
     }
 
-    // if ($frontGlass) {
-    //     foreach ($parts as &$p) {
-    //         if ($p === 'Glass (back)') {
-    //             $p = $frontGlass . ' (back)';
-    //         }
-    //     }
-    //     unset($p);
-    // }
+    /* ---------- SMART CLEANUP ---------- */
+    $brandedGlassPattern = '/(Gorilla Glass|Ceramic Shield|Dragon|Victus|Crystal Shield|Corning|Armor)/i';
+    
+    foreach (['Front' => &$front, 'Back' => &$back] as $side => &$list) {
+        if (empty($list)) continue;
+        
+        $hasBranded = false;
+        foreach ($list as $item) {
+            if (preg_match($brandedGlassPattern, $item)) {
+                $hasBranded = true;
+                break;
+            }
+        }
+        
+        if ($hasBranded) {
+            $list = array_values(array_filter($list, fn($v) => !preg_match('/^Glass \(' . $side . '\)$/i', $v)));
+        }
+    }
+    unset($list);
 
-    // Remove generic glass front + back if both exist
-    if (in_array('Glass (front)', $parts, true) && in_array('Glass (back)', $parts, true)) {
-        $parts = array_filter($parts, function ($p) {
-            return !in_array($p, ['Glass (front)', 'Glass (back)'], true);
-        });
+    /* ---------- MERGE SAME FRONT + BACK ---------- */
+    if (!empty($front) && !empty($back)) {
+        $frontMap = [];
+        $backMap  = [];
+
+        foreach ($front as $f) {
+            if (preg_match('/^(.*)\s+\(Front\)$/', $f, $m)) {
+                $frontMap[strtolower($m[1])] = $m[1];
+            }
+        }
+        foreach ($back as $b) {
+            if (preg_match('/^(.*)\s+\(Back\)$/', $b, $m)) {
+                $backMap[strtolower($m[1])] = $m[1];
+            }
+        }
+
+        $common = array_intersect_key($frontMap, $backMap);
+        if (!empty($common)) {
+            $label = reset($common);
+            $front = array_values(array_filter($front, fn($v) => stripos($v, $label) === false));
+            $back  = array_values(array_filter($back, fn($v) => stripos($v, $label) === false));
+            array_unshift($front, $label . ' (Front, Back)');
+        }
     }
 
-    // Cleanup
-    $parts = array_unique(array_map('trim', $parts));
+    /* ---------- PICK ONLY ONE PER SIDE (premium first) ---------- */
+    $frontHighlight = !empty($front) ? reset($front) : null;
+    
+    $backHighlight = null;
+    if (!empty($back)) {
+        foreach ($back as $b) {
+            if (preg_match($brandedGlassPattern, $b)) {
+                $backHighlight = $b;
+                break;
+            }
+        }
+        $backHighlight = $backHighlight ?: reset($back);
+    }
+    
+    $frameHighlight = !empty($frame) ? reset($frame) : null;
 
-    return $parts ? implode(', ', $parts) : null;
+    /* ---------- FINAL OUTPUT ---------- */
+    $parts = array_filter([$frontHighlight, $backHighlight, $frameHighlight]);
+    return !empty($parts) ? implode(' · ', $parts) : null;
 }
+
+
 
 
 
