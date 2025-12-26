@@ -185,9 +185,11 @@ class MobileController extends Controller
     public function store(Request $request)
     {
 
+
         $validated = $request->validate([
             'brand' => 'required|string',
             'name' => 'required|string|max:255',
+            'description' => 'nullable|string',
             'tagline' => 'nullable|string',
             'release_date' => 'nullable|date',
             'variants' => 'required|array|min:1',
@@ -209,6 +211,7 @@ class MobileController extends Controller
                 'brand_id' => $validated['brand'],
                 'name' => $validated['name'],
                 'slug' => Str::slug($brandName . ' ' . $validated['name']), // Brand + Name
+                'description' => $validated['description'] ?? null, // Brand + Name
                 'tagline' => $validated['tagline'] ?? null,
                 'primary_image' => $primaryPath,
                 'release_date' => $validated['release_date'] ?? null,
@@ -304,13 +307,11 @@ class MobileController extends Controller
     public function update(Request $request, $id)
     {
 
-        // echo "<pre>";
-        // print_r($request->all());
-        // exit;
         $validated = $request->validate([
             'brand' => 'required|string',
             'name' => 'required|string|max:255',
             'slug' => 'nullable|string|max:50',
+            'description' => 'nullable|string',
             'tagline' => 'nullable|string',
             'release_date' => 'nullable|date',
             'variants' => 'required|array|min:1',
@@ -330,6 +331,7 @@ class MobileController extends Controller
             $updateData = [
                 'brand_id' => $validated['brand'],
                 'slug' => Str::slug($brandName . ' ' . $validated['name']), // Brand + Name
+                'description' => $validated['description'] ?? null, // Brand + Name
                 'tagline' => $validated['tagline'] ?? null,
                 'release_date' => $validated['release_date'] ?? null,
                 'announced_date' => $request->input('announced_date') ?? null,

@@ -13,6 +13,7 @@ class Phone extends Model
     protected $fillable = [
         'brand_id',
         'slug',
+        'description',
         'name',
         'tagline',
         'primary_image',
