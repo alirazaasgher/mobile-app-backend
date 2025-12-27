@@ -23,7 +23,7 @@ Route::middleware(['verify.api.signature'])->group(function () {
     });
 
     // ⚖️ Compare endpoints - 10/min
-    Route::middleware('throttle:10,1')->group(function () {
+    Route::middleware('throttle:100,1')->group(function () {
         Route::post('/phones/compare', [PhoneApiController::class, 'compare']);
     });
 
