@@ -266,7 +266,7 @@ class PhoneApiController extends Controller
         ]);
 
         $filters = $validated['filters'] ?? [];
-        $perPage = $validated['per_page'] ?? 20;
+        $perPage = $validated['per_page'] ?? 30;
         // $query = Phone::active()->with(['brand:id,name', 'searchIndex']);
         $page = $validated['page'] ?? 1;
         // Generate a unique cache key
