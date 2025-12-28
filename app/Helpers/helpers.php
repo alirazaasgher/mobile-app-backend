@@ -74,9 +74,6 @@ function update_phone_search_index(
     $mainCam = getShortCamera($mainCam);
 
     $shortChipset = getShortChipset($chipset);
-    echo "<pre>";
-    print_r($shortChipset);
-    exit;
     $cpuString = $specMap['performance']['cpu'];
     $cpuType = cpuType($cpuString);
     $setup = isset($specMap['main_camera']['setup']) && !empty($specMap['main_camera']['setup'])
