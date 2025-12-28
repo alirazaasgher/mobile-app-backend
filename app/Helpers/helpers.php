@@ -74,6 +74,9 @@ function update_phone_search_index(
     $mainCam = getShortCamera($mainCam);
 
     $shortChipset = getShortChipset($chipset);
+    echo "<pre>";
+    print_r($shortChipset);
+    exit;
     $cpuString = $specMap['performance']['cpu'];
     $cpuType = cpuType($cpuString);
     $setup = isset($specMap['main_camera']['setup']) && !empty($specMap['main_camera']['setup'])
@@ -252,8 +255,6 @@ function build_specs_grid($sizeInInches, $specMap, $shortChipset, $cpuType, $mai
     $chargingSpec = $specMap['battery']['charging_speed'] ?? '';
     $wirlessCharging = $specMap['battery']['wireless'] ?? '';
     $reverceCharging = $specMap['battery']['reverse'] ?? '';
-    $convertWirlessCharging = null;
-    $convertReverceCharging = null;
     $chargingSpec = shortChargingSpec($chargingSpec, $wirlessCharging, $reverceCharging);
     return [
         [
@@ -294,6 +295,11 @@ function getShortChipset($chipset)
     $nm = null;
     if (preg_match('/\((\d+\s*nm)\)/i', $chipset, $nmMatch)) {
         $nm = $nmMatch[1];
+    }
+
+    // SPECIFIC FIX: Remove "Qualcomm " prefix only for Snapdragon short strings
+    if (preg_match('/^Qualcomm\s+Snapdragon\b/i', $chipset)) {
+        $chipset = preg_replace('/^Qualcomm\s+/i', '', $chipset);
     }
 
     // Check if already short format (Brand + Chipset + Model + optional nm)
