@@ -40,7 +40,17 @@ Route::middleware(['verify.api.signature'])->group(function () {
         Route::get('/count', [PhoneApiController::class, 'count']);
     });
 });
+Route::fallback(function (Request $request) {
+    if ($request->isMethod('OPTIONS')) {
+        return response('', 204)
+            ->header('Access-Control-Allow-Origin', '*')
+            ->header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
+            ->header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, X-XSRF-Token, Accept')
+            ->header('Access-Control-Max-Age', '3600');
+    }
 
+    return response()->json(['error' => 'Not Found'], 404);
+});
 
 // // Admin routes (protected by auth middleware)
 // Route::middleware(['auth:sanctum', 'admin'])->prefix('admin')->group(function () {
