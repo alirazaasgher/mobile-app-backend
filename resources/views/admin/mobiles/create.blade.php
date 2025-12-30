@@ -105,7 +105,7 @@
           {{-- Show current image in Edit --}}
           @if(isset($mobile) && $mobile->primary_image)
             <div class="mt-2">
-              <img src="{{ env('R2_PUBLIC_URL') . $mobile->primary_image }}" alt="Primary Image"
+              <img src="{{ env('R2_PUBLIC_URL') .'/'. $mobile->primary_image }}" alt="Primary Image"
      class="w-24 h-24 object-cover rounded">
             </div>
           @endif
