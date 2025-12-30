@@ -345,12 +345,23 @@ class PhoneService
     /**
      * Handle primary image upload. Returns stored path or null.
      */
+
     public function handlePrimaryImage(?UploadedFile $file): ?string
     {
-        if ($file && $file->isValid()) {
-            return $file->store('primary_images', 'public');
+        if (!$file || !$file->isValid()) {
+            return null;
         }
-        return null;
+
+        $filename = Str::uuid() . '.' . $file->getClientOriginalExtension();
+        $path = 'primary_images/' . date('Y/m') . '/' . $filename;
+
+        Storage::disk('r2')->put(
+            $path,
+            file_get_contents($file),
+            ['visibility' => 'public']
+        );
+
+        return env('R2_PUBLIC_URL') . '/' . $path;
     }
 
     /**
