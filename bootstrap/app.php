@@ -1,9 +1,9 @@
 <?php
 
+use App\Http\Middleware\VerifyApiSignature;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
-use App\Http\Middleware\VerifyApiSignature;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -15,7 +15,12 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->alias([
             'verify.api.signature' => VerifyApiSignature::class,
-            'admin' => \App\Http\Middleware\AdminMiddleware::class,
+            'admin' => App\Http\Middleware\AdminMiddleware::class,
+        ]);
+
+        $middleware->validateCsrfTokens(except: [
+            'admin/mobiles',
+            'admin/mobiles/*',
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
