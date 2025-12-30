@@ -2,7 +2,14 @@
 
 use App\Http\Controllers\Api\PhoneApiController;
 use Illuminate\Support\Facades\Route;
+Route::get('/clear-cache', function () {
+    Artisan::call('cache:clear');
+    Artisan::call('config:clear');
+    Artisan::call('route:clear');
+    Artisan::call('view:clear');
 
+    return "All caches cleared!";
+});
 Route::middleware(['verify.api.signature'])->group(function () {
 
     // 📄 Listing endpoints - 100/min

@@ -16,9 +16,6 @@ class VerifyApiSignature
      */
     public function handle($request, Closure $next)
     {
-        echo "<pre>";
-        print_r("h");
-        exit;
         return $next($request);
 
         $clientId = $request->header('X-CLIENT-ID');
