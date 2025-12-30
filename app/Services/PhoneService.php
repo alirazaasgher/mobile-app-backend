@@ -361,7 +361,7 @@ class PhoneService
             ['visibility' => 'public']
         );
 
-        return env('R2_PUBLIC_URL') . '/' . $path;
+        return $path;
     }
 
     /**
