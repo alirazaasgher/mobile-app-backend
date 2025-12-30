@@ -29,45 +29,38 @@ class PhoneApiController extends Controller
      */
     public function index(Request $request): JsonResponse
     {
-        $cacheTTL = 43200;
         $usedPhoneIds = [];
         $baseQuery = Phone::select('id', 'name', 'brand_id', 'slug', 'release_date', 'primary_image', 'status', 'updated_at')
             ->with(['searchIndex', 'brand:id,name'])
             ->active();
 
-        // Cache latest mobiles
-        $latestMobiles = Cache::tags(['phones', 'latest'])->remember('latest_mobiles', $cacheTTL, function () use ($baseQuery) {
-            return (clone $baseQuery)
-                ->where('is_popular', 0)
-                ->whereNotNull('release_date')
-                ->orderByDesc('release_date')
-                ->take(12)
-                ->get();
-        });
+        // Latest mobiles
+        $latestMobiles = (clone $baseQuery)
+            ->where('is_popular', 0)
+            ->whereNotNull('release_date')
+            ->orderByDesc('release_date')
+            ->take(12)
+            ->get();
         $usedPhoneIds = $latestMobiles->pluck('id')->toArray();
 
-        // Cache upcoming mobiles
-        $upcomingMobiles = Cache::tags(['phones', 'upcoming'])->remember('upcoming_mobiles', $cacheTTL, function () use ($baseQuery, $usedPhoneIds) {
-            return (clone $baseQuery)
-                ->whereIn('status', ['rumored', 'upcoming'])
-                ->whereNotIn('id', $usedPhoneIds)
-                ->orderBy('release_date', 'asc')
-                ->take(12)
-                ->get();
-        });
+        // Upcoming mobiles
+        $upcomingMobiles = (clone $baseQuery)
+            ->whereIn('status', ['rumored', 'upcoming'])
+            ->whereNotIn('id', $usedPhoneIds)
+            ->orderBy('release_date', 'asc')
+            ->take(12)
+            ->get();
         $usedPhoneIds = array_merge($usedPhoneIds, $upcomingMobiles->pluck('id')->toArray());
 
-        // Cache popular mobiles
-        $popularMobiles = Cache::tags(['phones', 'popular'])->remember('popular_mobiles', $cacheTTL, function () use ($baseQuery, $usedPhoneIds) {
-            return (clone $baseQuery)
-                ->where('is_popular', 1)
-                ->whereNotIn('id', $usedPhoneIds)
-                ->take(12)
-                ->get();
-        });
+        // Popular mobiles
+        $popularMobiles = (clone $baseQuery)
+            ->where('is_popular', 1)
+            ->whereNotIn('id', $usedPhoneIds)
+            ->take(12)
+            ->get();
         $usedPhoneIds = array_merge($usedPhoneIds, $popularMobiles->pluck('id')->toArray());
 
-        // Cache price ranges
+        // Price ranges
         $priceRanges = [
             'under_10000' => [0, 9999],
             '10000_20000' => [10000, 19999],
@@ -80,24 +73,22 @@ class PhoneApiController extends Controller
 
         $mobilesByPriceRange = [];
         foreach ($priceRanges as $key => [$min, $max]) {
-            $mobilesByPriceRange[$key] = Cache::tags(['phones', 'price-range', $key])->remember("price_range_{$key}", $cacheTTL, function () use ($baseQuery, $usedPhoneIds, $min, $max) {
-                return (clone $baseQuery)
-                    ->when(!empty($usedPhoneIds), function ($q) use ($usedPhoneIds) {
-                        $q->whereNotIn('id', $usedPhoneIds);
-                    })
-                    ->whereHas('searchIndex', function ($q) use ($min, $max) {
-                        $q->where('min_price_pkr', '>', 0);
-                        if (is_null($max)) {
-                            $q->where('min_price_pkr', '>=', $min);
-                        } else {
-                            $q->where('min_price_pkr', '>=', $min)
-                                ->where('min_price_pkr', '<', $max);
-                        }
-                    })
-                    ->latest('updated_at')
-                    ->limit(12)
-                    ->get();
-            });
+            $mobilesByPriceRange[$key] = (clone $baseQuery)
+                ->when(!empty($usedPhoneIds), function ($q) use ($usedPhoneIds) {
+                    $q->whereNotIn('id', $usedPhoneIds);
+                })
+                ->whereHas('searchIndex', function ($q) use ($min, $max) {
+                    $q->where('min_price_pkr', '>', 0);
+                    if (is_null($max)) {
+                        $q->where('min_price_pkr', '>=', $min);
+                    } else {
+                        $q->where('min_price_pkr', '>=', $min)
+                            ->where('min_price_pkr', '<', $max);
+                    }
+                })
+                ->latest('updated_at')
+                ->limit(12)
+                ->get();
         }
 
         return response()->json([
@@ -112,6 +103,7 @@ class PhoneApiController extends Controller
             ],
         ]);
     }
+
 
     /**
      * Get single phone with complete details
@@ -151,39 +143,7 @@ class PhoneApiController extends Controller
         $maxPrice = $phone->searchIndex->max_price_pkr ?? 0;
         $priceRange = [$minPrice * 0.85, $maxPrice * 1.15];
         $avgPrice = ($phone->searchIndex->min_price_pkr + $phone->searchIndex->max_price_pkr) / 2;
-
-        $similarMobiles = Phone::with(['searchIndex', 'brand:id,name'])
-            ->join('phone_search_indices as psi', 'phones.id', '=', 'psi.phone_id')
-            ->where('phones.id', '!=', $phone->id)
-            ->when(!empty($competitorIds), fn($q) => $q->whereNotIn('phones.id', $competitorIds))
-            ->where(function ($query) use ($ramOptions, $storageOptions, $priceRange) {
-                if (!empty($ramOptions)) {
-                    $query->where(function ($q) use ($ramOptions) {
-                        foreach ($ramOptions as $ram) {
-                            $q->orWhereRaw('JSON_CONTAINS(psi.ram_options, ?)', [json_encode($ram)]);
-                        }
-                    });
-                }
-
-                if (!empty($storageOptions)) {
-                    $query->where(function ($q) use ($storageOptions) {
-                        foreach ($storageOptions as $storage) {
-                            $q->orWhereRaw('JSON_CONTAINS(psi.storage_options, ?)', [json_encode($storage)]);
-                        }
-                    });
-                }
-
-                if ($priceRange) {
-                    $query->where(function ($q) use ($priceRange) {
-                        $q->whereBetween('psi.min_price_pkr', $priceRange)
-                            ->orWhereBetween('psi.max_price_pkr', $priceRange);
-                    });
-                }
-            })
-            ->orderByRaw('POWER(((psi.min_price_pkr + psi.max_price_pkr)/2) - ?, 2) ASC', [$avgPrice])
-            ->select('phones.*') // keep full Phone model for resource
-            ->limit(6)
-            ->get();
+        $similarMobiles = $this->getSimilarMobiles($phone->id, $avgPrice, $ramOptions, $storageOptions, $priceRange, $competitorIds);
 
         //dd($similarMobiles->toSql(), $similarMobiles->getBindings());
         // ->get(['id', 'name', 'slug', 'primary_image', 'brand_id']);
@@ -524,14 +484,31 @@ class PhoneApiController extends Controller
             'brand:id,name',           // only id and name
             'searchIndex',
             'specifications',
-            'competitors',        // include compare_specs in resource
         ])
             ->whereIn('slug', $slugs)
             ->get();
+        if ($phones->count() === 1) {
+            $phone = $phones->first(); // get the single phone
+            $ramOptions = $phone->searchIndex->ram_options
+                ? json_decode($phone->searchIndex->ram_options, true)
+                : [];
+
+            $storageOptions = $phone->searchIndex->storage_options
+                ? json_decode($phone->searchIndex->storage_options, true)
+                : [];
+
+            $minPrice = $phone->searchIndex->min_price_pkr ?? 0;
+            $maxPrice = $phone->searchIndex->max_price_pkr ?? 0;
+            $priceRange = [$minPrice * 0.85, $maxPrice * 1.15];
+            $avgPrice = ($phone->searchIndex->min_price_pkr + $phone->searchIndex->max_price_pkr) / 2;
+            $similarMobiles = $this->getSimilarMobiles($phone->id, $avgPrice, $ramOptions, $storageOptions, $priceRange);
+        }
+
         PhoneResource::$hideDetails = true;
         return response()->json([
             'success' => true,
-            'data' => PhoneResource::collection($phones),
+            'data' => $phones->map(fn($phone) => new PhoneResource($phone, true)),
+            'similarMobiles' => $similarMobiles->map(fn($phone) => new PhoneResource($phone, false)), // omit searchIndex
 
         ]);
     }
@@ -588,5 +565,42 @@ class PhoneApiController extends Controller
             }
         }
         return response()->json(["data" => $slugs]);
+    }
+
+    public function getSimilarMobiles($phoneId, $avgPrice, $ramOptions, $storageOptions, $priceRange, $competitorIds = [])
+    {
+
+        return Phone::with(['searchIndex', 'brand:id,name'])
+            ->join('phone_search_indices as psi', 'phones.id', '=', 'psi.phone_id')
+            ->where('phones.id', '!=', $phoneId)
+            ->when(!empty($competitorIds), fn($q) => $q->whereNotIn('phones.id', $competitorIds))
+            ->where(function ($query) use ($ramOptions, $storageOptions, $priceRange) {
+                if (!empty($ramOptions)) {
+                    $query->where(function ($q) use ($ramOptions) {
+                        foreach ($ramOptions as $ram) {
+                            $q->orWhereRaw('JSON_CONTAINS(psi.ram_options, ?)', [json_encode($ram)]);
+                        }
+                    });
+                }
+
+                if (!empty($storageOptions)) {
+                    $query->where(function ($q) use ($storageOptions) {
+                        foreach ($storageOptions as $storage) {
+                            $q->orWhereRaw('JSON_CONTAINS(psi.storage_options, ?)', [json_encode($storage)]);
+                        }
+                    });
+                }
+
+                if ($priceRange) {
+                    $query->where(function ($q) use ($priceRange) {
+                        $q->whereBetween('psi.min_price_pkr', $priceRange)
+                            ->orWhereBetween('psi.max_price_pkr', $priceRange);
+                    });
+                }
+            })
+            ->orderByRaw('POWER(((psi.min_price_pkr + psi.max_price_pkr)/2) - ?, 2) ASC', [$avgPrice])
+            ->select('phones.*') // keep full Phone model for resource
+            ->limit(6)
+            ->get();
     }
 }

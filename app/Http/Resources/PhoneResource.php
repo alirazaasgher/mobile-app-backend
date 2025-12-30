@@ -8,10 +8,11 @@ use Illuminate\Support\Carbon;
 class PhoneResource extends JsonResource
 {
     public static $hideDetails;
-
-    public function __construct($resource)
+    protected $includeSpec = false;
+    public function __construct($resource,$includeSpec = false)
     {
         parent::__construct($resource);
+         $this->includeSpec = $includeSpec;
     }
     public function toArray($request)
     {
@@ -30,11 +31,13 @@ class PhoneResource extends JsonResource
             'searchIndex' => new PhoneSearchResource($this->whenLoaded('searchIndex'), hideDetails: false),
         ];
         if (self::$hideDetails) {
-            $data['specs'] = $this->compare_specs;
+            if($this->includeSpec){
+               $data['specs'] = $this->compare_specs;
+            }
+           
             $data['searchIndex'] = new PhoneSearchResource($this->whenLoaded('searchIndex'), hideDetails: true, fromCompare: true);
             $data['competitors'] = CompetitorResource::collection($this->whenLoaded('competitors'));
         } else {
-
             $data['variants'] = PhoneVariantResource::collection($this->whenLoaded('variants'));
             $data['colors'] = ColorResource::collection($this->whenLoaded('colors'));
             $data['specifications'] = PhoneSpecificationResource::collection($this->whenLoaded('specifications'));

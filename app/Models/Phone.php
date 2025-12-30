@@ -210,12 +210,12 @@ class Phone extends Model
                         'updates' => $s['performance']['update_policy'] ?? null,
                     ],
 
-                    'build' => [
-                        'dimensions' => $s['build']['dimensions'] ?? null,
-                        'weight' => $s['build']['weight'] ?? null,
-                        'build' => $s['build']['build'] ?? null,
-                        'ip_rating' => shortIPRating($s['build']['ip_rating']) ?? null,
-                    ],
+                    // 'build' => [
+                    //     'dimensions' => $s['build']['dimensions'] ?? null,
+                    //     'weight' => $s['build']['weight'] ?? null,
+                    //     'build' => $s['build']['build'] ?? null,
+                    //     'ip_rating' => shortIPRating($s['build']['ip_rating']) ?? null,
+                    // ],
 
                     'features' => [
                         'nfc' => $s['connectivity']['nfc'] ?? null,
@@ -259,14 +259,6 @@ class Phone extends Model
         // "2868 x 1320 (~460 ppi)" -> "2868x1320"
         preg_match('/(\d+)\s*x\s*(\d+)/', $value, $matches);
         return isset($matches[1], $matches[2]) ? "{$matches[1]} x {$matches[2]}" : null;
-    }
-
-    private function shortStorage($value)
-    {
-        if (!$value)
-            return null;
-        $parts = array_map('trim', explode('/', $value));
-        return count($parts) > 1 ? $parts[0] . '-' . end($parts) : $parts[0];
     }
 
     private function shortOS($value)
