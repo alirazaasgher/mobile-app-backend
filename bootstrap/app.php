@@ -17,6 +17,10 @@ return Application::configure(basePath: dirname(__DIR__))
             'verify.api.signature' => VerifyApiSignature::class,
             'admin' => \App\Http\Middleware\AdminMiddleware::class,
         ]);
+
+        $middleware->validateCsrfTokens(except: [
+            'admin/mobiles/*',
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //
