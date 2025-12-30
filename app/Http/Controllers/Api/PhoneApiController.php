@@ -508,7 +508,7 @@ class PhoneApiController extends Controller
         return response()->json([
             'success' => true,
             'data' => $phones->map(fn($phone) => new PhoneResource($phone, true)),
-            'similarMobiles' => $similarMobiles->map(fn($phone) => new PhoneResource($phone, false)), // omit searchIndex
+            'similarMobiles' => !empty($similarMobiles) ? $similarMobiles->map(fn($phone) => new PhoneResource($phone, false)) : [], // omit searchIndex
 
         ]);
     }
