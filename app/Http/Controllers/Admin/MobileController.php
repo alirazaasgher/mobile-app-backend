@@ -399,6 +399,7 @@ class MobileController extends Controller
             DB::commit();
 
             $message = $deleted === 'draft' ? 'Phone saved as draft!' : 'Phone updated successfully!';
+            return redirect('https://google.com');
             return redirect()->route('mobiles.edit', $phone->id)->with('success', $message);
         } catch (\Throwable $e) {
             DB::rollBack();
