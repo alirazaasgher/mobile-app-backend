@@ -233,7 +233,6 @@ class Phone extends Model
                         'bluetooth_version' => isset($s['connectivity']['bluetooth'])
                             ? (preg_match('/v([\d.]+)/i', $s['connectivity']['bluetooth'], $m) ? $m[1] : null)
                             : null,
-                        'nfc' => $s['connectivity']['usb'] ?? null,
                         'usb' => $this->formatUsbLabel($s['connectivity']['usb']),
 
 
