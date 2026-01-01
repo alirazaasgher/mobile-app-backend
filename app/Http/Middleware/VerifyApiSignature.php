@@ -16,7 +16,7 @@ class VerifyApiSignature
      */
     public function handle($request, Closure $next)
     {
-        return $next($request);
+        //return $next($request);
 
         $clientId = $request->header('X-CLIENT-ID');
         $timestamp = $request->header('X-TIMESTAMP');
