@@ -172,9 +172,6 @@ class Phone extends Model
     {
         $s = $this->specifications->keyBy('category')
             ->map(fn($spec) => json_decode($spec->specifications, true) ?: []);
-        echo "<pre>";
-        print_r($s);
-        exit;
         try {
             $chargingSpec = $s['battery']['charging_speed'] ?? '';
             $wirlessCharging = $s['battery']['wireless'] ?? '';
