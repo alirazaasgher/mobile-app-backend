@@ -16,7 +16,7 @@ class VerifyApiSignature
      */
     public function handle($request, Closure $next)
     {
-        $blocked_ips = ['39.46.138.35'];
+        $blocked_ips = ['13.52.98.180'];
         $client_ip = $_SERVER['REMOTE_ADDR'];
 
         if (in_array($client_ip, $blocked_ips)) {
