@@ -16,6 +16,14 @@ class VerifyApiSignature
      */
     public function handle($request, Closure $next)
     {
+        $blocked_ips = ['39.46.138.35'];
+        $client_ip = $_SERVER['REMOTE_ADDR'];
+
+        if (in_array($client_ip, $blocked_ips)) {
+            http_response_code(403);
+            exit('Access Denied');
+        }
+
         return $next($request);
 
         $clientId = $request->header('X-CLIENT-ID');
