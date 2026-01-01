@@ -58,7 +58,7 @@ class Phone extends Model
     {
         $spec = $this->specifications
             ->firstWhere('category', $category)
-            ?->specifications ?? [];
+                ?->specifications ?? [];
 
         return json_decode($spec, true) ?: [];
     }
@@ -172,6 +172,9 @@ class Phone extends Model
     {
         $s = $this->specifications->keyBy('category')
             ->map(fn($spec) => json_decode($spec->specifications, true) ?: []);
+        echo "<pre>";
+        print_r($s);
+        exit;
         try {
             $chargingSpec = $s['battery']['charging_speed'] ?? '';
             $wirlessCharging = $s['battery']['wireless'] ?? '';
@@ -190,7 +193,7 @@ class Phone extends Model
                         'brightness_(peak)' => $this->extractBrightness($s['display']['brightness'], "peak"),
                         'brightness_(typical)' => $this->extractBrightness($s['display']['brightness'], "typical"),
                         'glass_protection' => $formatGlassProtection,
-                        'has_branded_glass'     => $screenGlassType['has_branded_glass'],
+                        'has_branded_glass' => $screenGlassType['has_branded_glass'],
 
                     ],
                     'performance' => [
@@ -349,10 +352,10 @@ class Phone extends Model
                 'brand' => 'Corning',
                 'ranking' => [
                     'victus 2' => 100,
-                    'victus'   => 95,
-                    'dx+'      => 90,
-                    'dx'       => 88,
-                    '7i'       => 85,
+                    'victus' => 95,
+                    'dx+' => 90,
+                    'dx' => 88,
+                    '7i' => 85,
                 ]
             ],
 
@@ -469,8 +472,10 @@ class Phone extends Model
         $text = '';
 
         // if (!empty($data['brand'])) $text .= $data['brand'] . ' ';
-        if (!empty($data['glass_name'])) $text .= $data['glass_name'];
-        if (!empty($data['version'])) $text .= ' ' . $data['version'];
+        if (!empty($data['glass_name']))
+            $text .= $data['glass_name'];
+        if (!empty($data['version']))
+            $text .= ' ' . $data['version'];
         if (!empty($data['applies_to']) && $data['applies_to'] !== 'both') {
             $text .= ' (' . ucfirst($data['applies_to']) . ')';
         }
