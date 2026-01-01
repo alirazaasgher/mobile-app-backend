@@ -41,7 +41,6 @@ class PhoneResource extends JsonResource
             $data['variants'] = PhoneVariantResource::collection($this->whenLoaded('variants'));
             $data['colors'] = ColorResource::collection($this->whenLoaded('colors'));
             $data['specifications'] = PhoneSpecificationResource::collection($this->whenLoaded('specifications'));
-            // $data['searchIndex'] = new PhoneSearchResource($this->whenLoaded('searchIndex'), hideDetails: false);
         }
         if ($request->query('details') || $request->routeIs('phones.show')) {
             $data['competitors'] = CompetitorResource::collection($this->whenLoaded('competitors'));

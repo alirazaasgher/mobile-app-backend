@@ -58,7 +58,7 @@ class Phone extends Model
     {
         $spec = $this->specifications
             ->firstWhere('category', $category)
-                ?->specifications ?? [];
+            ?->specifications ?? [];
 
         return json_decode($spec, true) ?: [];
     }
@@ -177,6 +177,8 @@ class Phone extends Model
             $wirlessCharging = $s['battery']['wireless'] ?? '';
             $reverceCharging = $s['battery']['reverse'] ?? '';
             $chargingSpec = shortChargingSpec($chargingSpec, $wirlessCharging, $reverceCharging);
+            $screenGlassType = $this->extractScreenGlassType($s['display']['protection']);
+            $formatGlassProtection = $this->formatGlassProtection($screenGlassType);
             return [
                 'key' => [
                     'display' => [
@@ -184,6 +186,12 @@ class Phone extends Model
                         'type' => getShortDisplay($s['display']['type'] ?? null),
                         'resolution' => $this->shortResolution($s['display']['resolution'] ?? null),
                         'refresh_rate' => $this->extractNumber($s['display']['refresh_rate'] ?? null),
+                        "pixel_density" => $this->extractPpi($s['display']['resolution'] ?? null),
+                        'brightness_(peak)' => $this->extractBrightness($s['display']['brightness'], "peak"),
+                        'brightness_(typical)' => $this->extractBrightness($s['display']['brightness'], "typical"),
+                        'glass_protection' => $formatGlassProtection,
+                        'has_branded_glass'     => $screenGlassType['has_branded_glass'],
+
                     ],
                     'performance' => [
                         'chipset' => getShortChipset($s['performance']['chipset'] ?? null),
@@ -221,10 +229,17 @@ class Phone extends Model
                         'nfc' => $s['connectivity']['nfc'] ?? null,
                         'stereo_speakers' => $s['audio']['stereo'] ?? null,
                         '3.5mm_jack' => $s['audio']['3.5mm_jack'] ?? null,
+                        'wifi' => $this->formatWifiValue($s['connectivity']['wifi']),
+                        'bluetooth_version' => isset($s['connectivity']['bluetooth'])
+                            ? (preg_match('/v([\d.]+)/i', $s['connectivity']['bluetooth'], $m) ? $m[1] : null)
+                            : null,
+                        'nfc' => $s['connectivity']['usb'] ?? null,
+                        'usb' => $this->formatUsbLabel($s['connectivity']['usb']),
+
+
                         // '5g' => $s['connectivity']['5g'] ?? null,
                     ],
-                ],
-                'expandable' => $s
+                ]
             ];
         } catch (\Exception $e) {
             \Log::error("Error in getCompareSpecsAttribute for phone {$this->id}: " . $e->getMessage());
@@ -256,7 +271,6 @@ class Phone extends Model
     {
         if (!$value)
             return null;
-        // "2868 x 1320 (~460 ppi)" -> "2868x1320"
         preg_match('/(\d+)\s*x\s*(\d+)/', $value, $matches);
         return isset($matches[1], $matches[2]) ? "{$matches[1]} x {$matches[2]}" : null;
     }
@@ -268,5 +282,267 @@ class Phone extends Model
         // "Android 16 ,OneUI 8.0" -> "Android 16"
         // "IOS 26" -> "iOS 26"
         return trim(explode(',', $value)[0]);
+    }
+
+    private function extractPpi(?string $resolution): ?string
+    {
+        if (!$resolution) {
+            return null;
+        }
+
+        if (preg_match('/~\s*(\d+)\s*ppi/i', $resolution, $matches)) {
+            return $matches[1] . ' ppi';
+        }
+
+        return null;
+    }
+
+    private function extractBrightness(?string $brightness, string $type): ?string
+    {
+        if (!$brightness) {
+            return null;
+        }
+
+        $type = strtolower($type);
+
+        // Normalize string
+        $brightness = strtolower($brightness);
+
+        // Match: peak 3300 nits
+        if ($type === 'peak' && preg_match('/peak\s*(\d+)\s*nits/', $brightness, $matches)) {
+            return $matches[1] . ' nits';
+        }
+
+        // Match: typical 3000 nits (even if separated by comma)
+        if ($type === 'typical' && preg_match('/typical[^\d]*(\d+)\s*nits/', $brightness, $matches)) {
+            return $matches[1] . ' nits';
+        }
+
+        return null;
+    }
+
+    private function extractScreenGlassType(?string $protection): ?array
+    {
+        if (!$protection || empty(trim($protection))) {
+            return null;
+        }
+
+        // Step 3: Normalize
+        $protection = strtolower(trim($protection));
+
+        // Step 4: Extract glass type
+        return $this->parseGlassProtection($protection);
+    }
+
+    private function parseGlassProtection(?string $text): array
+    {
+        if (!$text) {
+            return $this->emptyGlassResult();
+        }
+
+        $text = strtolower($text);
+
+        $glassTypes = [
+            'Gorilla Glass' => [
+                'keywords' => ['gorilla glass'],
+                'version_regex' => '/gorilla\s*glass\s*(victus\s*2|victus|dx\+|dx|7i|ceramic\+?\s*\d*|\d+)/i',
+                'brand' => 'Corning',
+                'ranking' => [
+                    'victus 2' => 100,
+                    'victus'   => 95,
+                    'dx+'      => 90,
+                    'dx'       => 88,
+                    '7i'       => 85,
+                ]
+            ],
+
+            'Ceramic Shield' => [
+                'keywords' => ['ceramic shield'],
+                'version_regex' => '/ceramic\s*shield\s*(\d+)?/i',
+                'brand' => 'Apple',
+                'ranking' => [
+                    '2' => 92,
+                    '1' => 88,
+                ]
+            ],
+
+            'Dragontrail Glass' => [
+                'keywords' => ['dragontrail'],
+                'version_regex' => '/dragontrail\s*(pro|x|\d+)?/i',
+                'brand' => 'Asahi',
+                'ranking' => []
+            ],
+
+            'Schott Xensation' => [
+                'keywords' => ['xensation'],
+                'version_regex' => '/xensation\s*(up|cover|3d|\d+)?/i',
+                'brand' => 'Schott',
+                'ranking' => []
+            ],
+
+            'Kunlun Glass' => [
+                'keywords' => ['kunlun'],
+                'version_regex' => '/kunlun\s*glass\s*(\d+)?/i',
+                'brand' => 'Huawei',
+                'ranking' => []
+            ],
+
+            'Panda Glass' => [
+                'keywords' => ['panda glass'],
+                'version_regex' => '/panda\s*glass\s*(\d+)?/i',
+                'brand' => 'Panda',
+                'ranking' => []
+            ],
+
+            'Sapphire Crystal' => [
+                'keywords' => ['sapphire crystal', 'sapphire glass'],
+                'version_regex' => null,
+                'brand' => 'Sapphire',
+                'ranking' => []
+            ],
+        ];
+
+        $result = $this->emptyGlassResult();
+
+        /* ---------- Detect glass type ---------- */
+        foreach ($glassTypes as $base => $config) {
+            foreach ($config['keywords'] as $keyword) {
+                if (!str_contains($text, $keyword)) {
+                    continue;
+                }
+
+                $result['glass_name'] = $base;
+                $result['brand'] = $config['brand'];
+                $result['has_branded_glass'] = true;
+
+                /* ---------- Version ---------- */
+                if (
+                    !empty($config['version_regex']) &&
+                    preg_match($config['version_regex'], $text, $m) &&
+                    !empty($m[1])
+                ) {
+
+                    $version = trim(preg_replace('/\s+/', ' ', $m[1]));
+                    $result['version'] = ucwords($version);
+
+                    // Strength score
+                    $key = strtolower($version);
+                    if (isset($config['ranking'][$key])) {
+                        $result['strength_score'] = $config['ranking'][$key];
+                    }
+                }
+
+                break 2;
+            }
+        }
+
+        /* ---------- Mohs level ---------- */
+        if (preg_match('/mohs\s*level\s*(\d+)/i', $text, $m)) {
+            $result['mohs_level'] = (int) $m[1];
+        }
+
+        /* ---------- Front / Back detection ---------- */
+        if (str_contains($text, 'front')) {
+            $result['applies_to'] = 'front';
+        } elseif (str_contains($text, 'back')) {
+            $result['applies_to'] = 'back';
+        }
+
+        return $result;
+    }
+
+    private function emptyGlassResult(): array
+    {
+        return [
+            'glass_name' => null,
+            'version' => null,
+            'brand' => null,
+            'mohs_level' => null,
+            'has_branded_glass' => false,
+            'strength_score' => null,
+            'applies_to' => 'both', // front | back | both
+        ];
+    }
+
+    private function formatGlassProtection(array $data): string
+    {
+        $text = '';
+
+        // if (!empty($data['brand'])) $text .= $data['brand'] . ' ';
+        if (!empty($data['glass_name'])) $text .= $data['glass_name'];
+        if (!empty($data['version'])) $text .= ' ' . $data['version'];
+        if (!empty($data['applies_to']) && $data['applies_to'] !== 'both') {
+            $text .= ' (' . ucfirst($data['applies_to']) . ')';
+        }
+
+        return trim($text) ?: 'Unspecified glass';
+    }
+
+    function formatUsbLabel(?string $usb): ?string
+    {
+        if (empty($usb)) {
+            return null;
+        }
+
+        $type = null;
+        $version = null;
+        $generation = null;
+
+        // TYPE-C / TYPE-A
+        if (preg_match('/Type[-\s]?([A-Z])/i', $usb, $m)) {
+            $type = 'TYPE-' . strtoupper($m[1]);
+        }
+
+        // USB version
+        if (preg_match('/\b(2\.0|3\.0|3\.1|3\.2|4)\b/', $usb, $m)) {
+            $version = $m[1];
+        }
+
+        // GEN
+        if (preg_match('/Gen\s*(\d+(x\d+)?)/i', $usb, $m)) {
+            $generation = 'GEN ' . strtoupper($m[1]);
+        }
+
+        if ($type && $version) {
+            return $generation
+                ? "{$type} {$version} ({$generation})"
+                : "{$type} {$version}";
+        }
+
+        return null;
+    }
+
+    function formatWifiValue(?string $wifi): ?string
+    {
+        if (empty($wifi)) {
+            return null;
+        }
+
+        $version = null;
+        $band = null;
+
+        // Highest Wi-Fi version
+        if (preg_match('/\b7\b/', $wifi)) {
+            $version = '7';
+        } elseif (stripos($wifi, '6e') !== false) {
+            $version = '6E';
+        } elseif (preg_match('/\b6\b/', $wifi)) {
+            $version = '6';
+        } elseif (stripos($wifi, 'ac') !== false) {
+            $version = '5';
+        }
+
+        // Band
+        if (stripos($wifi, 'tri-band') !== false) {
+            $band = 'TRI-BAND';
+        } elseif (stripos($wifi, 'dual-band') !== false) {
+            $band = 'DUAL-BAND';
+        }
+
+        if ($version && $band) {
+            return "{$version} ({$band})";
+        }
+
+        return $version;
     }
 }

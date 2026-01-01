@@ -483,7 +483,6 @@ class PhoneApiController extends Controller
         $phones = Phone::with([
             'brand:id,name',           // only id and name
             'searchIndex',
-            'specifications',
         ])
             ->whereIn('slug', $slugs)
             ->get();
