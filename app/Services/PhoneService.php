@@ -355,11 +355,8 @@ class PhoneService
         $filename = Str::uuid() . '.' . $file->getClientOriginalExtension();
         $path = 'primary_images/' . date('Y/m') . '/' . $filename;
 
-        Storage::disk('r2')->put(
-            $path,
-            file_get_contents($file),
-            ['visibility' => 'public']
-        );
+        Storage::disk(config('filesystems.default'))
+            ->put($path, file_get_contents($file), 'public');
 
         return $path;
     }
@@ -470,46 +467,22 @@ class PhoneService
      *
      * $deleteImageIds optional array of image ids to remove
      */
-    public function syncColorsAndImages($phone, array $variants, array $color_names, array $color_hex, array $color_images = [], array $deleteImageIds = [])
-    {
+    public function syncColorsAndImages(
+        $phone,
+        array $uploadResults
+    ): array {
+        echo "<pre>";
+        print_r($uploadResults);
+        exit;
         $available_colors = [];
 
-        // Delete requested images globally first
-        if (!empty($deleteImageIds)) {
-            $images = PhoneImage::whereIn('id', $deleteImageIds)->get();
-            foreach ($images as $img) {
-                Storage::disk('public')->delete($img->image_url);
-                $img->delete();
-            }
-        }
-
-        foreach ($variants as $value) {
-            $colorName = trim($color_names[$value] ?? '');
-            $colorHex = $color_hex[$value] ?? null;
-
-            if (empty($colorName) || empty($colorHex)) {
-                continue;
-            }
-
-            $slug = Str::slug($colorName, '_');
-
-            $available_colors[] = compact('colorName', 'colorHex');
-
-            $phoneColor = PhoneColor::updateOrCreate(
-                ['phone_id' => $phone->id, 'slug' => $slug],
-                ['name' => $colorName, 'hex_code' => $colorHex]
-            );
-
-            // Add new images (preserve existing ones)
-            foreach ($color_images[$value] ?? [] as $file) {
-                if ($file && $file->isValid()) {
-                    $path = $file->store('colors', 'public');
-                    PhoneImage::create([
-                        'phone_color_id' => $phoneColor->id,
-                        'image_url' => $path,
-                    ]);
-                }
-            }
+        // Process uploaded colors and their images
+        foreach ($uploadResults['colors'] ?? [] as $colorData) {
+            $available_colors[] = [
+                'colorName' => $colorData['color_name'],
+                'colorHex' => $colorData['color_hex'] ?? null,
+                'color_id' => $colorData['color_id'] ?? null,
+            ];
         }
 
         return $available_colors;
@@ -680,5 +653,284 @@ class PhoneService
         }
 
         return ['value' => (float) $value, 'unit' => 'GB']; // fallback
+    }
+
+    public function handleBulkImageUpload(
+        $phone,
+        ?UploadedFile $primaryImage,
+        array $variants,
+        array $colorNames,
+        array $colorHex,
+        array $colorImages = [],
+        array $deleteImageIds = []
+    ): array {
+        $brandSlug = Str::slug($phone->brand->name);
+        $phoneSlug = Str::slug($phone->name);
+        $basePath = "{$brandSlug}/{$phoneSlug}";
+
+        $results = [
+            'primary_image' => null,
+            'colors' => [],
+            'uploaded_count' => 0,
+            'deleted_count' => 0,
+        ];
+
+        DB::beginTransaction();
+        try {
+            // 1. Handle primary image upload
+            if ($primaryImage) {
+                $results['primary_image'] = $this->uploadSingleImage(
+                    $primaryImage,
+                    "{$basePath}/primary_images",
+                    $phone->primary_image
+                );
+                $results['uploaded_count']++;
+            }
+
+            // 2. Delete requested images
+            if (!empty($deleteImageIds)) {
+                $results['deleted_count'] = $this->deleteImages($deleteImageIds);
+            }
+
+            // 3. Bulk upload color images
+            $results['colors'] = $this->bulkUploadColorImages(
+                $phone,
+                $variants,
+                $colorNames,
+                $colorHex,
+                $colorImages,
+                $basePath
+            );
+
+            $results['uploaded_count'] += array_sum(array_column($results['colors'], 'images_count'));
+
+            DB::commit();
+            return $results;
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            // Clean up uploaded files on failure
+            $this->cleanupOnFailure($results);
+            throw $e;
+        }
+    }
+
+    /**
+     * Upload single image
+     */
+    protected function uploadSingleImage(UploadedFile $file, string $directory, string|null $oldPath = null): string
+    {
+
+        // Validate upload
+        if (!$file->isValid()) {
+            throw new \Exception("Invalid file upload");
+        }
+
+        // Delete old image if exists
+        if ($oldPath && Storage::disk(config('filesystems.default'))->exists($oldPath)) {
+            Storage::disk(config('filesystems.default'))->delete($oldPath);
+            // optional log
+            // \Log::info("Deleted old image: {$oldPath}");
+        }
+
+        // Generate new unique filename
+        $filename = Str::uuid() . '.' . $file->getClientOriginalExtension();
+        $path = "{$directory}/{$filename}";
+
+        // Save new image
+        Storage::disk(config('filesystems.default'))->put(
+            $path,
+            file_get_contents($file->getRealPath()),
+            'public'
+        );
+
+        return $path;
+    }
+
+    /**
+     * Bulk upload color images
+     */
+    protected function bulkUploadColorImages(
+        $phone,
+        array $variants,
+        array $colorNames,
+        array $colorHex,
+        array $colorImages,
+        string $basePath
+    ): array {
+        $results = [];
+        $allFilesToUpload = [];
+
+        // First, prepare all uploads and create color records
+        foreach ($variants as $variantIndex) {
+            $colorName = trim($colorNames[$variantIndex] ?? '');
+            $colorHexCode = $colorHex[$variantIndex] ?? null;
+
+            if (empty($colorName) || empty($colorHexCode)) {
+                continue;
+            }
+            $slug = Str::slug($colorName, '_');
+            $colorSlug = Str::slug($colorName);
+            // Find existing color by phone_id and previous slug (or ID if you have it)
+            $existingColor = PhoneColor::where('phone_id', $phone->id)
+                ->where('slug', $variantIndex ?? $slug) // old slug from DB or fallback
+                ->first();
+
+            if ($existingColor) {
+                // Update name, hex_code and slug
+                $existingColor->update([
+                    'name' => $colorName,
+                    'hex_code' => $colorHexCode,
+                    'slug' => $slug
+                ]);
+                $phoneColor = $existingColor;
+            } else {
+                // Create new if not found
+                $phoneColor = PhoneColor::create([
+                    'phone_id' => $phone->id,
+                    'name' => $colorName,
+                    'hex_code' => $colorHexCode,
+                    'slug' => Str::slug($colorName, '_')
+                ]);
+            }
+
+
+            // Create or update phone color
+            $phoneColor = PhoneColor::updateOrCreate(
+                ['phone_id' => $phone->id, 'slug' => $slug],
+                ['name' => $colorName, 'hex_code' => $colorHexCode]
+            );
+
+            $colorResult = [
+                'color_name' => $colorName,
+                'color_id' => $phoneColor->id,
+                'images' => [],
+                'images_count' => 0,
+            ];
+
+            // Prepare images for this color
+            $images = $colorImages[$variantIndex] ?? [];
+            foreach ($images as $file) {
+                if ($file && $file instanceof UploadedFile && $file->isValid()) {
+                    $filename = Str::uuid() . '.' . $file->getClientOriginalExtension();
+                    $path = "{$basePath}/colors/{$colorSlug}/{$filename}";
+
+                    $allFilesToUpload[] = [
+                        'file' => $file,
+                        'path' => $path,
+                        'color_id' => $phoneColor->id,
+                        'color_index' => $colorName,
+                    ];
+                }
+            }
+
+            $results[] = $colorResult;
+        }
+
+        // Bulk upload all files
+        if (!empty($allFilesToUpload)) {
+            $this->bulkUploadFiles($allFilesToUpload);
+
+            // Create database records for uploaded images
+            foreach ($allFilesToUpload as $uploadedFile) {
+                PhoneImage::create([
+                    'phone_color_id' => $uploadedFile['color_id'],
+                    'image_url' => $uploadedFile['path'],
+                ]);
+
+                // Update results
+                foreach ($results as &$result) {
+                    if ($result['color_id'] === $uploadedFile['color_id']) {
+                        $result['images'][] = $uploadedFile['path'];
+                        $result['images_count']++;
+                    }
+                }
+            }
+        }
+
+        return $results;
+    }
+
+    /**
+     * Bulk upload files to storage (more efficient)
+     */
+    protected function bulkUploadFiles(array $filesToUpload): void
+    {
+        $storage = Storage::disk(config('filesystems.default'));
+
+        // For local storage or Cloudflare R2, we can use putFileAs or put
+        foreach ($filesToUpload as $item) {
+            $storage->put(
+                $item['path'],
+                file_get_contents($item['file']->getRealPath()),
+                'public'
+            );
+        }
+
+        // Alternative: Use Laravel's built-in batch upload if your driver supports it
+        // This is more efficient for some storage drivers
+        /*
+        $promises = [];
+        foreach ($filesToUpload as $item) {
+            $promises[] = $storage->putAsync(
+                $item['path'],
+                file_get_contents($item['file']->getRealPath()),
+                'public'
+            );
+        }
+        // Wait for all uploads to complete
+        Promise\all($promises)->wait();
+        */
+    }
+
+    /**
+     * Delete images in bulk
+     */
+    protected function deleteImages(array $imageIds): int
+    {
+        $images = PhoneImage::whereIn('id', $imageIds)->get();
+        $paths = $images->pluck('image_url')->toArray();
+
+        // Bulk delete from storage
+        if (!empty($paths)) {
+            Storage::disk(config('filesystems.default'))->delete($paths);
+        }
+
+        // Delete from database
+        return PhoneImage::whereIn('id', $imageIds)->delete();
+    }
+
+    /**
+     * Clean up uploaded files on failure
+     */
+    protected function cleanupOnFailure(array $results): void
+    {
+        $pathsToDelete = [];
+
+        if (!empty($results['primary_image'])) {
+            $pathsToDelete[] = $results['primary_image'];
+        }
+
+        foreach ($results['colors'] ?? [] as $color) {
+            $pathsToDelete = array_merge($pathsToDelete, $color['images'] ?? []);
+        }
+
+        if (!empty($pathsToDelete)) {
+            Storage::disk(config('filesystems.default'))->delete($pathsToDelete);
+        }
+    }
+
+    /**
+     * Get available colors (for response)
+     */
+    public function getAvailableColors($phone): array
+    {
+        return PhoneColor::where('phone_id', $phone->id)
+            ->get()
+            ->map(fn($color) => [
+                'colorName' => $color->name,
+                'colorHex' => $color->hex_code,
+            ])
+            ->toArray();
     }
 }

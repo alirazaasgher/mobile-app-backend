@@ -97,7 +97,7 @@ function update_phone_search_index(
             'storage_type' => $storage_type,
             'ram_type' => $ram_type,
             'sd_card' => $sd_card ?? 0,
-            'available_colors' => json_encode($availableColors),
+            // 'available_colors' => json_encode($availableColors),
             'screen_size_inches' => $sizeInInches,
             'battery_capacity_mah' => $capacity,
             'main_camera_mp' => $setup,

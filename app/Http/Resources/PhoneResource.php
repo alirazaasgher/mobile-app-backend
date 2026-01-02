@@ -9,15 +9,15 @@ class PhoneResource extends JsonResource
 {
     public static $hideDetails;
     protected $includeSpec = false;
-    public function __construct($resource,$includeSpec = false)
+    public function __construct($resource, $includeSpec = false)
     {
         parent::__construct($resource);
-         $this->includeSpec = $includeSpec;
+        $this->includeSpec = $includeSpec;
     }
     public function toArray($request)
     {
-        $baseUrl = "https://cdn.mobile42.com";
-        //$baseUrl = "http://127.0.0.1:8000";
+        $baseUrl = config('app.asset_url');
+        
         $data = [
             'id' => $this->id,
             'name' => $this->name,
@@ -31,10 +31,10 @@ class PhoneResource extends JsonResource
             'searchIndex' => new PhoneSearchResource($this->whenLoaded('searchIndex'), hideDetails: false),
         ];
         if (self::$hideDetails) {
-            if($this->includeSpec){
-               $data['specs'] = $this->compare_specs;
+            if ($this->includeSpec) {
+                $data['specs'] = $this->compare_specs;
             }
-           
+
             $data['searchIndex'] = new PhoneSearchResource($this->whenLoaded('searchIndex'), hideDetails: true, fromCompare: true);
             $data['competitors'] = CompetitorResource::collection($this->whenLoaded('competitors'));
         } else {

@@ -203,8 +203,13 @@ class MobileController extends Controller
         $sd_card = $request->input('sd_card');
         DB::beginTransaction();
         try {
+            $variantsColors = $validated['variants']['colors'] ?? [];
+            $color_names = $validated['variants']['color_names'] ?? [];
+            $color_hex = $validated['variants']['color_hex'] ?? [];
+            $color_images = $validated['variants']['color_image'] ?? [];
+
             // primary image
-            $primaryPath = $this->phoneService->handlePrimaryImage($request->file('primary_image'));
+            //$primaryPath = $this->phoneService->handlePrimaryImage($request->file('primary_image'));
             $brandName = Brand::find($validated['brand'])->name ?? 'unknown';
             // create phone
             $phone = Phone::create([
@@ -213,12 +218,27 @@ class MobileController extends Controller
                 'slug' => Str::slug($brandName . ' ' . $validated['name']), // Brand + Name
                 'description' => $validated['description'] ?? null, // Brand + Name
                 'tagline' => $validated['tagline'] ?? null,
-                'primary_image' => $primaryPath,
+                // 'primary_image' => $primaryPath,
                 'release_date' => $validated['release_date'] ?? null,
                 'announced_date' => $request->input('announced_date'),
                 'status' => $request->input('status'),
                 'deleted' => $deleted
             ]);
+            $uploadResults = $this->phoneService->handleBulkImageUpload(
+                $phone,
+                $request->file('primary_image'),
+                $variantsColors,
+                $color_names,
+                $color_hex,
+                $color_images,
+                $validated['variants']['delete_images'] ?? []
+            );
+            if ($uploadResults['primary_image']) {
+                $updateData['primary_image'] = $uploadResults['primary_image'];
+                $phone->update($updateData);
+            }
+
+
             $competitors = $validated['competitors'] ?? [];
             $phone->competitors()->sync($competitors);
             // variants
@@ -230,18 +250,15 @@ class MobileController extends Controller
             [$ram_list, $storage_list, $price_list] = $this->phoneService->syncVariants($phone, $variantsSpecs, $priceModifiersPKR, $priceModifiersUSD);
 
             // colors & images
-            $variantsColors = $validated['variants']['colors'] ?? [];
-            $color_names = $validated['variants']['color_names'] ?? [];
-            $color_hex = $validated['variants']['color_hex'] ?? [];
-            $color_images = $validated['variants']['color_image'] ?? [];
-            $available_colors = $this->phoneService->syncColorsAndImages(
-                $phone,
-                $variantsColors,
-                $color_names,
-                $color_hex,
-                $color_images,
-                $validated['variants']['delete_images'] ?? []
-            );
+
+            // $available_colors = $this->phoneService->syncColorsAndImages(
+            //     $phone,
+            //     $variantsColors,
+            //     $color_names,
+            //     $color_hex,
+            //     $color_images,
+            //     $validated['variants']['delete_images'] ?? []
+            // );
 
             // memory spec
             $memorySpec = $this->phoneService->buildMemorySpec(
@@ -270,7 +287,7 @@ class MobileController extends Controller
 
 
             // search index
-            update_phone_search_index($storage_type, $ram_type, $sd_card, $ram_list, $storage_list, $price_list, $available_colors, $updatedSpecs, $validated, $phone->id);
+            update_phone_search_index($storage_type, $ram_type, $sd_card, $ram_list, $storage_list, $price_list, "", $updatedSpecs, $validated, $phone->id);
 
             DB::commit();
             $message = $deleted === 'draft' ? 'Phone saved as draft!' : 'Phone published successfully!';
@@ -327,7 +344,21 @@ class MobileController extends Controller
         DB::beginTransaction();
         try {
             $brandName = Brand::find($validated['brand'])->name ?? 'unknown';
-            $primaryPath = $this->phoneService->handlePrimaryImage($request->file('primary_image'));
+            $variantsColors = $validated['variants']['colors'] ?? [];
+            $color_names = $validated['variants']['color_names'] ?? [];
+            $color_hex = $validated['variants']['color_hex'] ?? [];
+            $color_images = $validated['variants']['color_image'] ?? [];
+            $uploadResults = $this->phoneService->handleBulkImageUpload(
+                $phone,
+                $request->file('primary_image'),
+                $variantsColors,
+                $color_names,
+                $color_hex,
+                $color_images,
+                $validated['variants']['delete_images'] ?? []
+            );
+
+            //$primaryPath = $this->phoneService->handlePrimaryImage($request->file('primary_image'));
             $updateData = [
                 'brand_id' => $validated['brand'],
                 'slug' => Str::slug($brandName . ' ' . $validated['name']), // Brand + Name
@@ -339,8 +370,8 @@ class MobileController extends Controller
                 'deleted' => $deleted
             ];
 
-            if ($primaryPath) {
-                $updateData['primary_image'] = $primaryPath;
+            if ($uploadResults['primary_image']) {
+                $updateData['primary_image'] = $uploadResults['primary_image'];
             }
 
             $phone->update($updateData);
@@ -355,18 +386,12 @@ class MobileController extends Controller
             [$ram_list, $storage_list, $price_list] = $this->phoneService->syncVariants($phone, $variantsSpecs, $priceModifiersPKR, $priceModifiersUSD);
 
             // colors & images (preserve old unless deleted)
-            $variantsColors = $validated['variants']['colors'] ?? [];
-            $color_names = $validated['variants']['color_names'] ?? [];
-            $color_hex = $validated['variants']['color_hex'] ?? [];
-            $color_images = $validated['variants']['color_image'] ?? [];
-            $available_colors = $this->phoneService->syncColorsAndImages(
-                $phone,
-                $variantsColors,
-                $color_names,
-                $color_hex,
-                $color_images,
-                $validated['variants']['delete_images'] ?? []
-            );
+
+            // $available_colors = $this->phoneService->syncColorsAndImages(
+            //     $phone,
+            //     $uploadResults,
+            //     $validated['delete_images'] ?? []
+            // );
 
             // memory spec injected after performance
             $memorySpec = $this->phoneService->buildMemorySpec(
@@ -393,7 +418,7 @@ class MobileController extends Controller
             }, true);
 
 
-            update_phone_search_index($storage_type, $ram_type, $sd_card, $ram_list, $storage_list, $price_list, $available_colors, $updatedSpecs, $validated, $id);
+            update_phone_search_index($storage_type, $ram_type, $sd_card, $ram_list, $storage_list, $price_list, "", $updatedSpecs, $validated, $id);
             // search index (if published)
 
             DB::commit();
