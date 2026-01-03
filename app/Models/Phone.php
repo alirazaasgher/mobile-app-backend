@@ -187,8 +187,8 @@ class Phone extends Model
                         'resolution' => $this->shortResolution($s['display']['resolution'] ?? null),
                         'refresh_rate' => $this->extractNumber($s['display']['refresh_rate'] ?? null),
                         "pixel_density" => $this->extractPpi($s['display']['resolution'] ?? null),
-                        'brightness_(peak)' => $this->extractBrightness($s['display']['brightness'], "peak"),
-                        'brightness_(typical)' => $this->extractBrightness($s['display']['brightness'], "typical"),
+                        'brightness_(peak)' => $this->extractBrightness($s['display']['brightness'] ?? "", "peak"),
+                        'brightness_(typical)' => $this->extractBrightness($s['display']['brightness'] ?? "", "typical"),
                         'glass_protection' => $formatGlassProtection,
                         'has_branded_glass' => $screenGlassType['has_branded_glass'] ?? null,
 
