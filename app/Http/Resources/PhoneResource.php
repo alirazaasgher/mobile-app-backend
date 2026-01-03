@@ -26,7 +26,7 @@ class PhoneResource extends JsonResource
             'updated_at' => !empty($this->updated_at) ? $this->updated_at->toDateString() : null,
             'release_date' => !empty($this->release_date) ? Carbon::parse($this->release_date)->format('j F, Y') : null,
             'status' => $this->status,
-            'primary_image' => $this->primary_image ? $baseUrl . '/storage/' . ltrim($this->primary_image, '/')
+            'primary_image' => $this->primary_image ? $baseUrl . '/' . ltrim($this->primary_image, '/')
                 : null,
             'searchIndex' => new PhoneSearchResource($this->whenLoaded('searchIndex'), hideDetails: false),
         ];
