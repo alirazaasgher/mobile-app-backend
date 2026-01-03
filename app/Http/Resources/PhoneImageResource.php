@@ -7,12 +7,11 @@ class PhoneImageResource extends JsonResource
 {
     public function toArray($request)
     {
-        //$baseUrl = "http://127.0.0.1:8000";
-        $baseUrl = "https://cdn.mobile42.com";
+        $baseUrl = config('app.asset_url');
         return [
             'id' => $this->id,
             'url' => $this->image_url
-                ? $baseUrl . '/storage/' . ltrim($this->image_url, '/')
+                ? $baseUrl . '/' . ltrim($this->image_url, '/')
                 : null,
             'sort' => $this->sort,
         ];
