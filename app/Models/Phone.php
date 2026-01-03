@@ -178,7 +178,7 @@ class Phone extends Model
             $reverceCharging = $s['battery']['reverse'] ?? '';
             $chargingSpec = shortChargingSpec($chargingSpec, $wirlessCharging, $reverceCharging);
             $screenGlassType = $this->extractScreenGlassType($s['display']['protection'] ?? null);
-            $formatGlassProtection = $this->formatGlassProtection($screenGlassType);
+            $formatGlassProtection = $this->formatGlassProtection($screenGlassType ?? []);
             return [
                 'key' => [
                     'display' => [
