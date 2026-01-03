@@ -177,7 +177,7 @@ class Phone extends Model
             $wirlessCharging = $s['battery']['wireless'] ?? '';
             $reverceCharging = $s['battery']['reverse'] ?? '';
             $chargingSpec = shortChargingSpec($chargingSpec, $wirlessCharging, $reverceCharging);
-            $screenGlassType = $this->extractScreenGlassType($s['display']['protection']);
+            $screenGlassType = $this->extractScreenGlassType($s['display']['protection'] ?? null);
             $formatGlassProtection = $this->formatGlassProtection($screenGlassType);
             return [
                 'key' => [
@@ -190,7 +190,7 @@ class Phone extends Model
                         'brightness_(peak)' => $this->extractBrightness($s['display']['brightness'], "peak"),
                         'brightness_(typical)' => $this->extractBrightness($s['display']['brightness'], "typical"),
                         'glass_protection' => $formatGlassProtection,
-                        'has_branded_glass' => $screenGlassType['has_branded_glass'],
+                        'has_branded_glass' => $screenGlassType['has_branded_glass'] ?? null,
 
                     ],
                     'performance' => [
@@ -218,12 +218,12 @@ class Phone extends Model
                         'updates' => $s['performance']['update_policy'] ?? null,
                     ],
 
-                    // 'build' => [
-                    //     'dimensions' => $s['build']['dimensions'] ?? null,
-                    //     'weight' => $s['build']['weight'] ?? null,
-                    //     'build' => $s['build']['build'] ?? null,
-                    //     'ip_rating' => shortIPRating($s['build']['ip_rating']) ?? null,
-                    // ],
+                    'build' => [
+                        'dimensions' => $s['build']['dimensions'] ?? null,
+                        'weight' => $s['build']['weight'] ?? null,
+                        'build' => $s['build']['build'] ?? null,
+                        'ip_rating' => shortIPRating($s['build']['ip_rating']) ?? null,
+                    ],
 
                     'features' => [
                         'nfc' => $s['connectivity']['nfc'] ?? null,
