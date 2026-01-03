@@ -335,7 +335,8 @@
                             <div
                               class="relative group rounded-xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 bg-gray-50">
                               {{-- Clickable image to view full size --}}
-                              <img src="{{ Storage::url($img->image_url) }}"
+                              {{-- {{ Storage::url($img->image_url) }} --}}
+                              <img src=""
                                 class="w-full h-32 object-contain bg-white p-2 cursor-pointer group-hover:scale-105 transition-transform duration-300"
                                 alt="Color Image"
                                 onclick="openImageModal('{{ asset('storage/' . $img->image_url) }}', {{ $img->id }})">
