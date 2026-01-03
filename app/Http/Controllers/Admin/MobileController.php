@@ -361,6 +361,7 @@ class MobileController extends Controller
             //$primaryPath = $this->phoneService->handlePrimaryImage($request->file('primary_image'));
             $updateData = [
                 'brand_id' => $validated['brand'],
+                'name' => $validated['name'],
                 'slug' => Str::slug($brandName . ' ' . $validated['name']), // Brand + Name
                 'description' => $validated['description'] ?? null, // Brand + Name
                 'tagline' => $validated['tagline'] ?? null,
