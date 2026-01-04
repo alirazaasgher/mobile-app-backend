@@ -71,7 +71,7 @@ function update_phone_search_index(
     }
 
     $mainCam = $specMap['main_camera']['setup'] ?? null;
-    $mainCam = getShortCamera($mainCam);
+    $mainCam = getShortCamera($mainCam ?? '');
 
     $shortChipset = getShortChipset($chipset);
     $cpuString = $specMap['performance']['cpu'];
