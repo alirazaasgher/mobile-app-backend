@@ -432,6 +432,7 @@
                 ['value' => '16/256', 'label' => '16GB/256GB', 'modifier' => 0, 'badge' => 'Pro'],
                 ['value' => '16/512', 'label' => '16GB/512GB', 'modifier' => 0, 'badge' => 'Pro'],
                 ['value' => '16/1TB', 'label' => '16GB/1TB', 'modifier' => 0, 'badge' => 'Pro'],
+                ['value' => '20/1TB', 'label' => '20GB/1TB', 'modifier' => 0, 'badge' => 'Pro']
               ];
               $selectedSpecs = old("variants.{$variantIndex}.specs", $existingVariants);
 
