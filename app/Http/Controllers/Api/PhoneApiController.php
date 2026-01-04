@@ -236,7 +236,7 @@ class PhoneApiController extends Controller
             'per_page' => $perPage
         ]));
 
-        $phones = Cache::remember($cacheKey, 1, function () use ($filters, $perPage, $page) {
+        $phones = Cache::remember($cacheKey, now()->addHours(48), function () use ($filters, $perPage, $page) {
 
             $query = Phone::active()->with(['brand:id,name', 'searchIndex']);
             // Brands
@@ -388,8 +388,7 @@ class PhoneApiController extends Controller
             if (empty(array_filter($filters))) {
                 $query->select('id', 'name', 'brand_id', 'slug', 'release_date', 'primary_image', 'status', 'updated_at')
                     ->with('brand:id,name')
-                    ->orderBy('release_date', 'desc')
-                    ->inRandomOrder();
+                    ->orderBy('release_date', 'desc');
             }
 
             // Paginate
