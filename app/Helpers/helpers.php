@@ -62,7 +62,7 @@ function update_phone_search_index(
     $release_date = $validated['release_date'];
 
     // Extract commonly used specs
-    $capacity = preg_replace('/[^0-9]/', '', $specMap['battery']['capacity']);
+    $capacity = isset($specMap['battery']['capacity']) ? preg_replace('/[^0-9]/', '', $specMap['battery']['capacity']) : 0;
     $selfieCam = $specMap['selfie_camera']['setup'] ?? null;
     if ($selfieCam) {
         $selfieCammp = preg_match('/\(\s*(\d+)\s*mp\s*\)/i', (string) $selfieCam, $matches)
