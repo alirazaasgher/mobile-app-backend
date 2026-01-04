@@ -217,8 +217,7 @@
                             @endforeach
                           </select>
                         @elseif ($field['type'] === 'textarea')
-                          <div id="editor-{{ $fieldId }}" class="quill-editor bg-white min-h-[150px]"></div>
-
+                          <div id="editor-{{ $fieldId }}" class="quill-editor bg-white min-h-[150px]" data-target="{{ $fieldId }}"></div>
                           <textarea name="specifications[{{ $fieldindex }}][{{ $field['key'] }}]" id="{{ $fieldId }}"
                             class="hidden">{!! $specValue !!}</textarea>
                         @else

@@ -184,8 +184,6 @@ class MobileController extends Controller
 
     public function store(Request $request)
     {
-
-
         $validated = $request->validate([
             'brand' => 'required|string',
             'name' => 'required|string|max:255',
