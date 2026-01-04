@@ -99,7 +99,7 @@ function update_phone_search_index(
             'sd_card' => $sd_card ?? 0,
             // 'available_colors' => json_encode($availableColors),
             'screen_size_inches' => $sizeInInches,
-            'battery_capacity_mah' => $capacity,
+            'battery_capacity_mah' => $capacity ?? 0,
             'main_camera_mp' => $setup,
             'selfie_camera_mp' => $selfieCammp ?? 0,
             'os' => $os,
