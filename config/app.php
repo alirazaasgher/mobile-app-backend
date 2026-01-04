@@ -13,7 +13,8 @@ return [
     |
     */
 
-    'asset_url' => env('CDN_ASSET_BASE_URL', env('APP_URL')),
+    'asset_url' => env('ASSET_BASE_URL', env('APP_URL')),
+    'cdn_asset_url' => env('CDN_ASSET_BASE_URL', env('APP_URL')),
 
     'name' => env('APP_NAME', 'Laravel'),
 

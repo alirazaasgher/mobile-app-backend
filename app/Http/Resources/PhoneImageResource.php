@@ -7,7 +7,7 @@ class PhoneImageResource extends JsonResource
 {
     public function toArray($request)
     {
-        $baseUrl = config('app.asset_url');
+        $baseUrl = config('app.cdn_asset_url');
         return [
             'id' => $this->id,
             'url' => $this->image_url

@@ -8,7 +8,7 @@ class CompetitorResource extends JsonResource
     public function toArray($request)
     {
         $request->merge(['from_competitor' => true]);
-        $baseUrl = config('app.asset_url');
+        $baseUrl = config('app.cdn_asset_url');
         return [
             'id' => $this->id,
             'slug' => $this->slug,
