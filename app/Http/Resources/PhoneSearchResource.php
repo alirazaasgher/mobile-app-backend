@@ -42,7 +42,6 @@ class PhoneSearchResource extends JsonResource
             'ram_type' => $this->ram_type
         ];
         if (!$this->fromCompare) {
-            $data['specs_grid'] = json_decode($this->specs_grid, true);
             $data['min_price'] = isset($this->min_price_pkr) && $this->min_price_pkr > 0
                 ? number_format($this->min_price_pkr, 0, '.', ',')
                 : null;
@@ -51,6 +50,7 @@ class PhoneSearchResource extends JsonResource
         // Only include top_specs and specs_grid if request has details page flag
         if (!$this->hideDetails && ($request->query('details') || $request->routeIs('phones.show'))) {
             $data['top_specs'] = json_decode($this->top_specs, true);
+            $data['specs_grid'] = json_decode($this->specs_grid, true);
         }
 
         return $data;

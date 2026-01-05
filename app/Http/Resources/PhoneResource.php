@@ -28,15 +28,16 @@ class PhoneResource extends JsonResource
             'status' => $this->status,
             'primary_image' => $this->primary_image ? $baseUrl . '/' . ltrim($this->primary_image, '/')
                 : null,
-            'searchIndex' => new PhoneSearchResource($this->whenLoaded('searchIndex'), hideDetails: false),
+            // 'searchIndex' => new PhoneSearchResource($this->whenLoaded('searchIndex'), hideDetails: false),
+            'searchIndex' => $this->searchIndex
         ];
         if (self::$hideDetails) {
             if ($this->includeSpec) {
                 $data['specs'] = $this->compare_specs;
             }
 
-            $data['searchIndex'] = new PhoneSearchResource($this->whenLoaded('searchIndex'), hideDetails: true, fromCompare: true);
-            $data['competitors'] = CompetitorResource::collection($this->whenLoaded('competitors'));
+            // $data['searchIndex'] = new PhoneSearchResource($this->whenLoaded('searchIndex'), hideDetails: true, fromCompare: true);
+            // $data['competitors'] = CompetitorResource::collection($this->whenLoaded('competitors'));
         } else {
             $data['variants'] = PhoneVariantResource::collection($this->whenLoaded('variants'));
             $data['colors'] = ColorResource::collection($this->whenLoaded('colors'));
