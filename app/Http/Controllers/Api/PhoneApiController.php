@@ -111,7 +111,7 @@ class PhoneApiController extends Controller
         $attachData = function ($collection) use ($searchIndexes, $brands) {
             return $collection->map(function ($phone) use ($searchIndexes, $brands) {
                 $phone->brand = $brands[$phone->brand_id] ?? null;
-                $phone->searchIndex = $searchIndexes[$phone->id] ?? (object)[
+                $phone->searchIndex = $searchIndexes[$phone->id] ?? (object) [
                     'ram' => null,
                     'storage' => null,
                     'min_price_usd' => null,
@@ -626,11 +626,11 @@ class PhoneApiController extends Controller
         ]);
 
         $slugs = $validated['slugs'];
-        $phones = Phone::select('id','name','brand_id','slug','release_date','primary_image','updated_at','is_popular','status')
+        $phones = Phone::select('id', 'name', 'brand_id', 'slug', 'release_date', 'primary_image', 'updated_at', 'is_popular', 'status')
             ->whereIn('slug', $slugs)
             ->get();
         $allBrandIds = $phones->pluck('brand_id')->unique()->toArray();
-        $usedPhoneIds = $phones->pluck('id')->unique()->toArray();    
+        $usedPhoneIds = $phones->pluck('id')->unique()->toArray();
         $brands = DB::table('brands')
             ->select('id', 'name')
             ->whereIn('id', $allBrandIds)
@@ -656,7 +656,7 @@ class PhoneApiController extends Controller
         $attachData = function ($collection) use ($searchIndexes, $brands) {
             return $collection->map(function ($phone) use ($searchIndexes, $brands) {
                 $phone->brand = $brands[$phone->brand_id] ?? null;
-                $phone->searchIndex = $searchIndexes[$phone->id] ?? (object)[
+                $phone->searchIndex = $searchIndexes[$phone->id] ?? (object) [
                     'ram' => null,
                     'storage' => null,
                     'min_price_usd' => null,
@@ -667,14 +667,14 @@ class PhoneApiController extends Controller
                 return $phone;
             });
         };
-        $phones = $attachData($phones);  
+        $phones = $attachData($phones);
         PhoneResource::$hideDetails = true;
         return response()->json([
             'success' => true,
             'data' => $phones->map(fn($phone) => new PhoneResource($phone, true)),
             // 'similarMobiles' => !empty($similarMobiles) ? $similarMobiles->map(fn($phone) => new PhoneResource($phone, false)) : [], // omit searchIndex
 
-        ]);    
+        ]);
         // if ($phones->count() === 1) {
         //     $phone = $phones->first(); // get the single phone
         //     $ramOptions = $phone->searchIndex->ram_options
@@ -692,7 +692,7 @@ class PhoneApiController extends Controller
         //     $similarMobiles = $this->getSimilarMobiles($phone->id, $avgPrice, $ramOptions, $storageOptions, $priceRange);
         // }
 
-        
+
     }
 
     public function search(Request $request)
@@ -947,12 +947,12 @@ class PhoneApiController extends Controller
         // Get results
         $phones = $query->paginate($perPage, ['*'], 'page', $page);
         $phones->getCollection()->transform(function ($phone) {
-            $phone->brand = (object)[
+            $phone->brand = (object) [
                 'id' => $phone->brand_id,
                 'name' => $phone->brand_name,
             ];
 
-            $phone->searchIndex = (object)[
+            $phone->searchIndex = (object) [
                 'ram' => $phone->ram,
                 'storage' => $phone->storage,
                 'min_price_pkr' => $phone->min_price_pkr,
@@ -970,6 +970,9 @@ class PhoneApiController extends Controller
 
             return $phone;
         });
+        echo "<pre>";
+        print_r($phones);
+        exit;
         return [
             'phones' => $phones->items(),
             'pagination' => [
