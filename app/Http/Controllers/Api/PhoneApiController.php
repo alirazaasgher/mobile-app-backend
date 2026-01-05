@@ -945,11 +945,12 @@ class PhoneApiController extends Controller
                 $query->orderByDesc('phones.release_date');
                 break;
         }
-        echo "<pre>";
-        print_r("phones");
-        exit;
+
         // Get results
         $phones = $query->paginate($perPage, ['*'], 'page', $page);
+        echo "<pre>";
+        print_r($phones);
+        exit;
         $phones->getCollection()->transform(function ($phone) {
             $phone->brand = (object) [
                 'id' => $phone->brand_id,
