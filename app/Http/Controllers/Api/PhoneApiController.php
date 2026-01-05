@@ -943,7 +943,9 @@ class PhoneApiController extends Controller
                 $query->orderByDesc('phones.release_date');
                 break;
         }
-
+        echo "<pre>";
+        print_r("phones");
+        exit;
         // Get results
         $phones = $query->paginate($perPage, ['*'], 'page', $page);
         $phones->getCollection()->transform(function ($phone) {
@@ -970,9 +972,7 @@ class PhoneApiController extends Controller
 
             return $phone;
         });
-        echo "<pre>";
-        print_r($phones);
-        exit;
+
         return [
             'phones' => $phones->items(),
             'pagination' => [
