@@ -340,11 +340,11 @@ class PhoneApiController extends Controller
                 'per_page' => $perPage
             ]));
 
-            $response = $this->executeFilterQuery($filters, $perPage, $page);
+            //$response = $this->executeFilterQuery($filters, $perPage, $page);
 
-            // $response = Cache::remember($cacheKey, now()->addHours(48), function () use ($filters, $perPage, $page) {
-            //     return $this->executeFilterQuery($filters, $perPage, $page);
-            // });
+            $response = Cache::remember($cacheKey, now()->addHours(48), function () use ($filters, $perPage, $page) {
+                return $this->executeFilterQuery($filters, $perPage, $page);
+            });
         } else {
 
             $response = $this->executeFilterQuery($filters, $perPage, $page);
