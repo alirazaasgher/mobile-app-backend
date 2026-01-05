@@ -973,9 +973,9 @@ class PhoneApiController extends Controller
 
             return $phone;
         });
-        echo "<pre>";
-        print_r($phones);
-        exit;
+        // echo "<pre>";
+        // print_r($phones);
+        // exit;
         return [
             'phones' => $phones->items(),
             'pagination' => [
