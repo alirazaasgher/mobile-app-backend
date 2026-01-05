@@ -948,9 +948,7 @@ class PhoneApiController extends Controller
 
         // Get results
         $phones = $query->paginate($perPage, ['*'], 'page', $page);
-        echo "<pre>";
-        print_r($phones);
-        exit;
+
         $phones->getCollection()->transform(function ($phone) {
             $phone->brand = (object) [
                 'id' => $phone->brand_id,
@@ -975,7 +973,9 @@ class PhoneApiController extends Controller
 
             return $phone;
         });
-
+        echo "<pre>";
+        print_r($phones);
+        exit;
         return [
             'phones' => $phones->items(),
             'pagination' => [
