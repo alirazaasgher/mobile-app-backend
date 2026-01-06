@@ -97,7 +97,7 @@ function update_phone_search_index(
             'ram_options' => json_encode(value: array_map('intval', $ramOptions)),
             'storage_options' => json_encode(array_map('intval', $storageOptions)),
             'min_ram' => $min_ram,
-            'min_storge' => $min_storage,
+            'min_storage' => $min_storage,
             'storage_type' => $storage_type,
             'ram_type' => $ram_type,
             'sd_card' => $sd_card ?? 0,
