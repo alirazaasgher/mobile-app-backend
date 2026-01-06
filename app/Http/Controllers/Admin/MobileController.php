@@ -246,18 +246,13 @@ class MobileController extends Controller
             // $ramType = $validated['variants']['ram_type'] ?? null;
             // $storageType = $validated['variants']['storage_type'] ?? null;
             [$ram_list, $storage_list, $price_list] = $this->phoneService->syncVariants($phone, $variantsSpecs, $priceModifiersPKR, $priceModifiersUSD);
-
-            // colors & images
-
-            // $available_colors = $this->phoneService->syncColorsAndImages(
-            //     $phone,
-            //     $variantsColors,
-            //     $color_names,
-            //     $color_hex,
-            //     $color_images,
-            //     $validated['variants']['delete_images'] ?? []
-            // );
-
+            $minRam = 0;
+            $minStorage = 0;
+            if (!empty($variantsSpecs)) {
+                $firstParts = array_map('trim', explode('/', $variantsSpecs[0]));
+                $minRam = intval($firstParts[0] ?? 0);
+                $minStorage = $firstParts[1] ?? '0';
+            }
             // memory spec
             $memorySpec = $this->phoneService->buildMemorySpec(
                 $ram_list,
@@ -285,7 +280,7 @@ class MobileController extends Controller
 
 
             // search index
-            update_phone_search_index($storage_type, $ram_type, $sd_card, $ram_list, $storage_list, $price_list, "", $updatedSpecs, $validated, $phone->id);
+            update_phone_search_index($storage_type, $ram_type, $sd_card, $ram_list, $storage_list, $minRam, $minStorage, $price_list, "", $updatedSpecs, $validated, $phone->id);
 
             DB::commit();
             $message = $deleted === 'draft' ? 'Phone saved as draft!' : 'Phone published successfully!';
@@ -356,12 +351,11 @@ class MobileController extends Controller
                 $validated['variants']['delete_images'] ?? []
             );
 
-            //$primaryPath = $this->phoneService->handlePrimaryImage($request->file('primary_image'));
             $updateData = [
                 'brand_id' => $validated['brand'],
                 'name' => $validated['name'],
                 'slug' => Str::slug($brandName . ' ' . $validated['name']), // Brand + Name
-                'description' => $validated['description'] ?? null, // Brand + Name
+                // 'description' => $validated['description'] ?? null,
                 'tagline' => $validated['tagline'] ?? null,
                 'release_date' => $validated['release_date'] ?? null,
                 'announced_date' => $request->input('announced_date') ?? null,
@@ -384,14 +378,13 @@ class MobileController extends Controller
             // $storageType = $validated['variants']['storage_type'] ?? null;
             [$ram_list, $storage_list, $price_list] = $this->phoneService->syncVariants($phone, $variantsSpecs, $priceModifiersPKR, $priceModifiersUSD);
 
-            // colors & images (preserve old unless deleted)
-
-            // $available_colors = $this->phoneService->syncColorsAndImages(
-            //     $phone,
-            //     $uploadResults,
-            //     $validated['delete_images'] ?? []
-            // );
-
+            $minRam = 0;
+            $minStorage = 0;
+            if (!empty($variantsSpecs)) {
+                $firstParts = array_map('trim', explode('/', $variantsSpecs[0]));
+                $minRam = intval($firstParts[0] ?? 0);
+                $minStorage = $firstParts[1] ?? '0';
+            }
             // memory spec injected after performance
             $memorySpec = $this->phoneService->buildMemorySpec(
                 $ram_list,
@@ -417,7 +410,7 @@ class MobileController extends Controller
             }, true);
 
 
-            update_phone_search_index($storage_type, $ram_type, $sd_card, $ram_list, $storage_list, $price_list, "", $updatedSpecs, $validated, $id);
+            update_phone_search_index($storage_type, $ram_type, $sd_card, $ram_list, $storage_list, $minRam, $minStorage, $price_list, "", $updatedSpecs, $validated, $id);
             // search index (if published)
 
             DB::commit();

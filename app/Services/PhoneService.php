@@ -378,7 +378,6 @@ class PhoneService
         $incomingMap = [];
         foreach ($incomingSpecs as $spec) {
             $parts = array_map('trim', explode('/', $spec));
-
             $ram = $parts[0] ?? '';
             $storage = $parts[1] ?? '';
 
@@ -498,69 +497,6 @@ class PhoneService
         foreach ($ram_list as $i => $ram) {
             $short[] = $ram . 'GB/' . (is_numeric($storage_list[$i]) ? $storage_list[$i] . 'GB' : $storage_list[$i]);
         }
-        // echo "<pre>";
-        // print_r($short);
-        // echo "---";
-        // print_r($storage_list);
-        // exit;
-        // ---------- RAM ----------
-        // $ramValues = [];
-        // $ramValues = array_unique(array_map('intval', $ram_list));
-
-        // $ram = '';
-        // if (!empty($ramValues)) {
-        //     $ram = implode(' / ', $ramValues) . ' GB';
-        //     if (!empty($ram_type)) {
-        //         $ram .= ' ' . $ram_type;
-        //     }
-        // }
-
-        // // ---------- STORAGE ----------
-        // $gbValues = [];
-        // $tbValues = [];
-
-        // // Normalize storage values
-        // foreach ($storage_list as $value) {
-        //     if (empty($value))
-        //         continue;
-
-        //     $value = strtolower(trim($value));
-
-        //     if (preg_match('/([\d.]+)/', $value, $m)) {
-        //         $number = (float) $m[1];
-
-        //         if (str_contains($value, 'tb') || $number >= 1024) {
-        //             // Convert GB >= 1024 to TB
-        //             $tbValues[] = ($number >= 1024 ? $number / 1024 : $number) . ' TB';
-        //         } else {
-        //             $gbValues[] = (int) $number;
-        //         }
-        //     }
-        // }
-
-        // // Remove duplicates
-        // $gbValues = array_unique($gbValues);
-        // $tbValues = array_unique($tbValues);
-
-        // // Build storage string
-        // $storageParts = [];
-
-        // // Join GB values with "/"
-        // if (!empty($gbValues)) {
-        //     $storageParts[] = implode(' / ', $gbValues) . ' GB';
-        // }
-
-        // // Append TB values
-        // if (!empty($tbValues)) {
-        //     $storageParts = array_merge($storageParts, $tbValues);
-        // }
-
-        // $storage = implode(' / ', $storageParts);
-
-        // // Append storage type
-        // if (!empty($storage_type)) {
-        //     $storage .= ' ' . $storage_type;
-        // }
 
         return [
             'ram_type' => $ram_type,
@@ -706,7 +642,6 @@ class PhoneService
 
             DB::commit();
             return $results;
-
         } catch (\Exception $e) {
             DB::rollBack();
             // Clean up uploaded files on failure

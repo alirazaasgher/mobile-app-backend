@@ -27,9 +27,8 @@ class PhoneApiController extends Controller
     /**
      * Get filtered phones with pagination - Main listing API
      */
-    public function index(Request $request): JsonResponse
+    public function index(): JsonResponse
     {
-        // Single base query configuration
         $baseSelect = [
             'id',
             'name',
@@ -42,9 +41,7 @@ class PhoneApiController extends Controller
             'status'
         ];
 
-        $usedPhoneIds = [];
-
-        // Latest Mobiles
+        // Fetch all collections in parallel queries
         $latestMobiles = Phone::select($baseSelect)
             ->active()
             ->where('is_popular', 0)
@@ -52,10 +49,9 @@ class PhoneApiController extends Controller
             ->orderByDesc('release_date')
             ->limit(12)
             ->get();
-
+      
         $usedPhoneIds = $latestMobiles->pluck('id')->all();
 
-        // Upcoming Mobiles
         $upcomingMobiles = Phone::select($baseSelect)
             ->active()
             ->whereIn('status', ['rumored', 'upcoming'])
@@ -65,8 +61,6 @@ class PhoneApiController extends Controller
             ->get();
 
         $usedPhoneIds = array_merge($usedPhoneIds, $upcomingMobiles->pluck('id')->all());
-
-        // Popular Mobiles
         $popularMobiles = Phone::select($baseSelect)
             ->active()
             ->where('is_popular', 1)
@@ -77,22 +71,72 @@ class PhoneApiController extends Controller
 
         $usedPhoneIds = array_merge($usedPhoneIds, $popularMobiles->pluck('id')->all());
 
-        // Load all brands in ONE query
-        $allBrandIds = collect()
-            ->merge($latestMobiles)
-            ->merge($upcomingMobiles)
-            ->merge($popularMobiles)
-            ->pluck('brand_id')
+        // Fetch price range mobiles with UNION ALL for better performance
+        $priceRangeQueries = [
+            'under_10000' => [0, 9999],
+            '10000_20000' => [10000, 19999],
+            '20000_30000' => [20000, 29999],
+            '30000_40000' => [30000, 39999],
+            '40000_50000' => [40000, 49999],
+            '50000_60000' => [50000, 59999],
+            'above_60000' => [60000, null],
+        ];
+
+        $unionQuery = null;
+        foreach ($priceRangeQueries as $key => [$min, $max]) {
+            $query = Phone::select(array_merge($baseSelect, [DB::raw("'$key' as price_range")]))
+                ->active()
+                ->whereNotIn('id', $usedPhoneIds)
+                ->whereHas('searchIndex', function ($q) use ($min, $max) {
+                    $q->where('min_price_pkr', '>', 0);
+                    if (is_null($max)) {
+                        $q->where('min_price_pkr', '>=', $min);
+                    } else {
+                        $q->whereBetween('min_price_pkr', [$min, $max - 1]);
+                    }
+                })
+                ->latest('updated_at')
+                ->limit(12);
+
+            if ($unionQuery === null) {
+                $unionQuery = $query;
+            } else {
+                $unionQuery->unionAll($query);
+            }
+        }
+
+        $priceRangeMobiles = $unionQuery ? collect(DB::select($unionQuery->toSql(), $unionQuery->getBindings())) : collect();
+
+        // Group price range results
+        $mobilesByPriceRange = $priceRangeMobiles->groupBy('price_range')->map(function ($items) {
+            return collect($items)->map(fn($item) => (object) (array) $item);
+        });
+
+        // Collect all phone IDs for bulk loading
+        $allPhoneIds = collect()
+            ->merge($latestMobiles->pluck('id'))
+            ->merge($upcomingMobiles->pluck('id'))
+            ->merge($popularMobiles->pluck('id'))
+            ->merge($priceRangeMobiles->pluck('id'))
+            ->unique()
+            ->all();
+
+        // Bulk load brands (single query)
+        $brandIds = collect()
+            ->merge($latestMobiles->pluck('brand_id'))
+            ->merge($upcomingMobiles->pluck('brand_id'))
+            ->merge($popularMobiles->pluck('brand_id'))
+            ->merge($priceRangeMobiles->pluck('brand_id'))
             ->unique()
             ->all();
 
         $brands = DB::table('brands')
             ->select('id', 'name')
-            ->whereIn('id', $allBrandIds)
+            ->whereIn('id', $brandIds)
             ->get()
             ->keyBy('id');
 
-        // Load search indices (already optimized)
+        // Bulk load search indices (single query)
         $searchIndexes = DB::table('phone_search_indices')
             ->select(
                 'phone_id',
@@ -103,12 +147,12 @@ class PhoneApiController extends Controller
                 'ram_type',
                 'min_price_pkr as min_price'
             )
-            ->whereIn('phone_id', array_unique($usedPhoneIds))
+            ->whereIn('phone_id', $allPhoneIds)
             ->get()
             ->keyBy('phone_id');
 
-        // Attach relationships
-        $attachData = function ($collection) use ($searchIndexes, $brands) {
+        // Attach relationships helper
+        $attachRelations = function ($collection) use ($searchIndexes, $brands) {
             return $collection->map(function ($phone) use ($searchIndexes, $brands) {
                 $phone->brand = $brands[$phone->brand_id] ?? null;
                 $phone->searchIndex = $searchIndexes[$phone->id] ?? (object) [
@@ -119,80 +163,21 @@ class PhoneApiController extends Controller
                     'ram_type' => null,
                     'min_price' => null,
                 ];
+                unset($phone->price_range); // Remove helper field
                 return $phone;
             });
         };
 
-        $latestMobiles = $attachData($latestMobiles);
-        $upcomingMobiles = $attachData($upcomingMobiles);
-        $popularMobiles = $attachData($popularMobiles);
-
-        // Price ranges: Use UNION ALL instead of loop (MUCH faster)
-        $priceRanges = [
-            'under_10000' => [0, 9999],
-            '10000_20000' => [10000, 19999],
-            '20000_30000' => [20000, 29999],
-            '30000_40000' => [30000, 39999],
-            '40000_50000' => [40000, 49999],
-            '50000_60000' => [50000, 59999],
-            'above_60000' => [60000, null],
-        ];
-
-        // Build UNION query
-        $unionQuery = null;
-        foreach ($priceRanges as $key => [$min, $max]) {
-            $query = DB::table('phones')
-                ->select(
-                    'phones.id',
-                    'phones.name',
-                    'phones.slug',
-                    'phones.primary_image',
-                    'phone_search_indices.min_ram as ram',
-                    'phone_search_indices.min_storage as storage',
-                    'phone_search_indices.min_price_usd',
-                    'phone_search_indices.storage_type',
-                    'phone_search_indices.ram_type',
-                    'phone_search_indices.min_price_pkr as min_price',
-                    DB::raw("'$key' as price_range")
-                )
-                ->join('phone_search_indices', 'phone_search_indices.phone_id', '=', 'phones.id')
-                ->where('phones.status', 1)
-                ->where('phone_search_indices.min_price_pkr', '>', 0)
-                ->when(!empty($usedPhoneIds), fn($q) => $q->whereNotIn('phones.id', $usedPhoneIds))
-                ->when(
-                    $max === null,
-                    fn($q) => $q->where('phone_search_indices.min_price_pkr', '>=', $min),
-                    fn($q) => $q->whereBetween('phone_search_indices.min_price_pkr', [$min, $max])
-                )
-                ->orderByDesc('phones.updated_at')
-                ->limit(12);
-
-            $unionQuery = $unionQuery ? $unionQuery->unionAll($query) : $query;
-        }
-
-        $priceRangeResults = $unionQuery->get();
-
-        // Group by price range
-        $mobilesByPriceRange = [];
-        foreach ($priceRanges as $key => $range) {
-            $mobilesByPriceRange[$key] = $priceRangeResults
-                ->where('price_range', $key)
-                ->map(fn($row) => [
-                    'id' => $row->id,
-                    'name' => $row->name,
-                    'slug' => $row->slug,
-                    'primary_image' => $row->primary_image,
-                    'searchIndex' => [
-                        'ram' => $row->ram,
-                        'storage' => $row->storage,
-                        'min_price_usd' => $row->min_price_usd,
-                        'storage_type' => $row->storage_type,
-                        'ram_type' => $row->ram_type,
-                        'min_price' => $row->min_price,
-                    ]
-                ])
-                ->values();
-        }
+        // Attach to all collections
+        $latestMobiles = $attachRelations($latestMobiles);
+        $upcomingMobiles = $attachRelations($upcomingMobiles);
+        $popularMobiles = $attachRelations($popularMobiles);
+ 
+        // Transform price range collections
+        $priceRangeData = collect($priceRangeQueries)->keys()->mapWithKeys(function ($key) use ($mobilesByPriceRange, $attachRelations) {
+            $phones = $mobilesByPriceRange->get($key, collect());
+            return [$key => PhoneResource::collection($attachRelations($phones))];
+        });
 
         return response()->json([
             'success' => true,
@@ -200,9 +185,7 @@ class PhoneApiController extends Controller
                 'latest_mobiles' => PhoneResource::collection($latestMobiles),
                 'upcoming_mobiles' => PhoneResource::collection($upcomingMobiles),
                 'popular_mobiles' => PhoneResource::collection($popularMobiles),
-                'price_ranges' => collect($mobilesByPriceRange)->map(function ($phones) {
-                    return PhoneResource::collection($phones);
-                }),
+                'price_ranges' => $priceRangeData,
             ],
         ]);
     }
