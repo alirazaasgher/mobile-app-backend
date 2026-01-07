@@ -49,7 +49,7 @@ class PhoneApiController extends Controller
             ->orderByDesc('release_date')
             ->limit(12)
             ->get();
-      
+
         $usedPhoneIds = $latestMobiles->pluck('id')->all();
 
         $upcomingMobiles = Phone::select($baseSelect)
@@ -172,7 +172,7 @@ class PhoneApiController extends Controller
         $latestMobiles = $attachRelations($latestMobiles);
         $upcomingMobiles = $attachRelations($upcomingMobiles);
         $popularMobiles = $attachRelations($popularMobiles);
- 
+
         // Transform price range collections
         $priceRangeData = collect($priceRangeQueries)->keys()->mapWithKeys(function ($key) use ($mobilesByPriceRange, $attachRelations) {
             $phones = $mobilesByPriceRange->get($key, collect());
@@ -780,6 +780,7 @@ class PhoneApiController extends Controller
                 'phones.name',
                 'phones.slug',
                 'phones.release_date',
+                'phones.updated_at',
                 'phones.status',
                 'phones.primary_image',
                 'brands.id as brand_id',
