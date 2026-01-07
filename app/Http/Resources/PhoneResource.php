@@ -24,7 +24,7 @@ class PhoneResource extends JsonResource
             'brand' => $this->brand,
             'slug' => $this->slug,
             'updated_at' => $this->updated_at ?
-                Carbon::parse($this->updated_at)->toDateString()
+                Carbon::parse($this->updated_at)->format('Y-m-d')
                 : null,
             'release_date' => !empty($this->release_date) ? Carbon::parse($this->release_date)->format('j F, Y') : null,
             'status' => $this->status,
