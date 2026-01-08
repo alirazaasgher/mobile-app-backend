@@ -4,24 +4,34 @@
 $categories = ['general', 'network', 'sim', 'body', 'platform', 'memory', 'display', 'main_camera', 'selfie_camera', 'audio', 'sensors', 'connectivity', 'battery', 'misc'];
 $network = ['technology', '2G bands', '3G bands', '4G bands', '5G bands', 'speed'];
 @endphp
-<div class="w-full mx-auto p-6 bg-white shadow rounded">
-  @if($errors->any())
-  <div class="bg-red-100 text-red-700 p-3 rounded mb-4">
-    <ul class="list-disc list-inside">
-      @foreach ($errors->all() as $error)
-      <li>{{ $error }}</li>
-      @endforeach
+ <div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2 class="fw-bold mb-1">Mobiles Management</h2>
+        <p class="text-muted mb-0">Add Phone</p>
+    </div>
+</div>
+
+<!-- Error Messages -->
+@if($errors->any())
+<div class="alert alert-danger mb-4">
+    <ul class="mb-0">
+        @foreach ($errors->all() as $error)
+        <li>{{ $error }}</li>
+        @endforeach
     </ul>
-  </div>
-  @endif
+</div>
+@endif
 
-  @if (session('success'))
-  <div class="bg-green-100 text-green-700 p-3 rounded mb-4">
+<!-- Success Message -->
+@if (session('success'))
+<div class="alert alert-success alert-dismissible fade show mb-4" role="alert">
     {{ session('success') }}
-  </div>
-  @endif
+    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+</div>
+@endif
 
-  <h1 class="text-2xl font-bold mb-4">Add Phone</h1>
+<div class="container bg-white shadow rounded">
+
 
   <form action="{{ isset($mobile) ? route('admin.mobiles.update', $mobile->id) : route('admin.mobiles.store') }}" method="POST"
     enctype="multipart/form-data">
@@ -32,7 +42,6 @@ $network = ['technology', '2G bands', '3G bands', '4G bands', '5G bands', 'speed
     @endif
 
     <!-- Phone Basic Info -->
-    <div class="container">
 
       <!-- Brand & Name -->
       <div class="row g-3 mb-3">
