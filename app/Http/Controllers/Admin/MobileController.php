@@ -171,7 +171,10 @@ class MobileController extends Controller
     // List all mobiles
     public function index()
     {
-        $mobiles = Phone::orderBy('created_at', 'desc')->get();
+        $mobiles = Phone::with('brand:id,name') // Only fetch id and name from brands
+            ->select('id', 'name', 'brand_id','deleted', 'created_at','release_date')
+            ->orderBy('created_at', 'desc')
+            ->get();
         return view('admin.mobiles.index', compact('mobiles'));
     }
 

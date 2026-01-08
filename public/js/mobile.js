@@ -1,27 +1,5 @@
 let colorCounter = 1;
 $(document).ready(function () {
-    $(".tab-btn").on("click", function (e) {
-        e.preventDefault();
-        const targetTab = $(this).data("tab");
-
-        // Remove active state from all tabs
-        $(".tab-btn")
-            .removeClass("border-blue-600 text-blue-600 bg-blue-50")
-            .addClass("border-transparent text-gray-600")
-            .attr("aria-selected", "false");
-
-        // Add active state to clicked tab
-        $(this)
-            .addClass("border-blue-600 text-blue-600 bg-blue-50")
-            .removeClass("border-transparent text-gray-600")
-            .attr("aria-selected", "true");
-
-        // Hide all tab contents
-        $(".tab-content").addClass("hidden");
-
-        // Show target tab content
-        $("#tab-" + targetTab).removeClass("hidden");
-    });
     document
         .getElementById("variants-wrapper")
         .addEventListener("click", function (e) {
@@ -34,33 +12,50 @@ $(document).ready(function () {
         colorCounter++;
         const colorId = `color_${colorCounter}`;
         const colorSlug = colorId.toLowerCase();
-
         const html = `
-        <div class="color-option-row flex items-center space-x-2 w-full border p-2 rounded" id="${colorId}">
-            <input type="checkbox" name="variants[colors][]" value="${colorSlug}" class="rounded flex-shrink-0" checked>
+            <div class="border rounded p-3 mb-2" id="${colorId}">
+            <div class="row align-items-center g-2">
 
-            <div class="color-preview w-4 h-4 rounded-full border flex-shrink-0" style="background-color: #000000"></div>
+                <!-- Color name -->
+                <div class="col-md-4">
+                <input type="text"
+                    name="variants[color_names][${colorSlug}]"
+                    class="form-control form-control-sm"
+                    placeholder="Color name">
+                </div>
 
-            <input type="text" name="variants[color_names][${colorSlug}]" placeholder="Color Name"
-                class="color-name-input text-sm border rounded px-2 py-1 flex-1">
+                <!-- Hex code -->
+                <div class="col-md-3">
+                <input type="text"
+                    name="variants[color_hex][${colorSlug}]"
+                    value="#000000"
+                    class="form-control form-control-sm"
+                    oninput="updateColorCircle('${colorId}', this.value)">
+                </div>
 
-            <input type="text" name="variants[color_hex][${colorSlug}]" value="#000000"
-                class="color-hex-input text-xs border rounded px-2 py-1 flex-1"
-                oninput="updateColorCircle('${colorId}', this.value)">
+                <!-- Images -->
+                <div class="col-md-4">
+                <input type="file"
+                    name="variants[color_image][${colorSlug}][]"
+                    class="form-control form-control-sm"
+                    accept="image/*"
+                    multiple>
+                </div>
 
-            <input type="file" name="variants[color_image][${colorSlug}][]"
-                class="text-xs border rounded px-2 py-1 flex-1" accept="image/*" multiple>
+                <!-- Remove -->
+                <div class="col-md-1 text-center">
+                <button type="button"
+                    class="remove-color btn btn-danger btn-sm"
+                    data-target="${colorId}">
+                    &times;
+                </button>
+                </div>
 
-            <button type="button" class="remove-color bg-red-400 text-white px-2 py-1 rounded text-xs"
-                onclick="removeColorOption('${colorId}')">x</button>
-        </div>
-    `;
+            </div>
+            </div>
+            `;
 
         $("#color-options-container").append(html);
-    });
-
-    $(document).on("click", ".remove-color", function () {
-        $(this).closest(".color-option-row").remove();
     });
     $('select[name="competitors[]"]').select2({
         placeholder: "Select Status",
@@ -103,5 +98,16 @@ $(document).ready(function () {
         quill.on("text-change", function () {
             textarea.value = quill.root.innerHTML;
         });
+    });
+
+    $(document).on('click', '.remove-color', function () {
+        const targetId = $(this).data('target');
+        const $row = $('#' + targetId);
+
+        if (!$row.length) return;
+
+        if (!confirm('Remove this color option?')) return;
+
+        $row.remove();
     });
 });

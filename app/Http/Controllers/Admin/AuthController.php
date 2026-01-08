@@ -22,12 +22,13 @@ class AuthController extends Controller
             'password' => 'required',
         ]);
 
+        $credentials = $request->validate([
+            'email' => 'required|email',
+            'password' => 'required',
+        ]);
+
         // Attempt login using 'admins' guard if you have separate admin users
-        if (Auth::attempt([
-            'email' => $request->email,
-            'password' => $request->password,
-            'is_admin' => 1  // make sure only admin users can login
-        ])) {
+        if (Auth::guard('admin')->attempt($credentials)) {
             return redirect()->route('admin.dashboard');
         }
 
