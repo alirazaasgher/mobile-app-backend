@@ -420,7 +420,7 @@ class MobileController extends Controller
             DB::commit();
 
             $message = $deleted === 'draft' ? 'Phone saved as draft!' : 'Phone updated successfully!';
-            return redirect()->route('mobiles.edit', $phone->id)->with('success', $message);
+            return redirect()->route('admin.mobiles.edit', $phone->id)->with('success', $message);
         } catch (\Throwable $e) {
             DB::rollBack();
             Log::error('Phone update failed: ' . $e->getMessage(), ['trace' => $e->getTraceAsString()]);
