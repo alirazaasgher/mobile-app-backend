@@ -172,9 +172,10 @@ class MobileController extends Controller
     public function index()
     {
         $mobiles = Phone::with('brand:id,name') // Only fetch id and name from brands
-            ->select('id', 'name', 'brand_id','deleted', 'created_at','release_date')
+            ->select('id', 'name', 'brand_id', 'deleted', 'created_at', 'release_date')
             ->orderBy('created_at', 'desc')
-            ->get();
+            ->paginate(15); // Change from get() to paginate(15)
+
         return view('admin.mobiles.index', compact('mobiles'));
     }
 

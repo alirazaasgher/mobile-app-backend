@@ -13,11 +13,12 @@ class AdminMiddleware
      */
     public function handle(Request $request, Closure $next)
     {
-        // Check if user is logged in and is admin
-        if (!Auth::check() || Auth::user()->is_admin != 1) {
+        // Check if authenticated with admin guard
+        if (!Auth::guard('admin')->check()) {
             return redirect()->route('admin.login');
         }
 
+        $user = Auth::guard('admin')->user();
         return $next($request);
     }
 }

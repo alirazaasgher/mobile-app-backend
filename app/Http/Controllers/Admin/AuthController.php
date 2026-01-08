@@ -5,7 +5,10 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 class AuthController extends Controller
 {
     // Show login form
@@ -19,28 +22,42 @@ class AuthController extends Controller
     {
         $request->validate([
             'email' => 'required|email',
-            'password' => 'required',
+            'password' => 'required|string',
         ]);
 
-        $credentials = $request->validate([
-            'email' => 'required|email',
-            'password' => 'required',
-        ]);
+        // Rate limiting
+        $key = 'admin-login:' . $request->ip();
+        if (RateLimiter::tooManyAttempts($key, 5)) {
+            $seconds = RateLimiter::availableIn($key);
 
-        // Attempt login using 'admins' guard if you have separate admin users
-        if (Auth::guard('admin')->attempt($credentials)) {
-            return redirect()->route('admin.dashboard');
+            throw ValidationException::withMessages([
+                'email' => "Too many login attempts. Please try again in {$seconds} seconds.",
+            ]);
         }
+
+        $credentials = $request->only('email', 'password');
+
+        // Attempt login using 'admin' guard
+        if (Auth::guard('admin')->attempt($credentials, $request->boolean('remember'))) {
+            $request->session()->regenerate();
+            RateLimiter::clear($key);
+            return redirect()->intended(route('admin.dashboard'));
+        }
+        // Increment rate limiter on failed attempt
+
 
         return back()->withErrors([
             'email' => 'Invalid credentials or not an admin.',
-        ])->withInput();
+        ])->withInput($request->only('email'));
     }
 
-    // Logout
-    public function logout()
+    public function logout(Request $request)
     {
-        Auth::logout();
+        Auth::guard('admin')->logout();
+
+        $request->session()->invalidate();
+        $request->session()->regenerateToken();
+
         return redirect()->route('admin.login');
     }
 }

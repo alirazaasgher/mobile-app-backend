@@ -18,11 +18,11 @@ Route::prefix('admin')->name('admin.')->group(function () {
         ->name('login');
 
     Route::post('/login', [AuthController::class, 'login']);
-
-    // Route::middleware('admin')->group(function () {
+    Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
+    Route::middleware('admin')->group(function () {
         Route::get('/dashboard', [DashboardController::class, 'index'])
             ->name('dashboard');
 
         Route::resource('mobiles', MobileController::class);
-    // });
+    });
 });

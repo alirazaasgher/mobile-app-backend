@@ -283,12 +283,6 @@ $network = ['technology', '2G bands', '3G bands', '4G bands', '5G bands', 'speed
                   <!-- Row layout -->
                   <div class="row align-items-center g-2">
 
-                    <!-- Preview -->
-                    <div class="col-md-1 text-center">
-                      <div class="rounded-circle border"
-                        style="width:16px;height:16px;background:{{ $color['hex_code'] }}"></div>
-                    </div>
-
                     <!-- Name -->
                     <div class="col-md-4">
                       <input type="text"
@@ -317,8 +311,10 @@ $network = ['technology', '2G bands', '3G bands', '4G bands', '5G bands', 'speed
                     <!-- Remove -->
                     <div class="col-md-1 text-center">
                       <button type="button"
-                        class="remove-color btn btn-danger btn-sm"
+                        class="remove-color btn btn-sm btn-outline-danger"
                         data-target="{{ $colorId }}">
+
+                      <i class="bi bi-trash"></i>
                       </button>
                     </div>
 
@@ -332,8 +328,7 @@ $network = ['technology', '2G bands', '3G bands', '4G bands', '5G bands', 'speed
                       <div class="border rounded p-2 text-center position-relative">
                         <img src="{{ asset('storage/'.$img->image_url) }}"
                           class="img-fluid mb-2"
-                          style="height:100px;object-fit:contain;cursor:pointer"
-                          onclick="openImageModal('{{ asset('storage/'.$img->image_url) }}', {{ $img->id }})">
+                          style="height:100px;object-fit:contain;cursor:pointer">
 
                         <div class="form-check">
                           <input type="checkbox"

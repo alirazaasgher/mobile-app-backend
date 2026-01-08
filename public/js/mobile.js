@@ -1,13 +1,5 @@
 let colorCounter = 1;
 $(document).ready(function () {
-    document
-        .getElementById("variants-wrapper")
-        .addEventListener("click", function (e) {
-            if (e.target.classList.contains("remove-variant")) {
-                e.target.closest(".variant-row").remove();
-            }
-        });
-
     $(document).on("click", "#addColorBtn", function () {
         colorCounter++;
         const colorId = `color_${colorCounter}`;
@@ -45,9 +37,9 @@ $(document).ready(function () {
                 <!-- Remove -->
                 <div class="col-md-1 text-center">
                 <button type="button"
-                    class="remove-color btn btn-danger btn-sm"
+                    class="remove-color btn btn-sm btn-outline-danger"
                     data-target="${colorId}">
-                    &times;
+                    <i class="bi bi-trash"></i>
                 </button>
                 </div>
 
@@ -100,14 +92,18 @@ $(document).ready(function () {
         });
     });
 
-    $(document).on('click', '.remove-color', function () {
-        const targetId = $(this).data('target');
-        const $row = $('#' + targetId);
+    $(document).on("click", ".remove-color", function () {
+        const targetId = $(this).data("target");
+        const $row = $("#" + targetId);
 
         if (!$row.length) return;
 
-        if (!confirm('Remove this color option?')) return;
+        if (!confirm("Remove this color option?")) return;
 
         $row.remove();
+    });
+
+    $(document).ready(function () {
+        $('[data-bs-toggle="tooltip"]').tooltip();
     });
 });

@@ -1,13 +1,14 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Admin Panel</title>
     <link href="{{ asset('css/bootstrap.min.css') }}" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
     <link href="{{ asset('css/mobile.css') }}" rel="stylesheet">
-    <script src="{{ asset('css/select2.css') }}"></script>
+    <link src="{{ asset('css/select2.css') }}" rel="stylesheet">
     <script src="{{ asset('js/bootstrap.bundle.min.js') }}"></script>
     <script src="{{ asset('js/jquery.js') }}"></script>
     <script src="{{ asset('js/select2.js') }}"></script>
@@ -18,25 +19,29 @@
     <script src="{{ asset('js/mobile.js') }}"></script>
 </head>
 
-<body class="bg-light min-vh-100 d-flex">
+<body class="bg-light">
 
-    <!-- Sidebar -->
-    <div class="bg-dark text-white vh-100" style="width: 250px; overflow-y: auto;">
-        @include('admin.layouts.sidebar')
-    </div>
+<div class="d-flex min-vh-100">
 
-    <!-- Right content -->
+    <!-- LEFT SIDEBAR (FULL HEIGHT) -->
+    @include('admin.layouts.sidebar')
+
+    <!-- RIGHT SIDE -->
     <div class="flex-grow-1 d-flex flex-column">
 
-        <!-- Header -->
+        <!-- RIGHT HEADER -->
         @include('admin.layouts.header')
 
-        <!-- Main content -->
-        <main class="p-4 flex-grow-1 overflow-auto">
+        <!-- MAIN CONTENT -->
+        <main class="flex-grow-1 p-4">
             @yield('content')
         </main>
+
     </div>
-</body>
+
+</div>
+
+
 
 
 
