@@ -393,11 +393,6 @@ class MobileController extends Controller
                 $ram_type,
                 $sd_card == "1" ? "YES" : "NO"
             );
-            echo "<pre>";
-            print_r($memorySpec);
-            exit;
-
-
 
             $specs = $validated['specifications'];
             $updatedSpecs = [];
@@ -407,7 +402,9 @@ class MobileController extends Controller
                     $updatedSpecs['memory'] = $memorySpec;
                 }
             }
-
+            echo "<pre>";
+            print_r($updatedSpecs);
+            exit;
             $this->phoneService->saveSpecifications($phone, $updatedSpecs, function ($category) use ($request) {
                 return $request->input("searchable_text-$category");
             }, true);
