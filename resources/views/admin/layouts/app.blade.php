@@ -16,7 +16,7 @@
     <link href="{{ asset('css/quill_snow.css') }}" rel="stylesheet">
     <script src="{{ asset('js/quill.js') }}"></script>
 
-    <script src="{{ asset('js/mobile.js') }}"></script>
+    <script src="{{ asset('js/mobile.js?v=1') }}"></script>
 </head>
 
 <body class="bg-light">

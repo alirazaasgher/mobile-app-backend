@@ -7,7 +7,6 @@ $(document).ready(function () {
         const html = `
             <div class="border rounded p-3 mb-2" id="${colorId}">
             <div class="row align-items-center g-2">
-
                 <!-- Color name -->
                 <div class="col-md-4">
                 <input type="text"
