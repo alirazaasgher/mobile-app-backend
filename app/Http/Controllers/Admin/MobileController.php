@@ -309,7 +309,7 @@ class MobileController extends Controller
                 $q->select('phone_id', 'storage_type', 'ram_type', 'sd_card'); // only required columns
             }
         ])->findOrFail($id);
-      
+
         $mobile->specifications = collect($mobile->specifications)->keyBy('category');
         $existingCompetitors = $mobile->competitors->pluck('id')->toArray();
         return view('admin.mobiles.create', compact('mobile', 'existingCompetitors'));
@@ -393,9 +393,6 @@ class MobileController extends Controller
                 $ram_type,
                 $sd_card == "1" ? "YES" : "NO"
             );
-            echo "<pre>";
-            print_r($memorySpec);
-            exit;
 
 
 

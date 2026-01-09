@@ -509,7 +509,7 @@ $network = ['technology', '2G bands', '3G bands', '4G bands', '5G bands', 'speed
               </div>
               <div class="col-md-6">
                 <label class="form-label fw-medium">Storage Type:</label>
-                <select name="ram_type" class="form-select">
+                <select name="storage_type" class="form-select">
                   <option value="">Select storage</option>
                   @foreach ($storageTypes as $storageType)
                   <option value="{{ $storageType->name }}" {{ old('storage_type', $storageTypeSelected ?? '') == $storageType->name ? 'selected' : '' }}>
