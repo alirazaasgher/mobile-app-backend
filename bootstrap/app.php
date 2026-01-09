@@ -18,10 +18,10 @@ return Application::configure(basePath: dirname(__DIR__))
             'admin' => App\Http\Middleware\AdminMiddleware::class,
         ]);
 
-        $middleware->validateCsrfTokens(except: [
-            'admin/mobiles',
-            'admin/mobiles/*',
-        ]);
+        // $middleware->validateCsrfTokens(except: [
+        //     'admin/mobiles',
+        //     'admin/mobiles/*',
+        // ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //
