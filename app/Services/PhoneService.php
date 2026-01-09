@@ -594,7 +594,6 @@ class PhoneService
     public function handleBulkImageUpload(
         $phone,
         ?UploadedFile $primaryImage,
-        array $variants,
         array $colorNames,
         array $colorHex,
         array $colorImages = [],
@@ -631,7 +630,6 @@ class PhoneService
             // 3. Bulk upload color images
             $results['colors'] = $this->bulkUploadColorImages(
                 $phone,
-                $variants,
                 $colorNames,
                 $colorHex,
                 $colorImages,
@@ -687,7 +685,6 @@ class PhoneService
      */
     protected function bulkUploadColorImages(
         $phone,
-        array $variants,
         array $colorNames,
         array $colorHex,
         array $colorImages,
@@ -695,22 +692,16 @@ class PhoneService
     ): array {
         $results = [];
         $allFilesToUpload = [];
-
         // First, prepare all uploads and create color records
-        foreach ($variants as $variantIndex) {
-            $colorName = trim($colorNames[$variantIndex] ?? '');
-            $colorHexCode = $colorHex[$variantIndex] ?? null;
-
+        foreach ($colorNames as $slug => $colorName) {
+            $colorHexCode = $colorHex[$slug] ?? null;
             if (empty($colorName) || empty($colorHexCode)) {
                 continue;
             }
-            $slug = Str::slug($colorName, '_');
-            $colorSlug = Str::slug($colorName);
             // Find existing color by phone_id and previous slug (or ID if you have it)
             $existingColor = PhoneColor::where('phone_id', $phone->id)
-                ->where('slug', $variantIndex ?? $slug) // old slug from DB or fallback
+                ->where('slug', $slug) // old slug from DB or fallback
                 ->first();
-
             if ($existingColor) {
                 // Update name, hex_code and slug
                 $existingColor->update([
@@ -725,16 +716,9 @@ class PhoneService
                     'phone_id' => $phone->id,
                     'name' => $colorName,
                     'hex_code' => $colorHexCode,
-                    'slug' => Str::slug($colorName, '_')
+                    'slug' => $slug
                 ]);
             }
-
-
-            // Create or update phone color
-            $phoneColor = PhoneColor::updateOrCreate(
-                ['phone_id' => $phone->id, 'slug' => $slug],
-                ['name' => $colorName, 'hex_code' => $colorHexCode]
-            );
 
             $colorResult = [
                 'color_name' => $colorName,
@@ -744,11 +728,11 @@ class PhoneService
             ];
 
             // Prepare images for this color
-            $images = $colorImages[$variantIndex] ?? [];
+            $images = $colorImages[$slug] ?? [];
             foreach ($images as $file) {
                 if ($file && $file instanceof UploadedFile && $file->isValid()) {
                     $filename = Str::uuid() . '.' . $file->getClientOriginalExtension();
-                    $path = "{$basePath}/colors/{$colorSlug}/{$filename}";
+                    $path = "{$basePath}/colors/{$slug}/{$filename}";
 
                     $allFilesToUpload[] = [
                         'file' => $file,

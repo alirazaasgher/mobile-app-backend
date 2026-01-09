@@ -10,7 +10,7 @@ $(document).ready(function () {
                 <!-- Color name -->
                 <div class="col-md-4">
                 <input type="text"
-                    name="variants[color_names][${colorSlug}]"
+                    name="variants[colors][color_names][${colorSlug}]"
                     class="form-control form-control-sm"
                     placeholder="Color name">
                 </div>

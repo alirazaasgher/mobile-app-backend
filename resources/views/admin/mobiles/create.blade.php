@@ -291,7 +291,6 @@ $network = ['technology', '2G bands', '3G bands', '4G bands', '5G bands', 'speed
                 <div class="border rounded p-3" id="{{ $colorId }}">
                   <!-- Row layout -->
                   <div class="row align-items-center g-2">
-
                     <!-- Name -->
                     <div class="col-md-4">
                       <input type="text"
@@ -364,7 +363,7 @@ $network = ['technology', '2G bands', '3G bands', '4G bands', '5G bands', 'speed
                   <div class="row align-items-center g-2">
                     <div class="col-md-4">
                       <input type="text"
-                        name="variants[color_names][color_0]"
+                        name="variants[colors][color_names][color_0]"
                         class="form-control form-control-sm"
                         placeholder="Color name">
                     </div>

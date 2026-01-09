@@ -229,7 +229,6 @@ class MobileController extends Controller
             $uploadResults = $this->phoneService->handleBulkImageUpload(
                 $phone,
                 $request->file('primary_image'),
-                $variantsColors,
                 $color_names,
                 $color_hex,
                 $color_images,
@@ -333,6 +332,7 @@ class MobileController extends Controller
             'status' => 'nullable|string',
             'competitors' => 'nullable|array'
         ]);
+
         $phone = Phone::findOrFail($id);
         $deleted = $request->input('action') === 'draft' ? 1 : 0;
         $storage_type = $request->input('storage_type');
@@ -341,14 +341,12 @@ class MobileController extends Controller
         DB::beginTransaction();
         try {
             $brandName = Brand::find($validated['brand'])->name ?? 'unknown';
-            $variantsColors = $validated['variants']['colors'] ?? [];
             $color_names = $validated['variants']['color_names'] ?? [];
             $color_hex = $validated['variants']['color_hex'] ?? [];
             $color_images = $validated['variants']['color_image'] ?? [];
             $uploadResults = $this->phoneService->handleBulkImageUpload(
                 $phone,
                 $request->file('primary_image'),
-                $variantsColors,
                 $color_names,
                 $color_hex,
                 $color_images,
