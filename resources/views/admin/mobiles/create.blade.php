@@ -138,7 +138,7 @@ $network = ['technology', '2G bands', '3G bands', '4G bands', '5G bands', 'speed
       </div>
 
       <!-- Status & Top Competitors -->
-      <!-- <div class="row g-3 mb-3">
+      <div class="row g-3 mb-3">
         <div class="col-md-6">
             <label class="form-label fw-medium">Status</label>
             <select name="status" class="form-select">
@@ -149,7 +149,7 @@ $network = ['technology', '2G bands', '3G bands', '4G bands', '5G bands', 'speed
                 <option value="discontinued" {{ old('status', $mobile->status ?? '') == 'discontinued' ? 'selected' : '' }}>Discontinued</option>
             </select>
         </div>
-        <div class="col-md-6">
+        {{-- <div class="col-md-6">
             <label class="form-label fw-medium">Top Competitors</label>
             <select name="competitors[]" class="form-select" multiple size="6">
                 @foreach ($allMobiles as $m)
@@ -158,8 +158,8 @@ $network = ['technology', '2G bands', '3G bands', '4G bands', '5G bands', 'speed
                     </option>
                 @endforeach
             </select>
-        </div>
-    </div> -->
+        </div> --}}
+    </div>
 
 
       <div class="card border-0 shadow-lg mb-4">
