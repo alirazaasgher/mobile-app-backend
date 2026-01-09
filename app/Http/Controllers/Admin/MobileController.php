@@ -402,9 +402,7 @@ class MobileController extends Controller
                     $updatedSpecs['memory'] = $memorySpec;
                 }
             }
-            echo "<pre>";
-            print_r($updatedSpecs);
-            exit;
+
             $this->phoneService->saveSpecifications($phone, $updatedSpecs, function ($category) use ($request) {
                 return $request->input("searchable_text-$category");
             }, true);
