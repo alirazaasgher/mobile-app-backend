@@ -309,9 +309,9 @@ class MobileController extends Controller
                 $q->select('phone_id', 'storage_type', 'ram_type', 'sd_card'); // only required columns
             }
         ])->findOrFail($id);
-        // echo "<pre>";
-        // print_r($mobile->toArray());
-        // exit;
+        echo "<pre>";
+        print_r($mobile->toArray());
+        exit;
         $mobile->specifications = collect($mobile->specifications)->keyBy('category');
         $existingCompetitors = $mobile->competitors->pluck('id')->toArray();
         return view('admin.mobiles.create', compact('mobile', 'existingCompetitors'));
