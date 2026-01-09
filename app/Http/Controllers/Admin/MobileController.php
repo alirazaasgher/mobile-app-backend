@@ -393,6 +393,9 @@ class MobileController extends Controller
                 $ram_type,
                 $sd_card == "1" ? "YES" : "NO"
             );
+            echo "<pre>";
+            print_r($memorySpec);
+            exit;
 
 
 
