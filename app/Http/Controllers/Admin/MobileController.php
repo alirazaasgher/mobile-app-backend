@@ -288,7 +288,7 @@ class MobileController extends Controller
 
             DB::commit();
             $message = $deleted === 'draft' ? 'Phone saved as draft!' : 'Phone published successfully!';
-            return redirect()->route('mobiles.create')->with('success', $message);
+            return redirect()->route('admin.mobiles.create')->with('success', $message);
         } catch (\Throwable $e) {
             DB::rollBack();
             Log::error('Phone store failed: ' . $e->getMessage(), ['trace' => $e->getTraceAsString()]);
