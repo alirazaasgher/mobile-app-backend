@@ -28,7 +28,7 @@ class PhoneResource extends JsonResource
                 : null,
             'release_date' => !empty($this->release_date) ? Carbon::parse($this->release_date)->format('j F, Y') : null,
             'status' => $this->status,
-            'primary_color' => $this->primary_color,
+            'primary_color' => $this->primary_color ?? null,
             'primary_image' => $this->primary_image ? $baseUrl . '/' . ltrim($this->primary_image, '/')
                 : null,
             'searchIndex' => $this->searchIndex
@@ -39,7 +39,7 @@ class PhoneResource extends JsonResource
             }
             // $data['competitors'] = CompetitorResource::collection($this->whenLoaded('competitors'));
         }
-        if ($request->query('details')) {
+        if ($request->query('details') || $request->routeIs('phones.show')) {
             $data['competitors'] = CompetitorResource::collection($this->whenLoaded('competitors'));
             $data['searchIndex'] = new PhoneSearchResource($this->whenLoaded('searchIndex'), hideDetails: false);
             $data['variants'] = PhoneVariantResource::collection($this->whenLoaded('variants'));
