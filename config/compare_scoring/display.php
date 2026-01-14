@@ -67,23 +67,23 @@ return [
                 'space' => true           // true => add space, false => no space
             ],
             'ranges' => [
-                // Ultra-flagship (2024-2025 flagships)
-                ['min' => 6000, 'score' => 10],
-                ['min' => 5000, 'score' => 10],
-                ['min' => 4000, 'score' => 9],
-                ['min' => 3000, 'score' => 9],
-                // Premium flagship (2023-2024)
+                // Ultra-flagship (2024–2025)
+                ['min' => 4500, 'score' => 10],
+                ['min' => 3500, 'score' => 9],
+
+                // Premium flagship
                 ['min' => 2500, 'score' => 8],
-                ['min' => 2000, 'score' => 8],
-                // Standard flagship / High-end mid-range
-                ['min' => 1500, 'score' => 7],
-                ['min' => 1200, 'score' => 7],
+
+                // Upper mid-range / older flagships
+                ['min' => 1800, 'score' => 7],
+
                 // Mid-range
-                ['min' => 1000, 'score' => 6],
-                ['min' => 800, 'score' => 5],
+                ['min' => 1300, 'score' => 6],
+                ['min' => 1000, 'score' => 5],
+
                 // Budget
-                ['min' => 600, 'score' => 4],
-                ['min' => 400, 'score' => 3],
+                ['min' => 800, 'score' => 4],
+                ['min' => 600, 'score' => 3],
             ],
             'default' => 2,
         ],
