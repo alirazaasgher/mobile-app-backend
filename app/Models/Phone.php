@@ -175,7 +175,7 @@ class Phone extends Model
         $s = $this->specifications->keyBy('category')
             ->map(fn($spec) => json_decode($spec->specifications, true) ?: []);
         $buildMaterials = $this->buildMaterials($s['build']['build']);
-        $mobileDimensions = $this->getMobileDimensions($s['build']['dimensions']);
+        $mobileDimensions = $this->getMobileDimensions($s['build']['dimensions'] ?? []);
         $cameraApertures = $this->extractCameraApertures($s['main_camera']);
         $cameraOpticalZoom = $this->extractOpticalZoom($s['main_camera']);
         $cameratabilization = $this->extractStabilization($s['main_camera']);
@@ -255,7 +255,7 @@ class Phone extends Model
 
                     'build' => $scorer->scoreCategory('build', [
                         'dimensions' => $mobileDimensions['dimensions'] ?? null,
-                        'thickness' => $mobileDimensions['thickness'],
+                        'thickness' => $mobileDimensions['thickness'] ?? null,
                         'weight' => $s['build']['weight'] !== null
                             ? (float) preg_replace('/[^0-9.]/', '', $s['build']['weight'])
                             : null,
