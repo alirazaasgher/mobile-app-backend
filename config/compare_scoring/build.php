@@ -83,7 +83,7 @@ return [
                 'ip54' => 4,   // Dust protected + water splashes
                 'ip53' => 3,   // Dust protected + water spray
                 'ip52' => 3,   // Dust protected + dripping water
-
+                'ip48' => 8,
                 // Water resistance only (IPX ratings - no dust protection)
                 'ipx8' => 9,   // Extended submersion (no dust rating)
                 'ipx7' => 7,   // Submersion up to 1m (no dust rating)
