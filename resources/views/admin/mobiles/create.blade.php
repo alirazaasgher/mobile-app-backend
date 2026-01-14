@@ -118,6 +118,10 @@ $network = ['technology', '2G bands', '3G bands', '4G bands', '5G bands', 'speed
           </div>
           @endif
         </div>
+        <div class="col-md-6">
+          <label class="form-label fw-medium">Primary Color</label>
+          <input type="text" name="primary_color" value="{{ old('primary_color', $mobile->primary_color ?? '') }}" class="form-control">
+        </div>
       </div>
 
 

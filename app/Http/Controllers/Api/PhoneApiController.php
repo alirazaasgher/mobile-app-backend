@@ -611,7 +611,7 @@ class PhoneApiController extends Controller
         ]);
 
         $slugs = $validated['slugs'];
-        $phones = Phone::select('id', 'name', 'brand_id', 'slug', 'release_date', 'primary_image', 'updated_at', 'is_popular', 'status')
+        $phones = Phone::select('id', 'name', 'brand_id', 'slug', 'release_date', 'primary_image', 'primary_color', 'updated_at', 'is_popular', 'status')
             ->whereIn('slug', $slugs)
             ->get();
         $allBrandIds = $phones->pluck('brand_id')->unique()->toArray();

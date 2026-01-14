@@ -28,6 +28,7 @@ class PhoneResource extends JsonResource
                 : null,
             'release_date' => !empty($this->release_date) ? Carbon::parse($this->release_date)->format('j F, Y') : null,
             'status' => $this->status,
+            'primary_color' => $this->primary_color,
             'primary_image' => $this->primary_image ? $baseUrl . '/' . ltrim($this->primary_image, '/')
                 : null,
             'searchIndex' => $this->searchIndex

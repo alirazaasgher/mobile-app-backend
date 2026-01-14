@@ -192,6 +192,7 @@ class MobileController extends Controller
             'brand' => 'required|string',
             'name' => 'required|string|max:255',
             'description' => 'nullable|string',
+            'primary_color' => 'nullable|string|max:50',
             'tagline' => 'nullable|string',
             'release_date' => 'nullable|date',
             'variants' => 'required|array|min:1',
@@ -220,7 +221,7 @@ class MobileController extends Controller
                 'slug' => Str::slug($brandName . ' ' . $validated['name']), // Brand + Name
                 'description' => $validated['description'] ?? null, // Brand + Name
                 'tagline' => $validated['tagline'] ?? null,
-                // 'primary_image' => $primaryPath,
+                'primary_color' => $validated['primary_color'] ?? null,
                 'release_date' => $validated['release_date'] ?? null,
                 'announced_date' => $request->input('announced_date'),
                 'status' => $request->input('status'),
@@ -321,6 +322,7 @@ class MobileController extends Controller
         $validated = $request->validate([
             'brand' => 'required|string',
             'name' => 'required|string|max:255',
+            'primary_color' => 'nullable|string|max:50',
             'slug' => 'nullable|string|max:50',
             'description' => 'nullable|string',
             'tagline' => 'nullable|string',
@@ -355,7 +357,7 @@ class MobileController extends Controller
                 'brand_id' => $validated['brand'],
                 'name' => $validated['name'],
                 'slug' => Str::slug($brandName . ' ' . $validated['name']), // Brand + Name
-                // 'description' => $validated['description'] ?? null,
+                'primary_color' => $validated['primary_color'] ?? null,
                 'tagline' => $validated['tagline'] ?? null,
                 'release_date' => $validated['release_date'] ?? null,
                 'announced_date' => $request->input('announced_date') ?? null,
