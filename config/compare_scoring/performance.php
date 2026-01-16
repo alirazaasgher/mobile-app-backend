@@ -4,7 +4,7 @@ return [
     'specs' => [
         'chipset' => [
             'label' => 'Chipset',
-            'weight' => 35,
+            'weight' => 30,
             'scale' => [
                 // Apple (2024-2025)
                 'apple a19 pro' => 10,
@@ -129,7 +129,7 @@ return [
 
         'storage_type' => [
             'label' => 'Storage Type',
-            'weight' => 10,
+            'weight' => 8,
             'scale' => [
                 // NVMe (Apple uses this - fastest)
                 'nvme' => 10,
@@ -159,7 +159,7 @@ return [
 
         'storage_capacity' => [
             'label' => 'Storage Capacity',
-            'weight' => 15,
+            'weight' => 12,
             'unit' => [
                 'value' => 'GB',
                 'position' => 'after',   // before | after
@@ -178,7 +178,7 @@ return [
 
         'antutu_score' => [
             'label' => 'AnTuTu Benchmark',
-            'weight' => 15,
+            'weight' => 20,
             'ranges' => [
                 // 2024-2025 Flagships
                 ['min' => 2000000, 'score' => 10],  // 2M+ (Snapdragon 8 Elite, A18 Pro)
@@ -201,7 +201,7 @@ return [
 
         'cpu' => [
             'label' => 'CPU Cores',
-            'weight' => 5,
+            'weight' => 0,
             'scale' => [
                 // 12+ cores (2024-2025 flagships)
                 '12-core' => 10,
@@ -237,7 +237,7 @@ return [
         // Optional additional specs
         'gpu' => [
             'label' => 'GPU',
-            'weight' => 0, // Don't score separately (included in chipset)
+            'weight' => 10, // Don't score separately (included in chipset)
             'scale' => [
                 // Qualcomm Adreno (2024-2025 Flagship)
                 'adreno 840' => 10,

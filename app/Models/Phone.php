@@ -174,6 +174,7 @@ class Phone extends Model
     {
         $s = $this->specifications->keyBy('category')
             ->map(fn($spec) => json_decode($spec->specifications, true) ?: []);
+
         $buildMaterials = $this->buildMaterials($s['build']['build']);
         $mobileDimensions = $this->getMobileDimensions($s['build']['dimensions'] ?? []);
         $cameraApertures = $this->extractCameraApertures($s['main_camera']);
@@ -217,6 +218,7 @@ class Phone extends Model
                     ]),
                     'performance' => $scorer->scoreCategory('performance', [
                         'chipset' => getShortChipset($s['performance']['chipset'] ?? null),
+                        'os' => $this->androidVersion($s['performance']['os']),
                         'ram' => $memoryParsed['ram'],
                         'storage_capacity' => $memoryParsed['storage'],
                         'cpu' => cpuType($s['performance']['cpu']) ?? null,
@@ -284,6 +286,24 @@ class Phone extends Model
             exit;
             return ['key' => [], 'expandable' => []];
         }
+    }
+
+    public function androidVersion($os)
+    {
+        if (!is_string($os) || trim($os) === '') {
+            return '';
+        }
+
+        if (preg_match('/android\s*(\d+(?:\.\d+)?)/i', $os, $matches)) {
+            $version = $matches[1];
+
+            // Remove .0 suffix if present (e.g., 16.0 → 16)
+            $version = rtrim($version, '.0');
+
+            return 'Android ' . $version;
+        }
+
+        return '';
     }
 
     public function getHdrSupport($features)
