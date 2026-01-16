@@ -52,6 +52,7 @@ class MobileController extends Controller
                     ['key' => 'touch_sampling_rate', 'label' => 'Touch Sampling Rate', 'type' => 'text', 'placeholder' => '480Hz'],
                     ['key' => 'screen_to_body_ratio', 'label' => 'Screen to Body Ratio', 'type' => 'text', 'placeholder' => '93.2%'],
                     ['key' => 'features', 'label' => 'Display Features', 'type' => 'text', 'placeholder' => 'Always-on display, Dolby Vision, HDR10+'],
+                    ['key' => 'always_on_display', 'label' => 'Always On Display', 'type' => 'select', 'options' => ['Yes', 'No']],
                 ]
             ],
 
