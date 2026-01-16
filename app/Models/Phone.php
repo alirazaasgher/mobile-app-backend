@@ -288,7 +288,6 @@ class Phone extends Model
 
     public function getHdrSupport($features)
     {
-        $features = $s['display']['features'] ?? '';
         if (!is_string($features) || trim($features) === '') {
             $hdr_support = 'no'; // Changed from '' to 'no' to match your scale
         } else {
