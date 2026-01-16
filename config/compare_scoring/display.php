@@ -4,7 +4,7 @@ return [
     'specs' => [
         'type' => [
             'label' => 'Display Type',
-            'weight' => 30,
+            'weight' => 25, // Reduced from 30
             'scale' => [
                 'ltpo amoled' => 10,
                 'ltpo oled' => 10,
@@ -23,11 +23,11 @@ return [
         ],
         'refresh_rate' => [
             'label' => 'Refresh Rate',
-            'weight' => 20, // Reduced from 25
+            'weight' => 15, // Reduced from 20
             'unit' => [
                 'value' => 'Hz',
-                'position' => 'after',   // before | after
-                'space' => false           // true => add space, false => no space
+                'position' => 'after',
+                'space' => false
             ],
             'scale' => [
                 185 => 10,
@@ -37,15 +37,15 @@ return [
                 90 => 7,
                 60 => 5,
             ],
-            'default' => 5, // 60Hz is standard, not bad
+            'default' => 5,
         ],
         'pixel_density' => [
             'label' => 'Pixel Density (PPI)',
-            'weight' => 20,
+            'weight' => 15, // Reduced from 20
             'unit' => [
                 'value' => '(PPI)',
-                'position' => 'after',   // before | after
-                'space' => true           // true => add space, false => no space
+                'position' => 'after',
+                'space' => true
             ],
             'ranges' => [
                 ['min' => 500, 'score' => 10],
@@ -59,44 +59,35 @@ return [
             'default' => 3,
         ],
         'brightness_(peak)' => [
-            'label' => 'Brightness (nits)',
-            'weight' => 15,
+            'label' => 'Peak Brightness',
+            'weight' => 10, // Reduced from 15
             'unit' => [
                 'value' => 'nits',
-                'position' => 'after',   // before | after
-                'space' => true           // true => add space, false => no space
+                'position' => 'after',
+                'space' => true
             ],
             'ranges' => [
-                // Ultra-flagship (2024–2025)
                 ['min' => 4500, 'score' => 10],
                 ['min' => 3500, 'score' => 9],
-
-                // Premium flagship
                 ['min' => 2500, 'score' => 8],
-
-                // Upper mid-range / older flagships
                 ['min' => 1800, 'score' => 7],
-
-                // Mid-range
                 ['min' => 1300, 'score' => 6],
                 ['min' => 1000, 'score' => 5],
-
-                // Budget
                 ['min' => 800, 'score' => 4],
                 ['min' => 600, 'score' => 3],
             ],
             'default' => 2,
         ],
         'brightness_(typical)' => [
-            'label' => 'Typical Brightness (nits)',
-            'weight' => 10, // Reduce peak to 10%, add this at 10%
+            'label' => 'Typical Brightness',
+            'weight' => 8, // New spec
             'unit' => [
                 'value' => 'nits',
-                'position' => 'after',   // before | after
-                'space' => true           // true => add space, false => no space
+                'position' => 'after',
+                'space' => true
             ],
             'ranges' => [
-                ['min' => 1500, 'score' => 10], // Excellent for outdoor use
+                ['min' => 1500, 'score' => 10],
                 ['min' => 1200, 'score' => 9],
                 ['min' => 1000, 'score' => 8],
                 ['min' => 800, 'score' => 7],
@@ -107,37 +98,82 @@ return [
             ],
             'default' => 2,
         ],
-        'size' => [
-            'label' => 'Screen Size',
-            'weight' => 5,
+        'touch_sampling_rate' => [
+            'label' => 'Touch Sampling Rate',
+            'weight' => 7, // New spec - important for gaming
             'unit' => [
-                'value' => 'inch',
-                'position' => 'after',   // before | after
-                'space' => true           // true => add space, false => no space
+                'value' => 'Hz',
+                'position' => 'after',
+                'space' => false
+            ],
+            'scale' => [
+                720 => 10,
+                480 => 9,
+                360 => 8,
+                300 => 7,
+                240 => 6,
+                180 => 5,
+                120 => 4,
+            ],
+            'default' => 3,
+        ],
+        'hdr_support' => [
+            'label' => 'HDR Support',
+            'weight' => 5, // New spec
+            'scale' => [
+                'hdr10+, dolby vision, hdr10' => 10,
+                'dolby vision, hdr10' => 10,
+                'hdr10+, dolby vision' => 10,
+                'hdr10+, hdr10' => 9,
+                'dolby vision' => 9,
+                'hdr10+' => 8,
+                'hdr10' => 7,
+                'hdr' => 6,
+                'no' => 0,
+            ],
+            'default' => 0,
+        ],
+        'screen_to_body_ratio' => [
+            'label' => 'Screen-to-Body Ratio',
+            'weight' => 5, // New spec
+            'unit' => [
+                'value' => '%',
+                'position' => 'after',
+                'space' => false
             ],
             'ranges' => [
-                // Modern standard sizes
+                ['min' => 92, 'score' => 10],
+                ['min' => 90, 'score' => 9],
+                ['min' => 87, 'score' => 8],
+                ['min' => 84, 'score' => 7],
+                ['min' => 80, 'score' => 6],
+                ['min' => 75, 'score' => 5],
+                ['min' => 70, 'score' => 4],
+            ],
+            'default' => 3,
+        ],
+        'size' => [
+            'label' => 'Screen Size',
+            'weight' => 3, // Reduced from 5
+            'unit' => [
+                'value' => 'inch',
+                'position' => 'after',
+                'space' => true
+            ],
+            'ranges' => [
                 ['min' => 6.5, 'max' => 6.9, 'score' => 9],
                 ['min' => 6.1, 'max' => 6.49, 'score' => 8],
                 ['min' => 5.8, 'max' => 6.09, 'score' => 7],
-
-                // Compact phones
                 ['min' => 5.4, 'max' => 5.79, 'score' => 7],
-
-                // Large phones
                 ['min' => 7.0, 'max' => 7.5, 'score' => 8],
-
-                // Small budget phones
                 ['min' => 5.0, 'max' => 5.39, 'score' => 5],
-
-                // Very small or very large (edge cases)
                 ['min' => 4.5, 'max' => 4.99, 'score' => 4],
             ],
             'default' => 6,
         ],
         'glass_protection' => [
             'label' => 'Glass Protection',
-            'weight' => 10, // Increased - it's important
+            'weight' => 7, // Reduced from 10
             'scale' => [
                 // Latest generation (2024-2025)
                 'victus 3' => 10,
@@ -157,6 +193,7 @@ return [
                 // Mid-tier flagship (2022-2023)
                 'victus' => 8,
                 'gorilla glass 7' => 8,
+                'gorilla glass 7i' => 8,
                 'victus+' => 8,
                 'dragon crystal glass' => 8,
                 'schott xensation up' => 8,
@@ -190,7 +227,7 @@ return [
                 'reinforced glass' => 2,
                 'standard glass' => 1,
             ],
-            'default' => 2, // No protection or unknown
+            'default' => 2,
         ],
     ],
 ];

@@ -50,6 +50,7 @@ class MobileController extends Controller
                     ['key' => 'brightness', 'label' => 'Brightness', 'type' => 'text', 'placeholder' => 'Peak 3200 nits'],
                     ['key' => 'protection', 'label' => 'Protection', 'type' => 'text', 'placeholder' => 'Gorilla Glass 7i'],
                     ['key' => 'touch_sampling_rate', 'label' => 'Touch Sampling Rate', 'type' => 'text', 'placeholder' => '480Hz'],
+                    ['key' => 'screen_to_body_ratio', 'label' => 'Screen to Body Ratio', 'type' => 'text', 'placeholder' => '93.2%'],
                     ['key' => 'features', 'label' => 'Display Features', 'type' => 'text', 'placeholder' => 'Always-on display, Dolby Vision, HDR10+'],
                 ]
             ],
