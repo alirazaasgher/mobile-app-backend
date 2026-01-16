@@ -198,7 +198,6 @@ class Phone extends Model
             $wiredChargingSpec = $s['battery']['charging_speed'] ?? '';
             $wirlessCharging = $s['battery']['wireless'] ?? '';
             $reverceCharging = $s['battery']['reverse'] ?? '';
-            // $chargingSpec = shortChargingSpec($wiredChargingSpec, $wirlessCharging, $reverceCharging);
             $screenGlassType = $this->extractScreenGlassType($s['display']['protection'] ?? null);
             $formatGlassProtection = $this->formatGlassProtection($screenGlassType ?? []);
             return [
@@ -208,6 +207,8 @@ class Phone extends Model
                         'type' => getShortDisplay($s['display']['type'] ?? null),
                         'resolution' => $this->shortResolution($s['display']['resolution'] ?? null),
                         'refresh_rate' => $this->extractNumber($s['display']['refresh_rate'] ?? null),
+                        'screen_ratio' => (float) str_replace('%', '', $s['display']['screen_to_body_ratio']),
+                        'hdr_support' => $s['display']['features'] ?? null,
                         "pixel_density" => $this->extractPpi($s['display']['resolution'] ?? null),
                         'brightness_(peak)' => $this->extractBrightness($s['display']['brightness'] ?? "", "peak"),
                         'brightness_(typical)' => $this->extractBrightness($s['display']['brightness'] ?? "", "typical"),

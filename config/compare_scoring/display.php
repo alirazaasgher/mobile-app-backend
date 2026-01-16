@@ -121,19 +121,36 @@ return [
             'label' => 'HDR Support',
             'weight' => 5, // New spec
             'scale' => [
+                // Triple HDR (Premium flagship)
+                'hdr10+, dolby vision, hdr vivid' => 10,
                 'hdr10+, dolby vision, hdr10' => 10,
+                'dolby vision, hdr vivid, hdr10' => 10,
+
+                // Dual HDR with Dolby Vision (Top tier)
                 'dolby vision, hdr10' => 10,
                 'hdr10+, dolby vision' => 10,
+                'dolby vision, hdr vivid' => 10,
+
+                // Dual HDR combinations (High tier)
+                'hdr10+, hdr vivid' => 9,
                 'hdr10+, hdr10' => 9,
+                'hdr vivid, hdr10' => 9,
+
+                // Single premium HDR (Mid-high tier)
                 'dolby vision' => 9,
                 'hdr10+' => 8,
+                'hdr vivid' => 8,
+
+                // Standard HDR (Mid tier)
                 'hdr10' => 7,
                 'hdr' => 6,
+
+                // No HDR
                 'no' => 0,
             ],
             'default' => 0,
         ],
-        'screen_to_body_ratio' => [
+        'screen_ratio' => [
             'label' => 'Screen-to-Body Ratio',
             'weight' => 5, // New spec
             'unit' => [
