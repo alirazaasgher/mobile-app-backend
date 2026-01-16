@@ -145,7 +145,10 @@ return [
                 'hdr10' => 7,
                 'hdr' => 6,
 
-                // No HDR
+                // Basic HD support (Low tier)
+                'hd' => 3,
+
+                // No HDR/HD
                 'no' => 0,
             ],
             'default' => 0,

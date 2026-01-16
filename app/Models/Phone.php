@@ -208,7 +208,7 @@ class Phone extends Model
                         'resolution' => $this->shortResolution($s['display']['resolution'] ?? null),
                         'refresh_rate' => $this->extractNumber($s['display']['refresh_rate'] ?? null),
                         'screen_ratio' => (float) str_replace('%', '', $s['display']['screen_to_body_ratio']),
-                        'hdr_support' => $s['display']['features'] ?? null,
+                        'hdr_support' => $this->getHdrSupport($s['display']['features'] ?? ""),
                         "pixel_density" => $this->extractPpi($s['display']['resolution'] ?? null),
                         'brightness_(peak)' => $this->extractBrightness($s['display']['brightness'] ?? "", "peak"),
                         'brightness_(typical)' => $this->extractBrightness($s['display']['brightness'] ?? "", "typical"),
@@ -284,6 +284,31 @@ class Phone extends Model
             exit;
             return ['key' => [], 'expandable' => []];
         }
+    }
+
+    public function getHdrSupport($features)
+    {
+        $features = $s['display']['features'] ?? '';
+        if (!is_string($features) || trim($features) === '') {
+            $hdr_support = 'no'; // Changed from '' to 'no' to match your scale
+        } else {
+            $hdrValues = array_filter(
+                array_map('trim', explode(',', $features)),
+                function ($feature) {
+                    $f = strtolower($feature);
+                    return (
+                        str_contains($f, 'hdr') ||          // HDR10, HDR10+, HDR Vivid, HD
+                        str_contains($f, 'dolby vision') || // Dolby Vision
+                        str_contains($f, 'hlg')             // Hybrid Log-Gamma
+                    );
+                }
+            );
+
+            // If no HDR features found, set to 'no'
+            $hdr_support = !empty($hdrValues) ? strtolower(implode(', ', $hdrValues)) : 'no';
+        }
+
+        return $hdr_support;
     }
     function buildMaterials($buildString)
     {
