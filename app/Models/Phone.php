@@ -174,7 +174,7 @@ class Phone extends Model
     {
         $s = $this->specifications->keyBy('category')
             ->map(fn($spec) => json_decode($spec->specifications, true) ?: []);
-        $buildMaterials = $this->buildMaterials($s['build']['build']);
+        $buildMaterials = $this->buildMaterials($s['build']['build'] ?? '');
         $mobileDimensions = $this->getMobileDimensions($s['build']['dimensions'] ?? []);
         $cameraApertures = $this->extractCameraApertures($s['main_camera']);
         $cameraOpticalZoom = $this->extractOpticalZoom($s['main_camera']);
