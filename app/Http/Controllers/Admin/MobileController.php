@@ -27,7 +27,7 @@ class MobileController extends Controller
         $specificationTemplates = [
             'build' => [
                 'expandable' => true,
-                'max_visible' => 4,
+                'max_visible' => 7,
                 'items' => [
                     ['key' => 'dimensions', 'label' => 'Dimensions', 'type' => 'textarea', 'placeholder' => '162.8 x 77.6 x 8.2 mm'],
                     ['key' => 'weight', 'label' => 'Weight', 'type' => 'text', 'placeholder' => '169 g'],
