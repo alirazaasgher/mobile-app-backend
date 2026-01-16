@@ -304,7 +304,7 @@ class Phone extends Model
             );
 
             // If no HDR features found, set to 'no'
-            $hdr_support = !empty($hdrValues) ? strtolower(implode(', ', $hdrValues)) : 'no';
+            $hdr_support = !empty($hdrValues) ? strtoupper(implode(', ', $hdrValues)) : 'no';
         }
 
         return $hdr_support;
