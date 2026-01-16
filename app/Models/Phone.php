@@ -174,7 +174,6 @@ class Phone extends Model
     {
         $s = $this->specifications->keyBy('category')
             ->map(fn($spec) => json_decode($spec->specifications, true) ?: []);
-
         $buildMaterials = $this->buildMaterials($s['build']['build']);
         $mobileDimensions = $this->getMobileDimensions($s['build']['dimensions'] ?? []);
         $cameraApertures = $this->extractCameraApertures($s['main_camera']);
@@ -271,6 +270,7 @@ class Phone extends Model
                         'nfc' => $s['connectivity']['nfc'] ?? null,
                         'stereo_speakers' => $s['audio']['stereo'] ?? null,
                         '3.5mm_jack' => $s['audio']['3.5mm_jack'] ?? null,
+                        "infrared" => $s['connectivity']['infrared'],
                         'wifi' => $this->formatWifiValue($s['connectivity']['wifi']),
                         'bluetooth_version' => isset($s['connectivity']['bluetooth'])
                             ? (preg_match('/v([\d.]+)/i', $s['connectivity']['bluetooth'], $m) ? $m[1] : null)
