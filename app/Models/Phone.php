@@ -1032,7 +1032,7 @@ class Phone extends Model
             $text .= ' (' . ucfirst($data['applies_to']) . ')';
         }
 
-        return trim($text) ?: 'Unspecified glass';
+        return trim($text) ?: 'N/A';
     }
 
     function formatUsbLabel(?string $usb): ?string
