@@ -44,6 +44,7 @@ return [
                 'snapdragon 730g' => 5,
                 'snapdragon 695' => 5,
                 'snapdragon 690' => 4,
+                'snapdragon 685' => 4,
                 'snapdragon 680' => 4,
                 'snapdragon 662' => 3,
                 'snapdragon 460' => 3,
