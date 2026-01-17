@@ -354,6 +354,9 @@ class MobileController extends Controller
                 $color_images,
                 $validated['variants']['delete_images'] ?? []
             );
+            echo "<pre>";
+            print_r($uploadResults);
+            exit;
 
             $updateData = [
                 'brand_id' => $validated['brand'],
