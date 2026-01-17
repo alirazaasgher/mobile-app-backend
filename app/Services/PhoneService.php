@@ -597,17 +597,14 @@ class PhoneService
         array $colorNames,
         array $colorHex,
         array $colorImages = [],
+        array $colorIds = [],
         array $deleteImageIds = []
     ): array {
         $brandSlug = Str::slug($phone->brand->name);
         $phoneSlug = Str::slug($phone->name);
         $basePath = "{$brandSlug}/{$phoneSlug}";
-
         $results = [
-            'primary_image' => null,
-            'colors' => [],
-            'uploaded_count' => 0,
-            'deleted_count' => 0,
+            'primary_image' => null
         ];
 
         DB::beginTransaction();
@@ -619,12 +616,11 @@ class PhoneService
                     "{$basePath}/primary_images",
                     $phone->primary_image
                 );
-                $results['uploaded_count']++;
             }
 
             // 2. Delete requested images
             if (!empty($deleteImageIds)) {
-                $results['deleted_count'] = $this->deleteImages($deleteImageIds);
+                $this->deleteImages($deleteImageIds);
             }
 
             // 3. Bulk upload color images
@@ -633,10 +629,9 @@ class PhoneService
                 $colorNames,
                 $colorHex,
                 $colorImages,
+                $colorIds,
                 $basePath
             );
-
-            $results['uploaded_count'] += array_sum(array_column($results['colors'], 'images_count'));
 
             DB::commit();
             return $results;
@@ -688,52 +683,52 @@ class PhoneService
         array $colorNames,
         array $colorHex,
         array $colorImages,
+        array $colorIds,
         string $basePath
     ): array {
         $results = [];
         $allFilesToUpload = [];
-        // First, prepare all uploads and create color records
-        foreach ($colorNames as $slug => $colorName) {
-            $colorHexCode = $colorHex[$slug] ?? null;
-            if (empty($colorName) || empty($colorHexCode)) {
+        foreach ($colorNames as $key => $colorName) {
+
+            if (!$colorName)
                 continue;
-            }
-            // Find existing color by phone_id and previous slug (or ID if you have it)
-            $existingColor = PhoneColor::where('phone_id', $phone->id)
-                ->where('slug', $slug) // old slug from DB or fallback
-                ->first();
-            if ($existingColor) {
-                // Update name, hex_code and slug
-                $existingColor->update([
-                    'name' => $colorName,
-                    'hex_code' => $colorHexCode,
-                    'slug' => $slug
-                ]);
-                $phoneColor = $existingColor;
+
+            // Generate slug
+            $slug = strtolower(trim($colorName));
+            $slug = preg_replace('/\s+/', '_', $slug);
+            $slug = preg_replace('/[^a-z0-9_]/', '', $slug);
+            $slug = trim($slug, '_');
+
+            $colorId = $colorIds[$key] ?? null;
+
+            if ($colorId) {
+                // UPDATE
+                $phoneColor = PhoneColor::where('id', $colorId)
+                    ->where('phone_id', $phone->id)
+                    ->first();
+
+                if ($phoneColor) {
+                    $phoneColor->update([
+                        'name' => $colorName,
+                        'hex_code' => $colorHex[$key] ?? null,
+                        'slug' => $slug,
+                    ]);
+                }
             } else {
-                echo "<pre>";
-                print_r($phone->id);
-                exit;
-                // Create new if not found
+                // CREATE
                 $phoneColor = PhoneColor::create([
                     'phone_id' => $phone->id,
                     'name' => $colorName,
-                    'hex_code' => $colorHexCode,
-                    'slug' => $slug
+                    'hex_code' => $colorHex[$key] ?? null,
+                    'slug' => $slug,
                 ]);
             }
 
-            $colorResult = [
-                'color_name' => $colorName,
-                'color_id' => $phoneColor->id,
-                'images' => [],
-                'images_count' => 0,
-            ];
-
-            // Prepare images for this color
-            $images = $colorImages[$slug] ?? [];
+            // 🟢 IMPORTANT: use $key, NOT $slug
+            $images = $colorImages[$key] ?? [];
             foreach ($images as $file) {
-                if ($file && $file instanceof UploadedFile && $file->isValid()) {
+                if ($file instanceof UploadedFile && $file->isValid()) {
+
                     $filename = Str::uuid() . '.' . $file->getClientOriginalExtension();
                     $path = "{$basePath}/colors/{$slug}/{$filename}";
 
@@ -741,32 +736,21 @@ class PhoneService
                         'file' => $file,
                         'path' => $path,
                         'color_id' => $phoneColor->id,
-                        'color_index' => $colorName,
+                        'color_name' => $colorName,
                     ];
                 }
             }
-
-            $results[] = $colorResult;
         }
 
         // Bulk upload all files
         if (!empty($allFilesToUpload)) {
             $this->bulkUploadFiles($allFilesToUpload);
-
             // Create database records for uploaded images
             foreach ($allFilesToUpload as $uploadedFile) {
                 PhoneImage::create([
                     'phone_color_id' => $uploadedFile['color_id'],
                     'image_url' => $uploadedFile['path'],
                 ]);
-
-                // Update results
-                foreach ($results as &$result) {
-                    if ($result['color_id'] === $uploadedFile['color_id']) {
-                        $result['images'][] = $uploadedFile['path'];
-                        $result['images_count']++;
-                    }
-                }
             }
         }
 

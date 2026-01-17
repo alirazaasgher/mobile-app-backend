@@ -300,7 +300,7 @@ $network = ['technology', '2G bands', '3G bands', '4G bands', '5G bands', 'speed
                       <input type="text"
                         name="variants[color_names][{{ $colorSlug }}]"
                         value="{{ $color['name'] }}"
-                        class="form-control form-control-sm"
+                        class="form-control color-name form-control-sm"
                         placeholder="Color name">
                     </div>
 
@@ -319,6 +319,9 @@ $network = ['technology', '2G bands', '3G bands', '4G bands', '5G bands', 'speed
                         class="form-control form-control-sm"
                         accept="image/*" multiple>
                     </div>
+                    <input type="hidden"
+                    name="variants[color_id][{{ $colorSlug }}]"
+                    value="{{ $color->id }}">
 
                     <!-- Remove -->
                     <div class="col-md-1 text-center">

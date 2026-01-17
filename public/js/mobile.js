@@ -10,8 +10,8 @@ $(document).ready(function () {
                 <!-- Color name -->
                 <div class="col-md-4">
                 <input type="text"
-                    name="variants[colors][color_names][${colorSlug}]"
-                    class="form-control form-control-sm"
+                    name="variants[color_names][${colorSlug}]"
+                    class="form-control color-name form-control-sm"
                     placeholder="Color name">
                 </div>
 
@@ -20,8 +20,7 @@ $(document).ready(function () {
                 <input type="text"
                     name="variants[color_hex][${colorSlug}]"
                     value="#000000"
-                    class="form-control form-control-sm"
-                    oninput="updateColorCircle('${colorId}', this.value)">
+                    class="form-control form-control-sm">
                 </div>
 
                 <!-- Images -->

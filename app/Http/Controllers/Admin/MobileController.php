@@ -346,15 +346,17 @@ class MobileController extends Controller
             $color_names = $validated['variants']['color_names'] ?? [];
             $color_hex = $validated['variants']['color_hex'] ?? [];
             $color_images = $validated['variants']['color_image'] ?? [];
+            $colorIds = $validated['variants']['color_id'] ?? [];
             $uploadResults = $this->phoneService->handleBulkImageUpload(
                 $phone,
                 $request->file('primary_image'),
                 $color_names,
                 $color_hex,
                 $color_images,
+                $colorIds,
                 $validated['variants']['delete_images'] ?? []
             );
-          
+
 
             $updateData = [
                 'brand_id' => $validated['brand'],
