@@ -711,6 +711,9 @@ class PhoneService
                 ]);
                 $phoneColor = $existingColor;
             } else {
+                echo "<pre>";
+                print_r($phone->id);
+                exit;
                 // Create new if not found
                 $phoneColor = PhoneColor::create([
                     'phone_id' => $phone->id,
