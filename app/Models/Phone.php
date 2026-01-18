@@ -294,16 +294,36 @@ class Phone extends Model
             return '';
         }
 
-        if (preg_match('/android\s*(\d+(?:\.\d+)?)/i', $os, $matches)) {
-            $version = $matches[1];
+        $versions = [];
 
-            // Remove .0 suffix if present (e.g., 16.0 → 16)
-            $version = rtrim($version, '.0');
-
-            return 'Android ' . $version;
+        // Match Android versions with optional region
+        if (preg_match_all('/android\s*(\d+(?:\.\d+)?)\s*(?:\(([^)]+)\))?/i', $os, $matches)) {
+            foreach ($matches[1] as $index => $version) {
+                $version = rtrim($version, '.0');
+                $region = !empty($matches[2][$index]) ? ' (' . trim($matches[2][$index]) . ')' : '';
+                $versions[] = 'Android ' . $version . $region;
+            }
         }
 
-        return '';
+        // Match EMUI versions with optional region
+        if (preg_match_all('/EMUI\s*(\d+(?:\.\d+)?)\s*(?:\(([^)]+)\))?/i', $os, $matches)) {
+            foreach ($matches[1] as $index => $version) {
+                $version = rtrim($version, '.0');
+                $region = !empty($matches[2][$index]) ? ' (' . trim($matches[2][$index]) . ')' : '';
+                $versions[] = 'EMUI ' . $version . $region;
+            }
+        }
+
+        // Match HarmonyOS versions with optional region
+        if (preg_match_all('/HarmonyOS\s*(\d+(?:\.\d+)?)\s*(?:\(([^)]+)\))?/i', $os, $matches)) {
+            foreach ($matches[1] as $index => $version) {
+                $version = rtrim($version, '.0');
+                $region = !empty($matches[2][$index]) ? ' (' . trim($matches[2][$index]) . ')' : '';
+                $versions[] = 'HarmonyOS ' . $version . $region;
+            }
+        }
+
+        return implode(', ', $versions);
     }
 
     public function getHdrSupport($features)
