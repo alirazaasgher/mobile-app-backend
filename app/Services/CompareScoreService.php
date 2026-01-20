@@ -15,20 +15,26 @@ class CompareScoreService
        PUBLIC API
     --------------------------------*/
 
-    public function scoreCategory(string $category, array $values): array
-    {
+    public function scoreCategory(
+        string $category,
+        array $values,
+        string $profile = ''
+    ): array {
         if (!isset($this->config[$category])) {
             return ['score' => 0, 'specs' => []];
         }
 
         $specConfigs = $this->config[$category]['specs'];
 
+        // 🔹 profile overrides (safe fallback)
+        $profileMultipliers = config("compare_scoring.compare_profiles.$profile.$category.specs", []);
+
         $scoredSpecs = [];
 
         foreach ($specConfigs as $specKey => $specConfig) {
 
             if (!array_key_exists($specKey, $values)) {
-                continue; // missing spec is ignored
+                continue;
             }
 
             $value = $values[$specKey];
@@ -38,6 +44,7 @@ class CompareScoreService
                 continue;
             }
 
+            // 🔹 unit formatting (UNCHANGED)
             if (isset($specConfig['unit']) && $value !== null && $value !== '') {
                 $unit = $specConfig['unit']['value'] ?? '';
                 $position = $specConfig['unit']['position'] ?? 'after';
@@ -45,30 +52,37 @@ class CompareScoreService
 
                 $separator = $space ? ' ' : '';
 
-                if ($position === 'before') {
-                    $valueWithUnit = $unit . $separator . $value;
-                } else { // after
-                    $valueWithUnit = $value . $separator . $unit;
-                }
+                $valueWithUnit = $position === 'before'
+                    ? $unit . $separator . $value
+                    : $value . $separator . $unit;
             } else {
                 $valueWithUnit = $value;
             }
 
+            // 🔹 APPLY PROFILE MULTIPLIER (safe)
+            $baseWeight = $specConfig['weight'];
+            $multiplier = $profileMultipliers[$specKey] ?? 1;
+            $effectiveWeight = round($baseWeight * $multiplier, 2);
 
             $scoredSpecs[$specKey] = [
                 'value' => $valueWithUnit,
                 'score' => $score,
                 'out_of' => 10,
-                'weight' => $specConfig['weight']
+                'weight' => $effectiveWeight,
+                'base_weight' => $baseWeight,
+                'profile_multiplier' => $multiplier,
             ];
         }
 
+        // 🔹 meta / boolean specs (YES / NO / TEXT)
         $metaKeys = array_diff_key($values, $specConfigs);
 
         foreach ($metaKeys as $metaKey => $metaValue) {
             $scoredSpecs[$metaKey] = [
-                'value' => $metaValue,
-                'score' => null,      // no numeric score
+                'value' => is_bool($metaValue)
+                    ? ($metaValue ? 'Yes' : 'No')
+                    : $metaValue,
+                'score' => null,
                 'out_of' => null,
                 'weight' => null,
             ];
@@ -77,9 +91,10 @@ class CompareScoreService
         return [
             'score' => $this->calculateWeightedScore($scoredSpecs),
             'out_of' => 100,
-            'specs' => $scoredSpecs
+            'specs' => $scoredSpecs,
         ];
     }
+
 
     /* -------------------------------
        SCORING LOGIC
@@ -192,4 +207,5 @@ class CompareScoreService
         // Normalize → 100
         return (int) round(($weightedScore / ($totalWeight * 10)) * 100);
     }
+
 }

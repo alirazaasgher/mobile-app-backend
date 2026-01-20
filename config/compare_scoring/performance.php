@@ -85,10 +85,22 @@ return [
                 'exynos 2400' => 9,
                 'exynos 2200' => 8,
                 'exynos 2100' => 7,
+                'exynos 1680' => 7, // added
+                'exynos 1580' => 6, // Galaxy A55
+                'exynos 1280' => 6, // Galaxy A53 / A33 (very common)
+                'exynos 990' => 6, // still widely used (S20 series)
                 'exynos 1480' => 6,
                 'exynos 1380' => 6,
                 'exynos 1330' => 5,
+                'exynos 980' => 5,
+                'exynos 1200' => 5,
+                'exynos 1080' => 5,
+                'exynos 9611' => 4,
+                'exynos 9610' => 4,
                 'exynos 850' => 3,
+                'exynos 7904' => 3,
+                'exynos 7885' => 3,
+                'exynos 7870' => 2,
 
                 // Huawei Kirin
                 'kirin 9000s' => 9,

@@ -207,7 +207,7 @@ class Phone extends Model
                         'type' => getShortDisplay($s['display']['type'] ?? null),
                         'resolution' => $this->shortResolution($s['display']['resolution'] ?? null),
                         'refresh_rate' => $this->extractNumber($s['display']['refresh_rate'] ?? null),
-                        'screen_ratio' => (float) str_replace('%', '', $s['display']['screen_to_body_ratio']),
+                        'screen_ratio' => (float) str_replace('%', '', $s['display']['screen_to_body_ratio'] ?? "N/A"),
                         'hdr_support' => $this->getHdrSupport($s['display']['features'] ?? ""),
                         "pixel_density" => $this->extractPpi($s['display']['resolution'] ?? null),
                         'brightness_(peak)' => $this->extractBrightness($s['display']['brightness'] ?? "", "peak"),
