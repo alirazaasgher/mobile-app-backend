@@ -24,7 +24,7 @@ class VerifyApiSignature
             exit('Access Denied');
         }
 
-        //return $next($request);
+        return $next($request);
 
         $clientId = $request->header('X-CLIENT-ID');
         $timestamp = $request->header('X-TIMESTAMP');

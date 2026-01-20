@@ -265,7 +265,7 @@ return [
                 'adreno 735' => 9,
                 'adreno 730' => 8,
                 'adreno 725' => 8,
-                'adreno 722' => 8,  // Added - Mid-high tier
+                'adreno 722' => 8,
                 'adreno 720' => 8,
 
                 // Qualcomm Adreno (Mid-range & Older Flagship)
@@ -280,11 +280,15 @@ return [
                 'adreno 630' => 5,
                 'adreno 620' => 4,
                 'adreno 619' => 4,
+                'adreno 619l' => 4, // missing added
                 'adreno 618' => 4,
                 'adreno 616' => 3,
                 'adreno 610' => 3,
                 'adreno 506' => 2,
                 'adreno 505' => 2,
+                'adreno 308' => 2,
+                'adreno 306' => 2,
+                'adreno 305' => 2,
 
                 // Apple GPU (2024-2025)
                 'apple gpu (8-core)' => 10,
@@ -293,13 +297,18 @@ return [
                 'apple gpu (5-core)' => 9,
                 'apple gpu (4-core)' => 8,
                 'apple gpu (3-core)' => 7,
+                'apple gpu (2-core)' => 5, // legacy added
+                'apple gpu (1-core)' => 3, // legacy added
 
                 // ARM Mali (Flagship - G7xx series 2023-2025)
                 'mali-g925' => 10,
                 'mali-g920' => 10,
                 'mali-g720' => 9,
                 'mali-g715' => 9,
+                'mali-g715 mc6' => 9, // missing added
+                'mali-g715 mc4' => 8, // missing added
                 'mali-g710' => 8,
+                'mali-g710 mc10' => 9, // missing added
                 'mali-g78' => 8,
                 'mali-g77' => 7,
                 'mali-g76' => 7,
@@ -307,7 +316,9 @@ return [
                 // ARM Mali (Mid-range - G6xx series)
                 'mali-g620' => 8,
                 'mali-g615' => 7,
+                'mali-g615 mc2' => 6, // missing added
                 'mali-g610' => 7,
+                'mali-g610 mc4' => 7, // missing added
                 'mali-g68' => 7,
                 'mali-g57' => 6,
                 'mali-g52' => 5,
@@ -324,8 +335,16 @@ return [
                 'immortalis-g720' => 10,
                 'immortalis-g715' => 9,
 
+                // Samsung Xclipse (AMD RDNA)
+                'xclipse 530' => 6,
+                'xclipse 540' => 7,
+                'xclipse 550' => 8,
+                'xclipse 940' => 9,
+
                 // Huawei Maleoon (for Kirin chipsets)
                 'maleoon 935' => 8,
+                'maleoon 950' => 8, // missing added
+                'maleoon 920' => 6, // missing added
                 'maleoon 910' => 7,
                 'maleoon 900' => 6,
 
@@ -333,14 +352,14 @@ return [
                 'powervr gm9446' => 6,
                 'powervr ge8320' => 4,
                 'powervr ge8300' => 3,
+                'powervr sgx544' => 2, // missing added
+                'powervr sgx543' => 2, // missing added
+                'powervr g6430' => 4,   // missing added
 
                 // Imagination IMG (Some MediaTek)
                 'img bxm-8-256' => 7,
-
-                // Qualcomm Adreno (Budget/Entry)
-                'adreno 308' => 2,
-                'adreno 306' => 2,
-                'adreno 305' => 2,
+                'img gx6250' => 5, // missing added
+                'img gx5300' => 4, // missing added
             ],
             'default' => 5,
         ],
