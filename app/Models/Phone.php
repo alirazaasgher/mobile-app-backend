@@ -217,7 +217,7 @@ class Phone extends Model
                     ]),
                     'performance' => $scorer->scoreCategory('performance', [
                         'chipset' => getShortChipset($s['performance']['chipset'] ?? null),
-                        'os' => $this->androidVersion($s['performance']['os']),
+                        'os' => $this->mobileVersion($s['performance']['os']),
                         'ram' => $memoryParsed['ram'],
                         'storage_capacity' => $memoryParsed['storage'],
                         'cpu' => cpuType($s['performance']['cpu']) ?? null,
@@ -288,7 +288,7 @@ class Phone extends Model
         }
     }
 
-    public function androidVersion($os)
+    public function mobileVersion($os)
     {
         if (!is_string($os) || trim($os) === '') {
             return '';
@@ -302,6 +302,24 @@ class Phone extends Model
                 $version = rtrim($version, '.0');
                 $region = !empty($matches[2][$index]) ? ' (' . trim($matches[2][$index]) . ')' : '';
                 $versions[] = 'Android ' . $version . $region;
+            }
+        }
+
+        // Match iOS versions with optional region
+        if (preg_match_all('/iOS\s*(\d+(?:\.\d+)?)\s*(?:\(([^)]+)\))?/i', $os, $matches)) {
+            foreach ($matches[1] as $index => $version) {
+                $version = rtrim($version, '.0');
+                $region = !empty($matches[2][$index]) ? ' (' . trim($matches[2][$index]) . ')' : '';
+                $versions[] = 'iOS ' . $version . $region;
+            }
+        }
+
+        // Match iPadOS versions with optional region
+        if (preg_match_all('/iPadOS\s*(\d+(?:\.\d+)?)\s*(?:\(([^)]+)\))?/i', $os, $matches)) {
+            foreach ($matches[1] as $index => $version) {
+                $version = rtrim($version, '.0');
+                $region = !empty($matches[2][$index]) ? ' (' . trim($matches[2][$index]) . ')' : '';
+                $versions[] = 'iPadOS ' . $version . $region;
             }
         }
 
