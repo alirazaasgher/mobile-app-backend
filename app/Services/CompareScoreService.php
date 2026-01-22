@@ -18,7 +18,7 @@ class CompareScoreService
     public function scoreCategory(
         string $category,
         array $values,
-        string $profile = ''
+        string $profile = 'balanced'
     ): array {
         if (!isset($this->config[$category])) {
             return ['score' => 0, 'specs' => []];
