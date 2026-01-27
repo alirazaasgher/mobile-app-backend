@@ -20,50 +20,39 @@ class CompareScoreService
         array $values,
         string $profile = 'balanced'
     ): array {
+        // Early exit if the category is not defined
         if (!isset($this->config[$category])) {
             return ['score' => 0, 'specs' => []];
         }
 
+
         $specConfigs = $this->config[$category]['specs'];
 
-        // 🔹 profile overrides (safe fallback)
         $profileMultipliers = config("compare_scoring.compare_profiles.$profile.$category.specs", []);
-
         $scoredSpecs = [];
 
         foreach ($specConfigs as $specKey => $specConfig) {
-
+            // Check if the value exists
             if (!array_key_exists($specKey, $values)) {
                 continue;
             }
 
             $value = $values[$specKey];
             $score = $this->scoreSpec($value, $specConfig);
-
+            // Skip if scoring failed
             if ($score === null) {
                 continue;
             }
 
-            // 🔹 unit formatting (UNCHANGED)
-            if (isset($specConfig['unit']) && $value !== null && $value !== '') {
-                $unit = $specConfig['unit']['value'] ?? '';
-                $position = $specConfig['unit']['position'] ?? 'after';
-                $space = $specConfig['unit']['space'] ?? true;
+            // Format value with unit if applicable
+            $valueWithUnit = $this->formatValueWithUnit($value, $specConfig);
 
-                $separator = $space ? ' ' : '';
-
-                $valueWithUnit = $position === 'before'
-                    ? $unit . $separator . $value
-                    : $value . $separator . $unit;
-            } else {
-                $valueWithUnit = $value;
-            }
-
-            // 🔹 APPLY PROFILE MULTIPLIER (safe)
+            // Calculate effective weight
             $baseWeight = $specConfig['weight'];
             $multiplier = $profileMultipliers[$specKey] ?? 1;
             $effectiveWeight = round($baseWeight * $multiplier, 2);
 
+            // Store scored spec
             $scoredSpecs[$specKey] = [
                 'value' => $valueWithUnit,
                 'score' => $score,
@@ -74,14 +63,10 @@ class CompareScoreService
             ];
         }
 
-        // 🔹 meta / boolean specs (YES / NO / TEXT)
-        $metaKeys = array_diff_key($values, $specConfigs);
-
-        foreach ($metaKeys as $metaKey => $metaValue) {
+        // Handle meta specs
+        foreach (array_diff_key($values, $specConfigs) as $metaKey => $metaValue) {
             $scoredSpecs[$metaKey] = [
-                'value' => is_bool($metaValue)
-                    ? ($metaValue ? 'Yes' : 'No')
-                    : $metaValue,
+                'value' => is_bool($metaValue) ? ($metaValue ? 'Yes' : 'No') : $metaValue,
                 'score' => null,
                 'out_of' => null,
                 'weight' => null,
@@ -95,7 +80,21 @@ class CompareScoreService
         ];
     }
 
+    private function formatValueWithUnit($value, array $specConfig): string
+    {
+        if (isset($specConfig['unit']) && !is_null($value) && $value !== '') {
+            $unit = $specConfig['unit']['value'] ?? '';
+            $position = $specConfig['unit']['position'] ?? 'after';
+            $space = $specConfig['unit']['space'] ?? true;
+            $separator = $space ? ' ' : '';
 
+            return $position === 'before'
+                ? $unit . $separator . $value
+                : $value . $separator . $unit;
+        }
+
+        return (string) $value; // Ensure value is returned as a string
+    }
     /* -------------------------------
        SCORING LOGIC
     --------------------------------*/

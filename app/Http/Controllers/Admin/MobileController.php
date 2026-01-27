@@ -59,12 +59,13 @@ class MobileController extends Controller
 
             'performance' => [
                 'expandable' => true,
-                'max_visible' => 4,
+                'max_visible' => 6,
                 'items' => [
                     ['key' => 'os', 'label' => 'Operating System', 'type' => 'text', 'placeholder' => 'Android 14, One UI 6.1'],
                     ['key' => 'chipset', 'label' => 'Chipset', 'type' => 'text', 'placeholder' => 'Qualcomm Snapdragon 8 Gen 3 (4 nm)'],
                     ['key' => 'cpu', 'label' => 'CPU', 'type' => 'text', 'placeholder' => 'Octa-core (1x3.3 GHz X4)'],
                     ['key' => 'gpu', 'label' => 'GPU', 'type' => 'text', 'placeholder' => 'Adreno 750'],
+                    ['key' => 'instant_touch_sampling_rate', 'label' => 'Instant Touch Sampling Rate', 'type' => 'text', 'placeholder' => '480Hz'],
                     ['key' => 'cpu_architecture', 'label' => 'CPU Architecture', 'type' => 'text', 'placeholder' => '64-bit, ARMv9'],
                     ['key' => 'cooling', 'label' => 'Cooling System', 'type' => 'text', 'placeholder' => 'Vapor chamber, AI thermal control'],
                     ['key' => 'benchmark', 'label' => 'Benchmark Scores', 'type' => 'text', 'placeholder' => 'AnTuTu: 1,250,000 / Geekbench: 2200 (S) • 7200 (M)'],

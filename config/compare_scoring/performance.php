@@ -192,7 +192,7 @@ return [
             'default' => 2,
         ],
 
-        'antutu_score' => [
+        'antutu_score_(v10)' => [
             'label' => 'AnTuTu Benchmark',
             'weight' => 20,
             'ranges' => [
@@ -217,7 +217,7 @@ return [
 
         'cpu' => [
             'label' => 'CPU Cores',
-            'weight' => 0,
+            'weight' => 3,
             'scale' => [
                 // 12+ cores (2024-2025 flagships)
                 '12-core' => 10,
@@ -388,6 +388,28 @@ return [
                 'lpddr' => 1,
             ],
             'default' => 5,
+        ],
+        'instant_touch_sampling_rate' => [
+            'label' => 'Instant Touch Sampling Rate',
+            'weight' => 4,
+            'type' => 'integer', // Added for data validation
+            'unit' => [
+                'value' => 'Hz',
+                'position' => 'after',
+                'space' => false
+            ],
+            'scale' => [
+                2560 => 10,
+                1440 => 9,
+                720 => 8,
+                600 => 7,
+                480 => 6,
+                360 => 5,
+                240 => 4,
+                180 => 3, // Added for mid-range accuracy
+                120 => 2, // Added for budget accuracy
+            ],
+            'default' => 1, // Lowered default to reflect entry-level performance
         ],
     ],
 

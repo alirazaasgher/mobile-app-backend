@@ -608,10 +608,13 @@ class PhoneApiController extends Controller
         $validated = $request->validate([
             'slugs' => 'required|array|min:1|max:4',
             'slugs.*' => 'string|exists:phones,slug',
+            'profile' => 'nullable|string|in:balanced,gaming,camera,battery,budget_conscious,media_consumer,business_professional',
         ]);
 
         $slugs = $validated['slugs'];
+        $profile = $validated['profile'] ?? 'balanced'; // Default to balanced
         $phones = Phone::select('id', 'name', 'brand_id', 'slug', 'release_date', 'primary_image', 'primary_color', 'updated_at', 'is_popular', 'status')
+            ->with('specifications') // Load specifications relationship
             ->whereIn('slug', $slugs)
             ->get();
         $allBrandIds = $phones->pluck('brand_id')->unique()->toArray();
@@ -636,7 +639,48 @@ class PhoneApiController extends Controller
             ->whereIn('phone_id', array_unique($usedPhoneIds))
             ->get()
             ->keyBy('phone_id');
+        $scorer = app(\App\Services\CompareScoreService::class);
+        $scoredPhones = $phones->map(function ($phone) use ($searchIndexes, $brands, $scorer, $profile) {
+            $phone->brand = $brands[$phone->brand_id] ?? null;
+            $phone->searchIndex = $searchIndexes[$phone->id] ?? (object) [
+                'ram' => null,
+                'storage' => null,
+                'min_price_usd' => null,
+                'storage_type' => null,
+                'ram_type' => null,
+                'min_price' => null,
+            ];
 
+            // Get phone specifications (adjust based on your existing spec extraction logic)
+            $specs = $phone->specifications; // or however you access specs
+            // Score all categories
+            $phone->scores = $this->scorePhone($specs, $scorer, $profile);
+
+            return $phone;
+        });
+
+        $verdict = $this->generateVerdict($scoredPhones, $profile);
+
+        $chartData = $this->formatChartData($scoredPhones);
+        return response()->json([
+            'success' => true,
+            'profile' => $profile,
+            'data' => $scoredPhones->map(fn($phone) => new PhoneResource($phone, true)),
+            'comparison' => [
+                'scores' => $scoredPhones->map(function ($phone) {
+                    return [
+                        'phone_id' => $phone->id,
+                        'phone_name' => $phone->name,
+                        'primary_color' => $phone->primary_color,
+                        'category_scores' => $phone->scores,
+                        'total_score' => $this->calculateTotalScore($phone->scores ?? []),
+                    ];
+                }),
+                'verdict' => $verdict,
+                'winner' => $verdict['overall_recommendation']['recommended_phone'], // ✅ Use the recommendation
+                'charts' => $chartData,
+            ],
+        ]);
         // Attach relationships
         $attachData = function ($collection) use ($searchIndexes, $brands) {
             return $collection->map(function ($phone) use ($searchIndexes, $brands) {
@@ -680,6 +724,806 @@ class PhoneApiController extends Controller
 
     }
 
+    public function scorePhone($specs, $scorer, $profile)
+    {
+        $s = $specs->keyBy('category')
+            ->map(fn($spec) => json_decode($spec->specifications, true) ?: []);
+        $benchmark = getBenchmark($s['performance']['benchmark'] ?? '');
+        $buildMaterials = buildMaterials($s['build']['build'] ?? '');
+        $mobileDimensions = getMobileDimensions($s['build']['dimensions'] ?? []);
+        $cameraApertures = extractCameraApertures($s['main_camera']);
+        $cameraOpticalZoom = extractOpticalZoom($s['main_camera']);
+        $cameratabilization = extractStabilization($s['main_camera']);
+        $cameraSetup = parseCameraSetup($s['main_camera']['setup']);
+        $cameraFlash = getFlash($s['main_camera']);
+        $cameraVideo = extractVideo($s['main_camera']['video']);
+        $setup = $s['selfie_camera']['setup'] ?? ''; // e.g., "Single (50 MP)"
+        // Extract the first number
+        preg_match('/\d+/', $setup, $matches);
+        $frontCameraSetup = $matches[0] ?? null;
+        $object = [];
+        foreach ($cameraSetup as $value) {
+            // Dynamically use 'type' as key and 'mp' as value
+            $key = $value['type']; // e.g., 'rear', 'front', 'wide'
+            $object[$key] = $value['mp'] ?? null; // fallback to null if 'mp' is missing
+        }
+        $memoryParsed = parseMemory($s['memory']['memory']);
+        try {
+            $wiredChargingSpec = $s['battery']['charging_speed'] ?? '';
+            $wirlessCharging = $s['battery']['wireless'] ?? '';
+            $reverceCharging = $s['battery']['reverse'] ?? '';
+            $screenGlassType = extractScreenGlassType($s['display']['protection'] ?? null);
+            $formatGlassProtection = formatGlassProtection($screenGlassType ?? []);
+            return [
+                'display' => $scorer->scoreCategory('display', [
+                    'size' => extractSize($s['display']['size'] ?? null),
+                    'type' => getShortDisplay($s['display']['type'] ?? null),
+                    'resolution' => shortResolution($s['display']['resolution'] ?? null),
+                    'refresh_rate' => extractNumber($s['display']['refresh_rate'] ?? null),
+                    'screen_ratio' => (float) str_replace('%', '', $s['display']['screen_to_body_ratio'] ?? "N/A"),
+                    'aspect_ratio' => $s['display']['aspect_ratio'] ?? null,
+                    'hdr_support' => getHdrSupport($s['display']['features'] ?? ""),
+                    "pixel_density" => extractPpi($s['display']['resolution'] ?? null),
+                    'brightness_(peak)' => extractBrightness($s['display']['brightness'] ?? "", "peak"),
+                    'brightness_(typical)' => extractBrightness($s['display']['brightness'] ?? "", "typical"),
+                    'glass_protection' => $formatGlassProtection,
+                    'touch_sampling_rate' => preg_replace('/\D+/', '', $s['display']['touch_sampling_rate'] ?? null),
+                    'has_branded_glass' => $screenGlassType['has_branded_glass'] ?? null,
+                ], $profile),
+                'performance' => $scorer->scoreCategory('performance', [
+                    'chipset' => getShortChipset($s['performance']['chipset'] ?? null),
+                    'ram' => $memoryParsed['ram'],
+                    'storage_capacity' => $memoryParsed['storage'],
+                    'cpu' => cpuType($s['performance']['cpu']) ?? null,
+                    'gpu' => $s['performance']['gpu'] ?? null,
+                    'storage_type' => $s['memory']['storage_type'] ?? null,
+                    'ram_type' => $s['memory']['ram_type'] ?? null,
+                    'instant_touch_sampling_rate' => preg_replace('/\D+/', '', $s['performance']['instant_touch_sampling_rate'] ?? null),
+                    'antutu_score_(v10)' => $benchmark['antutu'] ?? null,
+                    'card_slot' => $s['memory']['card_slot']
+
+                ], $profile),
+                'camera' => $scorer->scoreCategory(
+                    'camera',
+                    array_merge(
+                        $object,
+                        $cameraApertures, // dynamic camera keys
+                        [
+                            'optical_zoom' => $cameraOpticalZoom,
+                            'stabilization' => $cameratabilization,
+                            'flash' => $cameraFlash,
+                            'front' => $frontCameraSetup ?? null,
+                            'video_resolution' => $cameraVideo ?? null,
+                            'front_video' => extractVideo($s['selfie_camera']['video']) ?? null,
+                        ]
+                    )
+                    ,
+                    $profile
+                ),
+                'battery' => $scorer->scoreCategory(
+                    'battery',
+                    [
+                        "type" => parseBatteryType($s['battery']['type']),
+                        'capacity' => parseBatteryCapacity($s['battery']['capacity']) ?? null,
+                        'Fast' => parseFastChargingToWatts($wiredChargingSpec),
+                        'Wirless' => parseFastChargingToWatts($wirlessCharging ?? 0),
+                        'Reverce' => parseFastChargingToWatts($reverceCharging ?? 0),
+                    ],
+                    $profile
+                ),
+                'build' => $scorer->scoreCategory(
+                    'build',
+                    [
+                        'dimensions' => $mobileDimensions['dimensions'] ?? null,
+                        'thickness' => $mobileDimensions['thickness'] ?? null,
+                        'weight' => $s['build']['weight'] !== null
+                            ? (float) preg_replace('/[^0-9.]/', '', $s['build']['weight'])
+                            : null,
+                        'build_material' => $buildMaterials['build_material'] ?? null,
+                        'back_material' => $buildMaterials['back_material'] ?? null,
+                        'ip_rating' => shortIPRating($s['build']['ip_rating']) ?? null,
+                    ],
+                    $profile
+                ),
+
+                'features' => $scorer->scoreCategory(
+                    'features',
+                    [
+                        'nfc' => $s['connectivity']['nfc'] ?? null,
+                        'stereo_speakers' => $s['audio']['stereo'] ?? null,
+                        '3.5mm_jack' => $s['audio']['3.5mm_jack'] ?? null,
+                        "infrared" => $s['connectivity']['infrared'] ?? null,
+                        'wifi' => formatWifiValue($s['connectivity']['wifi']),
+                        'bluetooth_version' => isset($s['connectivity']['bluetooth'])
+                            ? (preg_match('/v([\d.]+)/i', $s['connectivity']['bluetooth'], $m) ? $m[1] : null)
+                            : null,
+                        'usb' => formatUsbLabel($s['connectivity']['usb']),
+                    ],
+                    $profile
+                ),
+                'software' => $scorer->scoreCategory(
+                    'software',
+                    [
+                        'os' => mobileVersion($s['performance']['os'] ?? null),
+                        'update_policy' => $s['performance']['update_policy'] ?? null, // e.g., "3 years security updates"
+                        'extra_features' => $s['software']['features'] ?? null, // e.g., gestures, multitasking, AI features
+                    ],
+                    $profile
+                ),
+                'value' => $scorer->scoreCategory(
+                    'value',
+                    [
+                        'price' => $s['pricing']['price'] ?? null,
+                        'spec_score_sum' => array_sum([
+                            $s['performance']['chipset_score'] ?? 0,
+                            $s['camera']['score'] ?? 0,
+                            $s['battery']['score'] ?? 0,
+                            $s['display']['score'] ?? 0,
+                            $s['build']['score'] ?? 0,
+                            $s['features']['score'] ?? 0,
+                        ]),
+                        'price_performance_ratio' => isset($s['pricing']['price']) && isset($s['performance']['chipset_score'])
+                            ? $s['performance']['chipset_score'] / $s['pricing']['price']
+                            : null,
+                    ],
+                    $profile
+                ),
+            ];
+        } catch (\Exception $e) {
+            \Log::error("Error in getCompareSpecsAttribute for phone: " . $e->getMessage());
+            echo "<pre>";
+            print_r($e->getMessage());
+            exit;
+            return ['key' => [], 'expandable' => []];
+        }
+    }
+
+    private function generateVerdict($phones, $profile)
+    {
+
+        $verdictConfig = config('compare_scoring.compare_verdict');
+        $categoryWinners = [];
+        $categoryVerdicts = [];
+
+        // Get all categories from config (including new ones)
+        $categories = array_keys(array_filter($verdictConfig, function ($item) {
+            return isset($item['label']) && isset($item['thresholds']);
+        }));
+
+        // Determine winner for each category
+        foreach ($categories as $category) {
+
+            $categoryScores = $phones->map(function ($phone) use ($category) {
+                return [
+                    'phone' => $phone,
+                    'score' => $phone->scores[$category]['score'] ?? 0,
+                ];
+            })->sortByDesc('score');
+
+            $winner = $categoryScores->first();
+            $runnerUp = $categoryScores->skip(1)->first();
+
+            $scoreDiff = $winner['score'] - ($runnerUp['score'] ?? 0);
+            $thresholds = $verdictConfig[$category]['thresholds'];
+
+            // Determine verdict type based on thresholds
+            if ($scoreDiff >= $thresholds['decisive']) {
+                $verdictType = 'decisive';
+            } elseif ($scoreDiff >= $thresholds['notable']) {
+                $verdictType = 'notable';
+            } elseif ($scoreDiff >= $thresholds['marginal']) {
+                $verdictType = 'marginal';
+            } else {
+                $verdictType = 'close';
+            }
+
+            $winnerKey = $this->phoneKey($winner['phone']);
+            $runnerKey = $runnerUp ? $this->phoneKey($runnerUp['phone']) : null;
+
+            // Store category analysis
+            $categoryWinners[$category] = [
+                'winner' => $winnerKey,
+                'runner_up' => $runnerKey,
+                'score' => $winner['score'],
+                'difference' => round($scoreDiff, 1),
+                'verdict_type' => $verdictType,
+                'category_label' => $verdictConfig[$category]['label'] ?? ucfirst($category),
+            ];
+
+            // Generate verdict text with advantages
+            $categoryVerdicts[$category] = $this->generateCategoryVerdict(
+                $category,
+                $winner,
+                $runnerUp,
+                $scoreDiff,
+                $verdictType,
+                $verdictConfig
+            );
+        }
+
+        return [
+            'category_winners' => $categoryWinners,
+            'category_verdicts' => $categoryVerdicts,
+            'overall_recommendation' => $this->generateOverallRecommendation($phones, $categoryWinners, $profile),
+        ];
+    }
+
+    private function phoneKey($phone)
+    {
+        return trim($phone->brand->name . ' ' . $phone->name);
+    }
+    private function generateOverallRecommendation($phones, $categoryWinners, $profile)
+    {
+        $verdictConfig = config('compare_scoring.compare_verdict');
+        $phoneAnalysis = [];
+
+        foreach ($phones as $phone) {
+            $phoneKey = $this->phoneKey($phone);
+            $weightedWins = 0;
+            $totalWins = 0;
+            $winTypes = [
+                'dominant' => [],
+                'decisive' => [],
+                'notable' => [],
+                'close' => [],
+                'marginal' => [],
+            ];
+
+            // Analyze wins for each category
+            foreach ($categoryWinners as $category => $data) {
+                if ($data['winner'] === $phoneKey) {
+                    $totalWins++;
+                    $categoryWeight = $verdictConfig[$category]['weight'] ?? 1.0;
+
+                    // Different scoring based on win type
+                    $typeMultiplier = match ($data['verdict_type']) {
+                        'decisive' => 3.0,
+                        'notable' => 2.0,
+                        'marginal' => 1.5,
+                        'close' => 1.2,
+                        default => 1.0,
+                    };
+
+                    $weightedWins += $categoryWeight * $typeMultiplier;
+                    $winTypes[$data['verdict_type']][] = $category;
+                }
+            }
+
+            // Bonus for high-priority category wins
+            $highPriorityBonus = 0;
+            foreach ($winTypes as $type => $categories) {
+                foreach ($categories as $category) {
+                    $priority = $verdictConfig[$category]['priority'] ?? 'medium';
+                    if ($priority === 'critical') {
+                        $highPriorityBonus += 2.0;
+                    } elseif ($priority === 'high') {
+                        $highPriorityBonus += 1.0;
+                    }
+                }
+            }
+            $weightedWins += $highPriorityBonus;
+
+            $phoneAnalysis[$phoneKey] = [
+                'weighted_score' => $weightedWins,
+                'total_wins' => $totalWins,
+                'win_types' => $winTypes,
+                'total_score' => $this->calculateTotalScore($phone->scores),
+                'phone_object' => $phone,
+            ];
+        }
+
+        // Sort phones by analysis
+        uasort($phoneAnalysis, function ($a, $b) {
+            // Primary: Weighted score
+            if (abs($a['weighted_score'] - $b['weighted_score']) > 2.0) {
+                return $b['weighted_score'] <=> $a['weighted_score'];
+            }
+
+            // Secondary: Total wins
+            if ($a['total_wins'] !== $b['total_wins']) {
+                return $b['total_wins'] <=> $a['total_wins'];
+            }
+
+            // Tertiary: Critical category wins
+            $aCritical = count($a['win_types']['decisive'] ?? []) + count($a['win_types']['dominant'] ?? []);
+            $bCritical = count($b['win_types']['decisive'] ?? []) + count($b['win_types']['dominant'] ?? []);
+            if ($aCritical !== $bCritical) {
+                return $bCritical <=> $aCritical;
+            }
+
+            // Quaternary: Total score
+            return $b['total_score'] <=> $a['total_score'];
+        });
+
+        $recommendedPhoneKey = array_key_first($phoneAnalysis);
+        $recommendedAnalysis = $phoneAnalysis[$recommendedPhoneKey];
+        $runnerUpKey = array_keys($phoneAnalysis)[1] ?? null;
+        $runnerUpAnalysis = $runnerUpKey ? $phoneAnalysis[$runnerUpKey] : null;
+
+        // Generate the recommendation
+        $message = $this->generateNuancedMessage(
+            $recommendedPhoneKey,
+            $recommendedAnalysis,
+            $runnerUpAnalysis,
+            $categoryWinners,
+            $profile,
+            $verdictConfig
+        );
+
+        return [
+            'message' => $message,
+            'recommended_phone' => $recommendedPhoneKey,
+            'weighted_score' => round($recommendedAnalysis['weighted_score'], 2),
+            'total_wins' => $recommendedAnalysis['total_wins'],
+            'win_breakdown' => $recommendedAnalysis['win_types'],
+            'confidence_level' => $this->calculateConfidence($recommendedAnalysis, $runnerUpAnalysis),
+            'key_differentiators' => $this->identifyKeyDifferentiators($categoryWinners, $recommendedPhoneKey),
+            'profile_match' => $this->calculateProfileMatch($recommendedPhoneKey, $categoryWinners, $profile, $verdictConfig),
+            'caveats' => $this->addContextualCaveats($categoryWinners, $recommendedPhoneKey),
+            'trade_off_message' => $this->generateTradeOffMessage($phones, $categoryWinners, $verdictConfig),
+        ];
+    }
+
+    private function getMagnitudeDescriptor($scoreDiff, $modifiers)
+    {
+        if ($scoreDiff >= ($modifiers['game_changer'] ?? 25)) {
+            return 'game-changing difference';
+        } elseif ($scoreDiff >= ($modifiers['dominant'] ?? 18)) {
+            return 'dominant advantage';
+        } elseif ($scoreDiff >= ($modifiers['significant'] ?? 12)) {
+            return 'significant advantage';
+        } elseif ($scoreDiff >= ($modifiers['noticeable'] ?? 8)) {
+            return 'noticeable advantage';
+        } elseif ($scoreDiff >= ($modifiers['slight'] ?? 4)) {
+            return 'slight advantage';
+        } elseif ($scoreDiff >= ($modifiers['marginal'] ?? 1)) {
+            return 'marginal advantage';
+        }
+
+        return null;
+    }
+
+    private function generateCategoryVerdict($category, $winner, $runnerUp, $scoreDiff, $verdictType, $verdictConfig)
+    {
+        $winnerPhone = $winner['phone'];
+        $winnerName = $winnerPhone->brand->name . ' ' . $winnerPhone->name;
+
+        if ($verdictType === 'close') {
+            return $verdictConfig[$category]['verdicts']['close'];
+        }
+
+        // Get the template
+        $template = $verdictConfig[$category]['verdicts']['winner'];
+
+        // Get specific advantages from scores
+        $advantages = [];
+        $winnerScores = $winnerPhone->scores[$category] ?? [];
+        $runnerScores = $runnerUp['phone']->scores[$category] ?? [];
+
+        if (isset($winnerScores['advantages']) && is_array($winnerScores['advantages'])) {
+            foreach ($winnerScores['advantages'] as $advantageKey => $advantageValue) {
+                if (isset($verdictConfig[$category]['verdicts']['advantages'][$advantageKey])) {
+                    $advantageTemplate = $verdictConfig[$category]['verdicts']['advantages'][$advantageKey];
+                    $advantages[] = str_replace('{value}', $advantageValue, $advantageTemplate);
+                }
+            }
+        }
+
+        // Build final verdict
+        $verdict = str_replace('{phone}', $winnerName, $template);
+
+        if (!empty($advantages)) {
+            $verdict .= ' Specifically: ' . $this->formatList($advantages, 'sentence');
+        }
+
+        // Add magnitude descriptor if not close
+        $magnitude = $this->getMagnitudeDescriptor($scoreDiff, $verdictConfig['score_modifiers'] ?? []);
+        if ($magnitude && $verdictType !== 'close') {
+            $verdict .= ' (' . $magnitude . ')';
+        }
+
+        return $verdict;
+    }
+
+    private function generateNuancedMessage($phoneName, $analysis, $runnerUpAnalysis, $categoryWinners, $profile, $verdictConfig)
+    {
+        $messages = [];
+        $totalCategories = count($categoryWinners);
+
+        // Start with strong opening if we have decisive/dominant wins
+        $decisiveWins = count($analysis['win_types']['decisive'] ?? []);
+        $dominantWins = count($analysis['win_types']['dominant'] ?? []);
+
+        if ($dominantWins > 0) {
+            $dominantCategories = array_map(
+                fn($cat) => $verdictConfig[$cat]['label'] ?? ucfirst($cat),
+                $analysis['win_types']['dominant']
+            );
+            $messages[] = "🔥 **Dominates** in " . $this->formatList($dominantCategories) .
+                " - these are game-changing advantages";
+        } elseif ($decisiveWins > 0) {
+            $decisiveCategories = array_map(
+                fn($cat) => $verdictConfig[$cat]['label'] ?? ucfirst($cat),
+                $analysis['win_types']['decisive']
+            );
+            $messages[] = "⭐ **Significantly outperforms** in " . $this->formatList($decisiveCategories);
+        }
+
+        // Add profile-specific context
+        if ($profile !== 'balanced' && isset($verdictConfig['profile_priorities'][$profile])) {
+            $profileInfo = $verdictConfig['profile_priorities'][$profile];
+            $profileCategories = $profileInfo['categories'] ?? [];
+
+            $profileWins = array_intersect(
+                array_merge(...array_values($analysis['win_types'])),
+                $profileCategories
+            );
+
+            if (!empty($profileWins)) {
+                $profileWinLabels = array_map(
+                    fn($cat) => $verdictConfig[$cat]['label'] ?? ucfirst($cat),
+                    $profileWins
+                );
+                $messages[] = "🎯 **Perfect for {$profile} users**: Wins in key areas like " .
+                    $this->formatList($profileWinLabels);
+            }
+        }
+
+        // Mention total win count if winning majority
+        if ($analysis['total_wins'] > $totalCategories / 2) {
+            $winPercentage = round(($analysis['total_wins'] / $totalCategories) * 100);
+            $messages[] = "📊 **Wins {$analysis['total_wins']} out of {$totalCategories} categories** ({$winPercentage}%)";
+        }
+
+        // Mention notable wins
+        $notableWins = count($analysis['win_types']['notable'] ?? []);
+        if ($notableWins > 0) {
+            $notableCategories = array_map(
+                fn($cat) => $verdictConfig[$cat]['label'] ?? ucfirst($cat),
+                $analysis['win_types']['notable']
+            );
+            $messages[] = "📈 **Excels** in " . $this->formatList($notableCategories);
+        }
+
+        // Acknowledge areas where it's close or loses
+        if ($runnerUpAnalysis) {
+            $closeLosses = [];
+            foreach ($categoryWinners as $category => $data) {
+                if ($data['winner'] !== $phoneName && $data['verdict_type'] === 'close') {
+                    $closeLosses[] = $verdictConfig[$category]['label'] ?? ucfirst($category);
+                }
+            }
+
+            if (count($closeLosses) <= 2 && !empty($messages)) {
+                $messages[] = "🤏 **Close calls**: Differences in " . $this->formatList($closeLosses) . " are minimal";
+            }
+        }
+
+        // Add value consideration if available
+        if (isset($categoryWinners['value']) && $categoryWinners['value']['winner'] === $phoneName) {
+            $valueDiff = $categoryWinners['value']['difference'] ?? 0;
+            if ($valueDiff >= 15) {
+                $messages[] = "💰 **Excellent value**: Significantly better price-to-performance ratio";
+            }
+        }
+
+        // Build final message
+        if (empty($messages)) {
+            return "📱 **{$phoneName}** is recommended based on overall balanced performance.";
+        }
+
+        return "📱 **{$phoneName}** " . lcfirst(implode('. ', $messages)) . ".";
+    }
+    private function formatList($items, $type = 'simple')
+    {
+        if (empty($items)) {
+            return '';
+        }
+
+        $items = array_unique($items);
+
+        if (count($items) === 1) {
+            return $items[0];
+        }
+
+        if (count($items) === 2) {
+            return $items[0] . ' and ' . $items[1];
+        }
+
+        $last = array_pop($items);
+
+        if ($type === 'sentence') {
+            return implode(', ', $items) . ', and ' . $last;
+        }
+
+        return implode(', ', $items) . ', and ' . $last;
+    }
+
+    private function getOtherPhone($currentPhone, $phones)
+    {
+        foreach ($phones as $phone) {
+            if ($phone !== $currentPhone) {
+                return $phone;
+            }
+        }
+        return '';
+    }
+
+    /**
+     * Calculate recommendation confidence
+     */
+    private function calculateConfidence($analysis, $runnerUpAnalysis = null)
+    {
+        $confidenceScore = 0;
+
+        // Base score from weighted wins
+        $confidenceScore += $analysis['weighted_score'];
+
+        // Bonus for decisive/dominant wins
+        $confidenceScore += count($analysis['win_types']['dominant'] ?? []) * 5;
+        $confidenceScore += count($analysis['win_types']['decisive'] ?? []) * 3;
+
+        // Penalty if runner-up is close
+        if ($runnerUpAnalysis) {
+            $gap = $analysis['weighted_score'] - $runnerUpAnalysis['weighted_score'];
+            if ($gap < 3) {
+                $confidenceScore -= 2;
+            }
+        }
+
+        if ($confidenceScore >= 15) {
+            return [
+                'level' => 'Very High',
+                'score' => $confidenceScore,
+                'phrase' => 'Strongly recommended',
+                'icon' => '🎯'
+            ];
+        } elseif ($confidenceScore >= 10) {
+            return [
+                'level' => 'High',
+                'score' => $confidenceScore,
+                'phrase' => 'Recommended',
+                'icon' => '👍'
+            ];
+        } elseif ($confidenceScore >= 6) {
+            return [
+                'level' => 'Moderate',
+                'score' => $confidenceScore,
+                'phrase' => 'Leans toward',
+                'icon' => '🤔'
+            ];
+        } else {
+            return [
+                'level' => 'Low',
+                'score' => $confidenceScore,
+                'phrase' => 'Slight preference',
+                'icon' => '⚖️'
+            ];
+        }
+    }
+
+
+    /**
+     * Identify key differentiators
+     */
+    private function identifyKeyDifferentiators($categoryWinners, $recommendedPhone)
+    {
+        $differentiators = [];
+
+        foreach ($categoryWinners as $category => $data) {
+            if ($data['winner'] === $recommendedPhone) {
+                $impact = match ($data['verdict_type']) {
+                    'dominant' => 'game_changer',
+                    'decisive' => 'high',
+                    'notable' => 'medium',
+                    default => 'low',
+                };
+
+                // Only include medium to high impact differentiators
+                if (in_array($impact, ['game_changer', 'high', 'medium'])) {
+                    $differentiators[] = [
+                        'category' => $data['category_label'] ?? ucfirst($category),
+                        'winner' => $data['winner'],
+                        'margin' => $data['difference'],
+                        'impact' => $impact,
+                        'type' => $data['verdict_type'],
+                    ];
+                }
+            }
+        }
+
+        // Sort by impact (game_changer > high > medium)
+        usort($differentiators, function ($a, $b) {
+            $impactOrder = ['game_changer' => 3, 'high' => 2, 'medium' => 1, 'low' => 0];
+            return ($impactOrder[$b['impact']] ?? 0) <=> ($impactOrder[$a['impact']] ?? 0);
+        });
+
+        return $differentiators;
+    }
+
+    private function addContextualCaveats($categoryWinners, $recommendedPhone)
+    {
+        $caveats = [];
+
+        foreach ($categoryWinners as $category => $data) {
+            // Check for major losses (opponent has decisive or dominant win)
+            if ($data['winner'] !== $recommendedPhone) {
+                if ($data['verdict_type'] === 'dominant') {
+                    $caveats[] = [
+                        'type' => 'warning',
+                        'category' => $data['category_label'] ?? ucfirst($category),
+                        'message' => "⚠️ **{$data['winner']} has a massive advantage in {$data['category_label']}** ({$data['difference']} points). If this is critical for you, reconsider.",
+                        'severity' => 'high',
+                        'difference' => $data['difference'],
+                    ];
+                } elseif ($data['verdict_type'] === 'decisive' && $data['difference'] >= 20) {
+                    $caveats[] = [
+                        'type' => 'note',
+                        'category' => $data['category_label'] ?? ucfirst($category),
+                        'message' => "📝 **{$data['winner']} is significantly better in {$data['category_label']}**.",
+                        'severity' => 'medium',
+                        'difference' => $data['difference'],
+                    ];
+                }
+            }
+        }
+
+        return $caveats;
+    }
+
+    private function calculateProfileMatch($phoneName, $categoryWinners, $profile, $verdictConfig)
+    {
+        if ($profile === 'balanced' || !isset($verdictConfig['profile_priorities'][$profile])) {
+            return null;
+        }
+
+        $profileInfo = $verdictConfig['profile_priorities'][$profile];
+        $priorityCategories = $profileInfo['categories'] ?? [];
+        $profileWins = 0;
+        $totalPriorityCategories = count($priorityCategories);
+
+        foreach ($priorityCategories as $category) {
+            if (isset($categoryWinners[$category]) && $categoryWinners[$category]['winner'] === $phoneName) {
+                $profileWins++;
+            }
+        }
+
+        if ($totalPriorityCategories === 0) {
+            return null;
+        }
+
+        $matchPercentage = round(($profileWins / $totalPriorityCategories) * 100);
+
+        return [
+            'profile' => $profile,
+            'match_percentage' => $matchPercentage,
+            'wins_in_priority' => $profileWins,
+            'total_priority_categories' => $totalPriorityCategories,
+            'message' => $profileInfo['message'] ?? '',
+        ];
+    }
+
+    private function generateTradeOffMessage($phones, $categoryWinners, $verdictConfig)
+    {
+        $phoneWins = [];
+
+        foreach ($categoryWinners as $category => $data) {
+            $phoneWins[$data['winner']][] = $verdictConfig[$category]['label'] ?? ucfirst($category);
+        }
+
+        $phonesArray = array_keys($phoneWins);
+
+        if (count($phonesArray) < 2) {
+            return $verdictConfig['overall']['templates']['too_close'] ?? "Both phones are very close in performance.";
+        }
+
+        $phone1 = $phonesArray[0];
+        $phone2 = $phonesArray[1];
+        $categories1 = $phoneWins[$phone1] ?? [];
+        $categories2 = $phoneWins[$phone2] ?? [];
+
+        if (empty($categories1) || empty($categories2)) {
+            return $verdictConfig['overall']['templates']['too_close'] ?? "Both phones are very close in performance.";
+        }
+
+        $template = $verdictConfig['overall']['templates']['balanced_trade_off'] ??
+            "{phone1} excels at {categories1}, while {phone2} is better for {categories2}";
+
+        return str_replace(
+            ['{phone1}', '{categories1}', '{phone2}', '{categories2}'],
+            [
+                $phone1,
+                $this->formatList(array_slice($categories1, 0, 3)),
+                $phone2,
+                $this->formatList(array_slice($categories2, 0, 3))
+            ],
+            $template
+        );
+    }
+
+    private function determineWinner($phones)
+    {
+        // Use the SAME logic as overall_recommendation
+        $phoneScores = $phones->mapWithKeys(function ($phone) {
+            return [$phone->name => $this->calculateTotalScore($phone->scores)];
+        })->toArray();
+
+        arsort($phoneScores);
+        return array_key_first($phoneScores);
+    }
+
+    private function calculateTotalScore($categoryScores)
+    {
+        $verdictConfig = config('compare_scoring.compare_verdict');
+        $totalWeightedScore = 0;
+        $totalWeight = 0;
+        foreach ($categoryScores as $category => $scoreData) {
+            $categoryWeight = $verdictConfig[$category]['weight'] ?? 1.0;
+            $categoryScore = $scoreData['score'] ?? 0;
+
+            $totalWeightedScore += $categoryScore * $categoryWeight;
+            $totalWeight += $categoryWeight;
+        }
+
+        return $totalWeight > 0 ? round($totalWeightedScore / $totalWeight, 2) : 0;
+    }
+
+    /**
+     * Format data for chart visualization
+     */
+    private function formatChartData($phones)
+    {
+        $categories = ['display', 'performance', 'camera', 'battery', 'build', 'features'];
+
+        // Radar Chart Data
+        $radarData = [];
+        foreach ($categories as $category) {
+            $dataPoint = ['category' => ucfirst($category)];
+
+            foreach ($phones as $phone) {
+                $dataPoint[$phone->brand->name . ' ' . $phone->name] = $phone->scores[$category]['score'] ?? 0;
+            }
+
+            $radarData[] = $dataPoint;
+        }
+
+        // Bar Chart Data (same structure works for grouped bars)
+        $barData = $radarData;
+
+        // Category Breakdown Data (for detailed comparison)
+        $categoryBreakdown = [];
+        foreach ($categories as $category) {
+            $categoryBreakdown[$category] = [
+                'label' => config("compare_scoring.compare_verdict.{$category}.label"),
+                'phones' => $phones->map(function ($phone) use ($category) {
+                    return [
+                        'name' => $phone->brand->name . ' ' . $phone->name,
+                        'score' => $phone->scores[$category]['score'] ?? 0,
+                        'out_of' => $phone->scores[$category]['out_of'] ?? 100,
+                    ];
+                })->toArray(),
+            ];
+        }
+
+        // Overall Score Comparison
+        $overallScores = $phones->map(function ($phone) {
+            return [
+                'name' => $phone->brand->name . ' ' . $phone->name,
+                'score' => $this->calculateTotalScore($phone->scores),
+                'color' => $phone->primary_color
+            ];
+        })->toArray();
+
+        return [
+            'radar' => $radarData,
+            'bar' => $barData,
+            'category_breakdown' => $categoryBreakdown,
+            'overall_scores' => $overallScores,
+            'phone_colors' => $phones->mapWithKeys(function ($phone) {
+                return [$phone->brand->name . ' ' . $phone->name => $phone->primary_color];
+            })->toArray(),
+        ];
+    }
     public function search(Request $request)
     {
         $term = $request->query('q'); // Get search term from query parameter

@@ -88,22 +88,28 @@ return [
                 'space' => false           // true => add space, false => no space
             ],
             'ranges' => [
-                // Ultra-fast wireless
-                ['min' => 80, 'score' => 10],   // Xiaomi, OPPO
-                ['min' => 67, 'score' => 10],
+                // Extreme / Proprietary Wireless
+                ['min' => 80, 'score' => 10],   // Xiaomi, OPPO (proprietary)
+                ['min' => 60, 'score' => 9],
+
+                // Very Fast Wireless
                 ['min' => 50, 'score' => 9],    // Xiaomi, OnePlus
+                ['min' => 40, 'score' => 8],    // OPPO, Vivo
 
-                // Fast wireless
-                ['min' => 30, 'score' => 8],    // Samsung, OPPO
-                ['min' => 27, 'score' => 8],
-                ['min' => 25, 'score' => 7],
+                // Fast Wireless (Flagships)
+                ['min' => 30, 'score' => 8],    // Samsung Ultra
+                ['min' => 25, 'score' => 8],    // iPhone 15 series (MagSafe), Pixel Stand 2
 
-                // Standard wireless
-                ['min' => 15, 'score' => 6],    // iPhone, Samsung
-                ['min' => 10, 'score' => 5],
-                ['min' => 7.5, 'score' => 4],   // iPhone (Qi)
-                ['min' => 5, 'score' => 3],     // Basic Qi
+                // Standard Wireless
+                ['min' => 20, 'score' => 7],
+                ['min' => 15, 'score' => 6],    // iPhone (older MagSafe), Samsung
+
+                // Basic Qi
+                ['min' => 10, 'score' => 5],    // Qi phones
+                ['min' => 7.5, 'score' => 4],   // Older iPhones (Qi)
+                ['min' => 5, 'score' => 3],     // Entry-level Qi
             ],
+
             'default' => 2,  // No wireless charging
             'none_value' => 0, // Explicitly no wireless charging
         ],

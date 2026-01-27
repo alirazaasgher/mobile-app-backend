@@ -14,21 +14,76 @@ return [
             ],
             'spec_weights' => [
                 'performance' => [
-                    'cpu' => 1.3,  // Daily tasks & OS snappiness
-                    'geekbench_multi_score' => 1.25, // Multi-core efficiency (2023 standard)
-                    'thermal_management' => 1.2,  // Sustained speed / throttling
-                    'ram_capacity' => 1.15, // Multi-tasking headroom
-                    'antutu_score' => 1.1,  // Overall platform score
-                    'chipset' => 1.1,  // Architecture quality
-                    'gpu' => 1.1,  // ⬆ Small bump: Ray tracing & high-refresh UI
-                    'storage_type' => 1.05, // UFS 4.0 vs 3.1
-                    'cooling_system' => 1.0,  // Physical hardware
-                    'ram_type' => 1.0,  // LPDDR5X vs LPDDR5
-                    'storage_capacity' => 0.8,  // ⬇ Small drop: Space != Speed
-                    'instant_touch_rate' => 0.8,
+                    'chipset' => 1.3, // Baseline architecture
+                    'gpu' => 1.2, // Boosted: Crucial for high-refresh 2023 gaming
+                    'cpu' => 1.1,
+                    'antutu_score' => 1.2,
+                    'geekbench_multi_score' => 1.0,
+                    'ram_capacity' => 1.0,
+                    'ram_type' => 1.1, // Increased: Differentiates LPDDR5X vs LPDDR5
+                    'storage_capacity' => 0.9, // Dropped slightly: Capacity doesn't equal speed
+                    'storage_type' => 1.2, // Increased: UFS 4.0 vs 3.1 is a massive 2023 jump
+                    'cooling_system' => 1.2, // Kept high: Hardware (VC area, etc.)
+                    'thermal_management' => 1.0, // Increased: Logic/Software throttling control
+                ],
+                'display' => [
+                    'brightness_peak' => 1.3, // ✅ Perfect
+                    'refresh_rate' => 1.2, // ✅
+                    'size' => 1.2, // ↑ Could argue 1.2 - size drove purchase decisions
+                    'display_technology' => 1.1, // ✅
+                    'hdr_support' => 1.0, // ↓ To 1.0 - still not mainstream in content
+                    'pixel_density' => 1.0, // ✅
+                    'type' => 1.0, // ✅
+                    'pwm_flicker' => 0.8, // ↓ To 0.8 - truly niche concern in 2023
+                    'color_accuracy' => 0.8, // ↓ To 0.8 - reviewers cared, users didn't
+                    'touch_sampling' => 0.7, // ↓ To 0.7 - only gaming phones emphasized this
+                ],
+                'camera' => [
+                    'low_light_performance' => 1.4, // ✅ Perfect leader
+                    'main_sensor_size' => 1.4, // ✅ Co-leader
+                    'computational_photography' => 1.3, // ✅ Critical addition
+                    'optical_zoom' => 1.2, // ✅ Right level
+                    'stabilization' => 1.2, // ✅
+                    'color_science' => 1.1, // ✅ Important differentiator
+                    'portrait_mode' => 1.1, // ✅
+                    'ultrawide_quality' => 1.0, // ✅
+                    'telephoto_quality' => 1.0, // ✅
+                    'ai_processing' => 1.0, // ✅
+                    'video_stabilization' => 0.9, // ✅
+                    'video_resolution' => 0.9, // ✅
+                    'main_camera_mp' => 0.8, // ✅
+                    'front_camera_mp' => 0.7, // ✅
+                    'macro_camera' => 0.5, // ✅
+                    'depth_sensor' => 0.4, // ✅
+                ],
+                'battery' => [
+                    'screen_on_time' => 1.6, // 🥇 ACTUAL LEADER: Every review's #1 metric
+                    'battery_life_hours' => 1.5, // ✅ Perfect - but SOT is the measured version
+                    'charging_curve' => 1.4, // 🥈 CRITICAL: 0-50% speed > 0-100% speed
+                    'fast_charging_w' => 1.3, // ✅ Marketing wars (65W vs 100W vs 150W)
+                    'standby_drain' => 1.2, // ⚡️ Always-on displays & 5G killed idle battery
+                    'capacity_mah' => 1.1, // ✅ Important but not definitive
+                    'battery_health' => 1.0, // 🔋 New awareness: 80% limit, degradation
+                    'wireless_charging' => 0.9, // ✅ Expected in flagships
+                    'charging_tech' => 0.8, // 🔌 GaN chargers, PD 3.1, PPS
+                    'thermal_charging' => 0.7, // 🌡️ Fast charging without overheating
+                    'reverse_charging' => 0.5, // ✅ Niche feature
+                    'adapter_included' => 0.4, // 📦 Apple removal made this a consideration
+                ],
+                'build' => [
+                    'water_resistance' => 1.4, // 🥇 "Can it survive rain or accidental drops in water?"
+                    'scratch_resistance' => 1.3, // "Do I need a screen protector?"
+                    'premium_feel' => 1.3, // "Does it feel cheap or expensive in hand?"
+                    'drop_durability' => 1.2, // "Will the screen crack if I drop it?"
+                    'comfortable_weight' => 1.1, // "Not too heavy for daily use"
+                    'good_looking_design' => 1.0, // "Looks nice and modern"
+                    'color_options' => 0.9, // "Comes in colors I like"
+                    'fingerprint_resistance' => 0.8, // "Doesn't show smudges easily"
+                    'button_quality' => 0.7, // "Buttons feel solid, not loose"
+                    'thin_borders' => 0.6, // "Looks more futuristic"
+                ],
 
-                ]
-            ]
+            ],
         ],
         '2025' => [
             'weights' => [
@@ -39,6 +94,82 @@ return [
                 'software' => 10,
                 'build' => 8,
                 'features' => 8,
+            ],
+            'spec_weights' => [
+                'display' => [
+                    'refresh_rate' => 1.3, // ↑ Could argue 1.3 - LTPO 3.0 will be THE battery saver
+                    'pwm_flicker' => 1.2, // ✅ Perfect
+                    'brightness_peak' => 1.1, // ↓ To 1.1 - dimming range matters more than peak
+                    'adaptive_brightness_ai' => 1.1, // NEW: AI-driven auto-brightness that actually works
+                    'display_technology' => 1.1, // ✅
+                    'color_accuracy' => 1.0, // ✅
+                    'hdr_support' => 1.0, // ✅
+                    'size' => 1.0, // ✅
+                    'pixel_density' => 1.0, // ✅
+                    'ultra_dark_mode' => 1.0, // ↑ To 1.0 - critical for always-on AI assistants
+                    'type' => 0.9, // ↓ OLED so universal it matters less
+                    'touch_sampling' => 0.8, // ↓ Further - truly niche
+                    'screen_protection' => 0.8, // NEW: Ceramic Shield vs Gorilla Glass Victus 3
+                ],
+                'performance' => [
+                    'chipset' => 1.3, // ✅ Perfect
+                    'npu_ai_performance' => 1.3, // ↑ Could argue for top billing
+                    'gpu' => 1.1, // ↓ Slightly if AI dominates
+                    'ai_feature_latency' => 1.1, // NEW: User experience metric
+                    'thermal_management' => 1.1, // ✅
+                    'storage_type' => 1.1, // ✅
+                    'ram_type' => 1.1, // ✅
+                    'antutu_score' => 1.0, // ↓ Further to 1.0
+                    'cpu' => 1.0,
+                    'cooling_system' => 1.0,
+                    'ram_capacity' => 1.0,
+                    'geekbench_multi_score' => 0.8, // ↓ Benchmarks less relevant
+                    'storage_capacity' => 0.8,
+                ],
+                'camera' => [
+                    'ai_processing' => 1.5, // ↑ Could be #1 - AI will define camera quality
+                    'low_light_performance' => 1.4, // ✅ Still critical
+                    'computational_zoom' => 1.3, // NEW: AI-powered 2x-10x zoom quality
+                    'main_sensor_size' => 1.2, // ↓ Further to 1.2 - AI reduces hardware dependency
+                    'optical_zoom' => 1.2, // ✅
+                    'video_ai_features' => 1.2, // NEW: AI Cinematic mode, object tracking
+                    'stabilization' => 1.1, // ✅
+                    'video_resolution' => 1.1, // ✅
+                    'telephoto_quality' => 1.0, // CHANGED: More than MP
+                    'portrait_ai' => 1.0, // NEW: AI-generated studio lighting
+                    'ultrawide_quality' => 0.9, // CHANGED: More than MP
+                    'main_camera_mp' => 0.8, // ↓ Further to 0.8
+                    'front_camera_ai' => 0.8, // NEW: Vlogger AI features
+                    'front_camera_mp' => 0.7, // ↓ MP less important than AI
+                    'macro_camera' => 0.4, // ↓ Further - computational macro from ultrawide
+                    'multi_frame_hdr' => 0.8, // NEW: Standardized but less differentiating
+                ],
+                'battery' => [
+                    'ai_power_management' => 1.5, // 🥇 LEADER: AI predicts usage, optimizes everything
+                    'battery_life_hours' => 1.4, // ✅ Still critical but AI-enhanced
+                    'thermal_efficiency' => 1.3, // 🔥 Heat management for battery health
+                    'fast_charging_curve' => 1.2, // ⚡️ 0-80% in 15min is the new race
+                    'battery_health_tech' => 1.2, // ⬆ Guaranteed 5-year health is a selling point
+                    'capacity_mah' => 1.1, // ⬇ New battery tech makes mAh less relevant
+                    'wireless_charging' => 1.0, // ✅ Qi2 standard
+                    'sustainable_charging' => 0.9, // 🌱 Charges when grid is greenest
+                    'fast_charging_w' => 0.9, // ⬇ Diminishing returns indeed
+                    'reverse_wireless' => 0.7, // NEW: Qi2 reverse charging for accessories
+                    'battery_swappability' => 0.6, // NEW: Some brands revive removable batteries
+                    'reverse_charging' => 0.5, // ⬇ Niche
+                ],
+                'build' => [
+                    'scratch_resistance' => 1.4, // 🥇 "Can I go without a screen protector?"
+                    'water_proofing' => 1.3, // "Can it survive rain or toilet drops?"
+                    'premium_look_feel' => 1.2, // "Does it look/feel expensive?"
+                    'drop_protection' => 1.2, // "Will it crack if I drop it?"
+                    'comfortable_weight' => 1.1, // "Not too heavy for pockets/hands"
+                    'repair_availability' => 1.0, // NEW: "Can I get it fixed easily/cheaply?"
+                    'heat_management' => 1.0, // "Does it get hot when charging?"
+                    'button_feel' => 0.9, // "Are buttons satisfying to press?"
+                    'color_options' => 0.8, // "Does it come in nice colors?"
+                    'slim_design' => 0.8, // "Looks sleek in my pocket"
+                ],
             ],
         ],
         '2026' => [
@@ -51,67 +182,147 @@ return [
                 'build' => 8,
                 'features' => 8,
             ],
-        ],
-        'display' => [
-            'specs' => [
+            'spec_weights' => [
+                'display' => [
+                    'pwm_flicker' => 1.4, // ↑ Could be even higher - class action lawsuits may emerge
+                    'display_technology' => 1.3, // ↑ Tandem OLED vs Micro-LED will be the premium divide
+                    'adaptive_intelligence' => 1.2, // NEW: AI that adjusts everything (refresh, color, brightness) based on content/context
+                    'refresh_rate' => 1.1, // ↓ Slightly - LTPO 4.0 makes this table stakes
+                    'power_efficiency' => 1.1, // NEW: nits-per-watt becomes key metric
+                    'color_accuracy' => 1.1, // ✅
+                    'ultra_dark_mode' => 1.1, // ✅
+                    'brightness_peak' => 1.0, // ↓ To 1.0 - truly diminishing returns
+                    'hdr_support' => 1.0, // ✅
+                    'touch_sampling' => 1.0, // ✅
+                    'size' => 0.9, // ↓ As foldables vary sizes dynamically
+                    'pixel_density' => 0.8, // ↓ 600+ PPI offers zero visible improvement
+                    'always_on_display_ai' => 0.8, // NEW: Contextual AOD with LLM-summarized info
+                ],
+                'performance' => [
+                    'npu_ai_performance' => 1.4, // ✅ Perfect leader
+                    'ai_efficiency_score' => 1.3, // NEW: TOPS/W matters for battery
+                    'chipset' => 1.2, // ↓ Slightly - NPU might dominate chip discourse
+                    'thermal_management' => 1.3, // ↑ This could be #2 constraint
+                    'gpu' => 1.1, // ↓ Slightly - AI will overshadow gaming
+                    'storage_type' => 1.2, // ✅
+                    'ram_bandwidth' => 1.1, // NEW: More than just type/capacity
+                    'ram_type' => 1.0, // ↓ Standardized by 2026
+                    'antutu_score' => 0.9, // ↓ Further
+                    'ram_capacity' => 1.0, // ✅
+                    'cpu' => 0.9, // ✅
+                    'cooling_system' => 0.9, // ✅
+                    'geekbench_multi_score' => 0.7, // ↓ Further
+                    'storage_capacity' => 0.8, // ✅
+                ],
+                'camera' => [
+                    'ai_creative_assistant' => 1.6, // ↑ Beyond processing to "co-creator"
+                    'video_workflow_specs' => 1.4, // ↑ Pro video could be the #2 differentiator
+                    'low_light_performance' => 1.2, // ↓ AI solves this nearly perfectly
+                    'optical_zoom' => 1.2, // ✅
+                    'stabilization' => 1.2, // ✅
+                    'computational_bokeh' => 1.2, // NEW: AI-generated lens blur (different focal lengths)
+                    'ar_camera_features' => 1.1, // NEW: Real-time 3D scanning, AR composition
+                    'main_sensor_size' => 1.0, // ↓ Further to 1.0
+                    'front_camera_ai' => 1.0, // NEW: More than MP - AR expression tracking
+                    'camera_ui_ai' => 1.0, // NEW: Predictive shooting suggestions
+                    'telephoto_quality' => 0.9, // CHANGED: AI zoom reduces need
+                    'main_camera_mp' => 0.7, // ↓ Further - irrelevant
+                    'ultrawide_quality' => 0.7, // ↓
+                    'thermal_management' => 0.8, // NEW: 8K 60fps requires cooling
+                    'macro_camera' => 0.3, // ↓ Effectively dead
+                    'lens_coatings' => 0.7, // NEW: Anti-reflective, hydrophobic
+                ],
+                'battery' => [
+                    'ai_lifetime_optimization' => 1.6, // 🥇 NEW LEADER: AI that extends usable life to 7+ years
+                    'battery_health_guarantee' => 1.5, // ⚡️ Guaranteed 90% capacity after 5 years
+                    'solid_state_performance' => 1.4, // 🆕 Solid-state batteries become mainstream
+                    'thermal_self_regulation' => 1.3, // ❄️ Batteries that actively cool/heater themselves
+                    'wireless_charging' => 1.2, // ⬆ Becomes PRIMARY method (desk, car, furniture)
+                    'fast_charging_efficiency' => 1.1, // ⚡️ Watts matter less than heat generation
+                    'capacity_mah' => 1.0, // ⬇ Truly irrelevant with new energy densities
+                    'sustainable_manufacturing' => 0.9, // 🌍 Carbon-negative battery production
+                    'modular_replacement' => 0.8, // 🔧 User-replaceable returns via regulation
+                    'ambient_charging' => 0.7, // 🔋 Solar, RF, or kinetic trickle charging
+                    'grid_integration' => 0.6, // 🏠 Phones as home battery backups
+                ],
+                'build' => [
+                    'scratch_resistance' => 1.4, // 🥇 "Does it need a screen protector?"
+                    'drop_survival' => 1.4, // 🥇 "Will it survive if I drop it?"
+                    'water_resistance' => 1.3, // "Can I use it in the rain/bathroom?"
+                    'premium_feel' => 1.2, // "Does it feel cheap or expensive?"
+                    'weight_comfort' => 1.1, // "Is it too heavy in my pocket?"
+                    'repair_cost' => 1.1, // ⬆ "How much to fix the screen?"
+                    'color_durability' => 1.0, // "Will the color rub off?"
+                    'button_quality' => 1.0, // "Are the buttons clicky or mushy?"
+                    'heat_in_hand' => 0.9, // "Does it get hot when charging/gaming?"
+                    'case_compatibility' => 0.8, // "Will it work with my favorite case?"
+                ],
+
+
+
+
+
 
             ],
         ],
-        'performance' => [
-            'specs' => [
-                'chipset' => 1.0,
-                'gpu' => 1.0,
-                'cpu' => 1.0,
-                'ram_capacity' => 1.0,
-                'ram_type' => 1.0,
-                'storage_capacity' => 1.0,
-                'storage_type' => 1.0,
-                'cooling_system' => 1.0,
-            ],
-        ],
-        'camera' => [
-            'specs' => [
-                'main_camera_mp' => 1.0,
-                'main_sensor_size' => 1.0,
-                'ultrawide_mp' => 1.0,
-                'telephoto_mp' => 1.0,
-                'optical_zoom' => 1.0,
-                'video_resolution' => 1.0,
-                'stabilization' => 1.0,
-                'front_camera_mp' => 1.0,
-                'low_light_performance' => 1.0,
-            ],
-        ],
-        'battery' => [
-            'specs' => [
-                'capacity_mah' => 1.0,
-                'fast_charging_w' => 1.0,
-                'wireless_charging' => 1.0,
-                'reverse_charging' => 1.0,
-                'battery_life_hours' => 1.0,
-            ],
-        ],
-        'build' => [
-            'specs' => [
-                'weight_g' => 1.0,
-                'thickness_mm' => 1.0,
-                'ip_rating' => 1.0,
-                'build_material' => 1.0,
-            ],
-        ],
-        'features' => [
-            'specs' => [
-                'stereo_speakers' => 1.0,
-                'audio_quality' => 1.0,
-                '3.5mm_jack' => 1.0,
-                'wifi_version' => 1.0,
-                'bluetooth_version' => 1.0,
-                'nfc' => 1.0,
-                'fingerprint_sensor' => 1.0,
-                'face_unlock' => 1.0,
-            ],
-        ],
+        // ... 2025, 2026
     ],
+
+    // 'balanced' => [
+    //     'build' => [
+    //         'weight' => 0.9,
+    //         'specs' => [
+    //             'weight_g' => 1.1,          // Lighter better
+    //             'thickness_mm' => 1.0,
+    //             'ip_rating' => 1.3,         // IP68+ standard
+    //             'build_material' => 1.2,
+    //             'durability_cert' => 1.0,   // Gorilla Glass Victus+
+    //         ],
+    //     ],
+    //     'features' => [
+    //         'weight' => 0.9,
+    //         'specs' => [
+    //             'stereo_speakers' => 1.1,
+    //             'audio_quality' => 1.0,
+    //             'haptics' => 1.1,           // Added
+    //             'wifi_version' => 1.0,      // WiFi 7
+    //             'bluetooth_version' => 0.8,
+    //             'nfc' => 0.9,
+    //             'fingerprint_sensor' => 1.0,
+    //             'face_unlock' => 0.9,
+    //             'uWB_support' => 0.7,       // Ultra-wideband
+    //             'ir_blaster' => 0.4,
+    //         ],
+    //     ],
+    //     'software' => [
+    //         'weight' => 1.1,
+    //         'specs' => [
+    //             'os_version' => 1.2,
+    //             'update_policy_years' => 1.5,
+    //             'security_updates' => 1.3,
+    //             'ui_optimization' => 1.1,
+    //             'bloatware' => 1.2,         // Lower is better
+    //             'ai_features' => 1.0,
+    //         ],
+    //     ],
+    //     'value' => [
+    //         'weight' => 1.4,                // Most important for balanced profile
+    //         'specs' => [
+    //             'launch_price' => 1.2,
+    //             'current_price' => 1.5,
+    //             'price_to_score_ratio' => 2.0,
+    //             'resale_value' => 1.3,
+    //         ],
+    //     ],
+    //     'connectivity' => [                 // Added missing category
+    //         'weight' => 0.8,
+    //         'specs' => [
+    //             '5g_bands' => 1.2,
+    //             '6g_ready' => 0.9,
+    //             'modem_quality' => 1.1,
+    //         ],
+    //     ],
+    // ],
 
     'gaming' => [
         'display' => [
