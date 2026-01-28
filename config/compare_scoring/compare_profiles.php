@@ -14,7 +14,9 @@ return [
         "display" => require __DIR__ . '/display.php',
         "camera" => require __DIR__ . '/camera.php',
         "battery" => require __DIR__ . '/battery.php',
-        "performance" => require __DIR__ . '/performance.php'
+        "performance" => require __DIR__ . '/performance.php',
+        "build" => require __DIR__ . '/build.php',
+        "features" => require __DIR__ . '/features.php'
     ],
 
     'gaming' => [

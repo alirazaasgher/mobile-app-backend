@@ -611,7 +611,7 @@ class PhoneApiController extends Controller
             'profile' => 'nullable|string|in:balanced,gaming,camera,battery,budget_conscious,media_consumer,business_professional',
         ]);
         $slugs = $validated['slugs'];
-        $profile = $validated['profile'] ?? 'balanced'; 
+        $profile = $validated['profile'] ?? 'balanced';
         $phones = Phone::select('id', 'name', 'brand_id', 'slug', 'release_date', 'primary_image', 'primary_color', 'updated_at', 'is_popular', 'status')
             ->with('specifications') // Load specifications relationship
             ->whereIn('slug', $slugs)
@@ -660,19 +660,19 @@ class PhoneApiController extends Controller
 
         $verdict = $this->generateVerdict($scoredPhones, $profile);
 
-        $chartData = $this->formatChartData($scoredPhones);
+        $chartData = $this->formatChartData($scoredPhones, $profile);
         return response()->json([
             'success' => true,
             'profile' => $profile,
             'data' => $scoredPhones->map(fn($phone) => new PhoneResource($phone, true)),
             'comparison' => [
-                'scores' => $scoredPhones->map(function ($phone) {
+                'scores' => $scoredPhones->map(function ($phone) use ($profile) {
                     return [
                         'phone_id' => $phone->id,
                         'phone_name' => $phone->name,
                         'primary_color' => $phone->primary_color,
                         'category_scores' => $phone->scores,
-                        'total_score' => $this->calculateTotalScore($phone->scores ?? []),
+                        'total_score' => $this->calculateTotalScore($phone->scores ?? [], $profile),
                     ];
                 }),
                 'verdict' => $verdict,
@@ -709,7 +709,10 @@ class PhoneApiController extends Controller
     {
         $s = $specs->keyBy('category')
             ->map(fn($spec) => json_decode($spec->specifications, true) ?: []);
-            
+        // $res = extractBrightness($s['display']['brightness'] ?? "", "typical");
+        // echo "<pre>";
+        // print_r($res);
+        // exit;
         $benchmark = getBenchmark($s['performance']['benchmark'] ?? '');
         $buildMaterials = buildMaterials($s['build']['build'] ?? '');
         $mobileDimensions = getMobileDimensions($s['build']['dimensions'] ?? []);
@@ -736,26 +739,6 @@ class PhoneApiController extends Controller
             $reverceCharging = $s['battery']['reverse'] ?? '';
             $screenGlassType = extractScreenGlassType($s['display']['protection'] ?? null);
             $formatGlassProtection = formatGlassProtection($screenGlassType ?? []);
-            $res = [
-                'display' => $scorer->scoreCategory('display', [
-                    'size' => extractSize($s['display']['size'] ?? null),
-                    'type' => getShortDisplay($s['display']['type'] ?? null),
-                    'resolution' => shortResolution($s['display']['resolution'] ?? null),
-                    'refresh_rate' => extractNumber($s['display']['refresh_rate'] ?? null),
-                    'screen_ratio' => (float) str_replace('%', '', $s['display']['screen_to_body_ratio'] ?? "N/A"),
-                    'aspect_ratio' => $s['display']['aspect_ratio'] ?? null,
-                    'hdr_support' => getHdrSupport($s['display']['features'] ?? ""),
-                    "pixel_density" => extractPpi($s['display']['resolution'] ?? null),
-                    'brightness_(peak)' => extractBrightness($s['display']['brightness'] ?? "", "peak"),
-                    'brightness_(typical)' => extractBrightness($s['display']['brightness'] ?? "", "typical"),
-                    'glass_protection' => $formatGlassProtection,
-                    'touch_sampling_rate' => preg_replace('/\D+/', '', $s['display']['touch_sampling_rate'] ?? null),
-                    'has_branded_glass' => $screenGlassType['has_branded_glass'] ?? null,
-                ], $profile),
-            ];
-            echo "<pre>";
-            print_r($res);
-            exit;
             return [
                 'display' => $scorer->scoreCategory('display', [
                     'size' => extractSize($s['display']['size'] ?? null),
@@ -766,8 +749,8 @@ class PhoneApiController extends Controller
                     'aspect_ratio' => $s['display']['aspect_ratio'] ?? null,
                     'hdr_support' => getHdrSupport($s['display']['features'] ?? ""),
                     "pixel_density" => extractPpi($s['display']['resolution'] ?? null),
-                    'brightness_(peak)' => extractBrightness($s['display']['brightness'] ?? "", "peak"),
-                    'brightness_(typical)' => extractBrightness($s['display']['brightness'] ?? "", "typical"),
+                    'brightness_peak' => extractBrightness($s['display']['brightness'] ?? "", "peak"),
+                    'brightness_typical' => extractBrightness($s['display']['brightness'] ?? "", "typical"),
                     'glass_protection' => $formatGlassProtection,
                     'touch_sampling_rate' => preg_replace('/\D+/', '', $s['display']['touch_sampling_rate'] ?? null),
                     'has_branded_glass' => $screenGlassType['has_branded_glass'] ?? null,
@@ -843,33 +826,33 @@ class PhoneApiController extends Controller
                     ],
                     $profile
                 ),
-                'software' => $scorer->scoreCategory(
-                    'software',
-                    [
-                        'os' => mobileVersion($s['performance']['os'] ?? null),
-                        'update_policy' => $s['performance']['update_policy'] ?? null, // e.g., "3 years security updates"
-                        'extra_features' => $s['software']['features'] ?? null, // e.g., gestures, multitasking, AI features
-                    ],
-                    $profile
-                ),
-                'value' => $scorer->scoreCategory(
-                    'value',
-                    [
-                        'price' => $s['pricing']['price'] ?? null,
-                        'spec_score_sum' => array_sum([
-                            $s['performance']['chipset_score'] ?? 0,
-                            $s['camera']['score'] ?? 0,
-                            $s['battery']['score'] ?? 0,
-                            $s['display']['score'] ?? 0,
-                            $s['build']['score'] ?? 0,
-                            $s['features']['score'] ?? 0,
-                        ]),
-                        'price_performance_ratio' => isset($s['pricing']['price']) && isset($s['performance']['chipset_score'])
-                            ? $s['performance']['chipset_score'] / $s['pricing']['price']
-                            : null,
-                    ],
-                    $profile
-                ),
+                // 'software' => $scorer->scoreCategory(
+                //     'software',
+                //     [
+                //         'os' => mobileVersion($s['performance']['os'] ?? null),
+                //         'update_policy' => $s['performance']['update_policy'] ?? null, // e.g., "3 years security updates"
+                //         'extra_features' => $s['software']['features'] ?? null, // e.g., gestures, multitasking, AI features
+                //     ],
+                //     $profile
+                // ),
+                // 'value' => $scorer->scoreCategory(
+                //     'value',
+                //     [
+                //         'price' => $s['pricing']['price'] ?? null,
+                //         'spec_score_sum' => array_sum([
+                //             $s['performance']['chipset_score'] ?? 0,
+                //             $s['camera']['score'] ?? 0,
+                //             $s['battery']['score'] ?? 0,
+                //             $s['display']['score'] ?? 0,
+                //             $s['build']['score'] ?? 0,
+                //             $s['features']['score'] ?? 0,
+                //         ]),
+                //         'price_performance_ratio' => isset($s['pricing']['price']) && isset($s['performance']['chipset_score'])
+                //             ? $s['performance']['chipset_score'] / $s['pricing']['price']
+                //             : null,
+                //     ],
+                //     $profile
+                // ),
             ];
         } catch (\Exception $e) {
             \Log::error("Error in getCompareSpecsAttribute for phone: " . $e->getMessage());
@@ -1009,7 +992,7 @@ class PhoneApiController extends Controller
                 'weighted_score' => $weightedWins,
                 'total_wins' => $totalWins,
                 'win_types' => $winTypes,
-                'total_score' => $this->calculateTotalScore($phone->scores),
+                'total_score' => $this->calculateTotalScore($phone->scores, $profile),
                 'phone_object' => $phone,
             ];
         }
@@ -1443,37 +1426,45 @@ class PhoneApiController extends Controller
         );
     }
 
-    private function determineWinner($phones)
+    private function determineWinner($phones, $profile)
     {
-        // Use the SAME logic as overall_recommendation
-        $phoneScores = $phones->mapWithKeys(function ($phone) {
-            return [$phone->name => $this->calculateTotalScore($phone->scores)];
+        $phoneScores = $phones->mapWithKeys(function ($phone) use ($profile) {
+            return [$phone->name => $this->calculateTotalScore($phone->scores, $profile)];
         })->toArray();
 
         arsort($phoneScores);
         return array_key_first($phoneScores);
     }
 
-    private function calculateTotalScore($categoryScores)
+    private function calculateTotalScore($categoryScores, $profile)
     {
-        $verdictConfig = config('compare_scoring.compare_verdict');
+        $profileConfig = config("compare_scoring.compare_profiles.$profile", []);
+        $categoryWeights = $profileConfig['weights'] ?? [];
+
         $totalWeightedScore = 0;
         $totalWeight = 0;
-        foreach ($categoryScores as $category => $scoreData) {
-            $categoryWeight = $verdictConfig[$category]['weight'] ?? 1.0;
-            $categoryScore = $scoreData['score'] ?? 0;
 
-            $totalWeightedScore += $categoryScore * $categoryWeight;
+        foreach ($categoryScores as $category => $scoreData) {
+            $categoryWeight = $categoryWeights[$category] ?? 0;
+            $categoryScore = $scoreData['score'] ?? 0; // 0-100
+            if ($categoryScore <= 0) {
+                continue;
+            }
+            $weightedScore = ($categoryScore / 100) * $categoryWeight;
+            // Category score is 0-100, so divide by 100 then multiply by weight
+            $totalWeightedScore += $weightedScore;
             $totalWeight += $categoryWeight;
         }
-
-        return $totalWeight > 0 ? round($totalWeightedScore / $totalWeight, 2) : 0;
+        // Convert back to 0-100 scale
+        return $totalWeight > 0
+            ? round(($totalWeightedScore / $totalWeight) * 100, 2)
+            : 0;
     }
 
     /**
      * Format data for chart visualization
      */
-    private function formatChartData($phones)
+    private function formatChartData($phones, $profile)
     {
         $categories = ['display', 'performance', 'camera', 'battery', 'build', 'features'];
 
@@ -1508,10 +1499,10 @@ class PhoneApiController extends Controller
         }
 
         // Overall Score Comparison
-        $overallScores = $phones->map(function ($phone) {
+        $overallScores = $phones->map(function ($phone) use ($profile) {
             return [
                 'name' => $phone->brand->name . ' ' . $phone->name,
-                'score' => $this->calculateTotalScore($phone->scores),
+                'score' => $this->calculateTotalScore($phone->scores, $profile),
                 'color' => $phone->primary_color
             ];
         })->toArray();
