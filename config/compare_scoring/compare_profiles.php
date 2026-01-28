@@ -2,115 +2,19 @@
 return [
 
     'balanced' => [
-        '2023' => [
-            'weights' => [
-                'performance' => 20,
-                'display' => 18,
-                'camera' => 18,
-                'battery' => 18,
-                'software' => 8,
-                'build' => 10,
-                'features' => 8,
-            ],
-            'spec_weights' => [
-                'performance' => [
-                    'cpu' => 1.3,  // Daily tasks & OS snappiness
-                    'geekbench_multi_score' => 1.25, // Multi-core efficiency (2023 standard)
-                    'thermal_management' => 1.2,  // Sustained speed / throttling
-                    'ram_capacity' => 1.15, // Multi-tasking headroom
-                    'antutu_score' => 1.1,  // Overall platform score
-                    'chipset' => 1.1,  // Architecture quality
-                    'gpu' => 1.1,  // ⬆ Small bump: Ray tracing & high-refresh UI
-                    'storage_type' => 1.05, // UFS 4.0 vs 3.1
-                    'cooling_system' => 1.0,  // Physical hardware
-                    'ram_type' => 1.0,  // LPDDR5X vs LPDDR5
-                    'storage_capacity' => 0.8,  // ⬇ Small drop: Space != Speed
-                    'instant_touch_rate' => 0.8,
-
-                ]
-            ]
+        'weights' => [
+            'performance' => 20,
+            'display' => 19,
+            'camera' => 19,
+            'battery' => 16,
+            'software' => 10,
+            'build' => 8,
+            'features' => 8,
         ],
-        '2025' => [
-            'weights' => [
-                'performance' => 20,
-                'display' => 19,
-                'camera' => 19,
-                'battery' => 16,
-                'software' => 10,
-                'build' => 8,
-                'features' => 8,
-            ],
-        ],
-        '2026' => [
-            'weights' => [
-                'performance' => 20,
-                'display' => 19,
-                'camera' => 19,
-                'battery' => 16,
-                'software' => 10,
-                'build' => 8,
-                'features' => 8,
-            ],
-        ],
-        'display' => [
-            'specs' => [
-
-            ],
-        ],
-        'performance' => [
-            'specs' => [
-                'chipset' => 1.0,
-                'gpu' => 1.0,
-                'cpu' => 1.0,
-                'ram_capacity' => 1.0,
-                'ram_type' => 1.0,
-                'storage_capacity' => 1.0,
-                'storage_type' => 1.0,
-                'cooling_system' => 1.0,
-            ],
-        ],
-        'camera' => [
-            'specs' => [
-                'main_camera_mp' => 1.0,
-                'main_sensor_size' => 1.0,
-                'ultrawide_mp' => 1.0,
-                'telephoto_mp' => 1.0,
-                'optical_zoom' => 1.0,
-                'video_resolution' => 1.0,
-                'stabilization' => 1.0,
-                'front_camera_mp' => 1.0,
-                'low_light_performance' => 1.0,
-            ],
-        ],
-        'battery' => [
-            'specs' => [
-                'capacity_mah' => 1.0,
-                'fast_charging_w' => 1.0,
-                'wireless_charging' => 1.0,
-                'reverse_charging' => 1.0,
-                'battery_life_hours' => 1.0,
-            ],
-        ],
-        'build' => [
-            'specs' => [
-                'weight_g' => 1.0,
-                'thickness_mm' => 1.0,
-                'ip_rating' => 1.0,
-                'build_material' => 1.0,
-            ],
-        ],
-        'features' => [
-            'specs' => [
-                'stereo_speakers' => 1.0,
-                'audio_quality' => 1.0,
-                '3.5mm_jack' => 1.0,
-                'wifi_version' => 1.0,
-                'bluetooth_version' => 1.0,
-                'nfc' => 1.0,
-                'fingerprint_sensor' => 1.0,
-                'face_unlock' => 1.0,
-            ],
-        ],
+        "display" => require __DIR__ . '/display.php',
+        "camera" => require __DIR__ . '/camera.php',
+        "battery" => require __DIR__ . '/battery.php',
+        "performance" => require __DIR__ . '/performance.php'
     ],
 
     'gaming' => [

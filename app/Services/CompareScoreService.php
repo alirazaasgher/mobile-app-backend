@@ -6,11 +6,6 @@ class CompareScoreService
 {
     protected array $config;
 
-    public function __construct()
-    {
-        $this->config = config('compare_scoring');
-    }
-
     /* -------------------------------
        PUBLIC API
     --------------------------------*/
@@ -20,18 +15,13 @@ class CompareScoreService
         array $values,
         string $profile = 'balanced'
     ): array {
-        // Early exit if the category is not defined
-        if (!isset($this->config[$category])) {
-            return ['score' => 0, 'specs' => []];
-        }
-
-
-        $specConfigs = $this->config[$category]['specs'];
-
-        $profileMultipliers = config("compare_scoring.compare_profiles.$profile.$category.specs", []);
+        $profileConfig = config("compare_scoring.compare_profiles.$profile", []);
+        $specConfigs = $profileConfig[$category]['specs'] ?? [];
+        $categoryWeight = $profileConfig['weights'][$category] ?? 0;
         $scoredSpecs = [];
-
+        $categoryScore = 0;
         foreach ($specConfigs as $specKey => $specConfig) {
+
             // Check if the value exists
             if (!array_key_exists($specKey, $values)) {
                 continue;
@@ -44,24 +34,22 @@ class CompareScoreService
                 continue;
             }
 
-            // Format value with unit if applicable
-            $valueWithUnit = $this->formatValueWithUnit($value, $specConfig);
-
-            // Calculate effective weight
-            $baseWeight = $specConfig['weight'];
-            $multiplier = $profileMultipliers[$specKey] ?? 1;
-            $effectiveWeight = round($baseWeight * $multiplier, 2);
+            $specWeight = $specConfig['weight'];
+            $contribution = ($score / 10) * $specWeight;
+            $categoryScore += $contribution;
 
             // Store scored spec
             $scoredSpecs[$specKey] = [
-                'value' => $valueWithUnit,
+                'value' => $this->formatValueWithUnit($value, $specConfig),
                 'score' => $score,
                 'out_of' => 10,
-                'weight' => $effectiveWeight,
-                'base_weight' => $baseWeight,
-                'profile_multiplier' => $multiplier,
+                'base_weight' => $specWeight,
+                'contribution' => round($contribution, 2),
             ];
         }
+
+        $adjustments = $this->applyContextualAdjustments($category, $values, $scoredSpecs, $profile);
+        $categoryScore += $adjustments['total_adjustment'];
 
         // Handle meta specs
         foreach (array_diff_key($values, $specConfigs) as $metaKey => $metaValue) {
@@ -74,9 +62,76 @@ class CompareScoreService
         }
 
         return [
-            'score' => $this->calculateWeightedScore($scoredSpecs),
+            'score' => round($categoryScore, 2),
             'out_of' => 100,
             'specs' => $scoredSpecs,
+            'adjustments' => $adjustments['details'],
+        ];
+    }
+
+    protected function applyContextualAdjustments(string $category, array $values, array $scoredSpecs, string $profile): array
+    {
+        $adjustments = [];
+        $totalAdjustment = 0;
+
+        if ($category === 'display') {
+            // Penalty: High brightness without HDR
+            $brightness = $values['brightness_(peak)'] ?? 0;
+            $hasHDR = ($values['hdr_support'] ?? 'no') !== 'no';
+
+            if ($brightness > 2000 && !$hasHDR) {
+                $penalty = -5; // Deduct 5 points
+                $totalAdjustment += $penalty;
+                $adjustments[] = [
+                    'type' => 'penalty',
+                    'reason' => 'High brightness (>2000 nits) without HDR support',
+                    'value' => $penalty,
+                ];
+            }
+
+            // Bonus: HDR + High brightness combination
+            if ($brightness > 1500 && $hasHDR) {
+                $bonus = 3;
+                $totalAdjustment += $bonus;
+                $adjustments[] = [
+                    'type' => 'bonus',
+                    'reason' => 'Excellent HDR + High brightness combination',
+                    'value' => $bonus,
+                ];
+            }
+
+            // Penalty: High refresh rate without high touch sampling
+            $refreshRate = $values['refresh_rate'] ?? 0;
+            $touchSampling = $values['touch_sampling_rate'] ?? 0;
+
+            if ($refreshRate >= 120 && $touchSampling < 240) {
+                $penalty = -2;
+                $totalAdjustment += $penalty;
+                $adjustments[] = [
+                    'type' => 'penalty',
+                    'reason' => 'High refresh rate without proportional touch sampling',
+                    'value' => $penalty,
+                ];
+            }
+
+            // Penalty: Low pixel density on large screen
+            $size = $values['size'] ?? 0;
+            $ppi = $values['pixel_density'] ?? 0;
+
+            if ($size > 6.7 && $ppi < 400) {
+                $penalty = -3;
+                $totalAdjustment += $penalty;
+                $adjustments[] = [
+                    'type' => 'penalty',
+                    'reason' => 'Large screen with inadequate pixel density',
+                    'value' => $penalty,
+                ];
+            }
+        }
+
+        return [
+            'total_adjustment' => $totalAdjustment,
+            'details' => $adjustments,
         ];
     }
 
@@ -206,5 +261,4 @@ class CompareScoreService
         // Normalize → 100
         return (int) round(($weightedScore / ($totalWeight * 10)) * 100);
     }
-
 }

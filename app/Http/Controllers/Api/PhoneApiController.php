@@ -610,9 +610,8 @@ class PhoneApiController extends Controller
             'slugs.*' => 'string|exists:phones,slug',
             'profile' => 'nullable|string|in:balanced,gaming,camera,battery,budget_conscious,media_consumer,business_professional',
         ]);
-
         $slugs = $validated['slugs'];
-        $profile = $validated['profile'] ?? 'balanced'; // Default to balanced
+        $profile = $validated['profile'] ?? 'balanced'; 
         $phones = Phone::select('id', 'name', 'brand_id', 'slug', 'release_date', 'primary_image', 'primary_color', 'updated_at', 'is_popular', 'status')
             ->with('specifications') // Load specifications relationship
             ->whereIn('slug', $slugs)
@@ -677,7 +676,7 @@ class PhoneApiController extends Controller
                     ];
                 }),
                 'verdict' => $verdict,
-                'winner' => $verdict['overall_recommendation']['recommended_phone'], // ✅ Use the recommendation
+                'winner' => $verdict['overall_recommendation']['recommended_phone'],
                 'charts' => $chartData,
             ],
         ]);
@@ -701,25 +700,7 @@ class PhoneApiController extends Controller
         return response()->json([
             'success' => true,
             'data' => $phones->map(fn($phone) => new PhoneResource($phone, true)),
-            // 'similarMobiles' => !empty($similarMobiles) ? $similarMobiles->map(fn($phone) => new PhoneResource($phone, false)) : [], // omit searchIndex
-
         ]);
-        // if ($phones->count() === 1) {
-        //     $phone = $phones->first(); // get the single phone
-        //     $ramOptions = $phone->searchIndex->ram_options
-        //         ? json_decode($phone->searchIndex->ram_options, true)
-        //         : [];
-
-        //     $storageOptions = $phone->searchIndex->storage_options
-        //         ? json_decode($phone->searchIndex->storage_options, true)
-        //         : [];
-
-        //     $minPrice = $phone->searchIndex->min_price_pkr ?? 0;
-        //     $maxPrice = $phone->searchIndex->max_price_pkr ?? 0;
-        //     $priceRange = [$minPrice * 0.85, $maxPrice * 1.15];
-        //     $avgPrice = ($phone->searchIndex->min_price_pkr + $phone->searchIndex->max_price_pkr) / 2;
-        //     $similarMobiles = $this->getSimilarMobiles($phone->id, $avgPrice, $ramOptions, $storageOptions, $priceRange);
-        // }
 
 
     }
@@ -728,6 +709,7 @@ class PhoneApiController extends Controller
     {
         $s = $specs->keyBy('category')
             ->map(fn($spec) => json_decode($spec->specifications, true) ?: []);
+            
         $benchmark = getBenchmark($s['performance']['benchmark'] ?? '');
         $buildMaterials = buildMaterials($s['build']['build'] ?? '');
         $mobileDimensions = getMobileDimensions($s['build']['dimensions'] ?? []);
@@ -747,13 +729,33 @@ class PhoneApiController extends Controller
             $key = $value['type']; // e.g., 'rear', 'front', 'wide'
             $object[$key] = $value['mp'] ?? null; // fallback to null if 'mp' is missing
         }
-        $memoryParsed = parseMemory($s['memory']['memory']);
+        $memoryParsed = parseMemory($s['memory']['memory'] ?? '');
         try {
             $wiredChargingSpec = $s['battery']['charging_speed'] ?? '';
             $wirlessCharging = $s['battery']['wireless'] ?? '';
             $reverceCharging = $s['battery']['reverse'] ?? '';
             $screenGlassType = extractScreenGlassType($s['display']['protection'] ?? null);
             $formatGlassProtection = formatGlassProtection($screenGlassType ?? []);
+            $res = [
+                'display' => $scorer->scoreCategory('display', [
+                    'size' => extractSize($s['display']['size'] ?? null),
+                    'type' => getShortDisplay($s['display']['type'] ?? null),
+                    'resolution' => shortResolution($s['display']['resolution'] ?? null),
+                    'refresh_rate' => extractNumber($s['display']['refresh_rate'] ?? null),
+                    'screen_ratio' => (float) str_replace('%', '', $s['display']['screen_to_body_ratio'] ?? "N/A"),
+                    'aspect_ratio' => $s['display']['aspect_ratio'] ?? null,
+                    'hdr_support' => getHdrSupport($s['display']['features'] ?? ""),
+                    "pixel_density" => extractPpi($s['display']['resolution'] ?? null),
+                    'brightness_(peak)' => extractBrightness($s['display']['brightness'] ?? "", "peak"),
+                    'brightness_(typical)' => extractBrightness($s['display']['brightness'] ?? "", "typical"),
+                    'glass_protection' => $formatGlassProtection,
+                    'touch_sampling_rate' => preg_replace('/\D+/', '', $s['display']['touch_sampling_rate'] ?? null),
+                    'has_branded_glass' => $screenGlassType['has_branded_glass'] ?? null,
+                ], $profile),
+            ];
+            echo "<pre>";
+            print_r($res);
+            exit;
             return [
                 'display' => $scorer->scoreCategory('display', [
                     'size' => extractSize($s['display']['size'] ?? null),
@@ -780,7 +782,7 @@ class PhoneApiController extends Controller
                     'ram_type' => $s['memory']['ram_type'] ?? null,
                     'instant_touch_sampling_rate' => preg_replace('/\D+/', '', $s['performance']['instant_touch_sampling_rate'] ?? null),
                     'antutu_score_(v10)' => $benchmark['antutu'] ?? null,
-                    'card_slot' => $s['memory']['card_slot']
+                    'card_slot' => $s['memory']['card_slot'] ?? 'NO'
 
                 ], $profile),
                 'camera' => $scorer->scoreCategory(
