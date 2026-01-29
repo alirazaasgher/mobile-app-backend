@@ -171,7 +171,7 @@ return [
             ],
             'default' => 0,
         ],
-        'color_depth_bits' => [
+        'color_depth' => [
             'label' => 'Color Depth',
             'weight' => 7.69,
             'scale' => [
@@ -194,50 +194,51 @@ return [
             ],
             'default' => 5,
         ],
-        'color_gamut_dci_p3' => [
+        'colour_gamut' => [
             'label' => 'DCI-P3 Color Gamut',
-            'weight' => 0, // Unweighted - niche professional feature
+            'weight' => 3,
             'unit' => [
                 'value' => '%',
                 'position' => 'after',
                 'space' => false
             ],
-            'scale' => [
-                100 => 10,  // Perfect coverage (iPhone 15 Pro, S24 Ultra)
-                98 => 9,    // Excellent (Most flagships)
-                95 => 8,    // Very Good
-                90 => 7,    // Good (Premium mid-range)
-                85 => 6,    // Above Average
-                80 => 5,    // Average
-                75 => 4,    // Below Average
-                70 => 3,    // Poor
+            'ranges' => [
+                ['min' => 100, 'score' => 10],
+                ['min' => 98, 'score' => 9],
+                ['min' => 95, 'score' => 8],
+                ['min' => 90, 'score' => 7],
+                ['min' => 85, 'score' => 6],
+                ['min' => 80, 'score' => 5],
+                ['min' => 70, 'score' => 3],
+                ['min' => 0, 'score' => 1],
             ],
-            'default' => 5,
-            'info_text' => 'DCI-P3 is a wider color space used in HDR content. Higher % means more vivid colors.',
+            'default' => 0,
+            'info_text' => 'DCI-P3 represents the display’s color range. Higher coverage improves HDR accuracy and color richness.',
         ],
 
         'color_accuracy_delta_e' => [
             'label' => 'Color Accuracy (Delta E)',
-            'weight' => 0, // Unweighted - professional/content creator feature
+            'weight' => 0,
             'unit' => [
                 'value' => 'ΔE',
                 'position' => 'after',
                 'space' => true
             ],
-            'scale' => [
-                0.5 => 10,  // Perfect (Professional monitors)
-                1.0 => 9,   // Excellent (iPhone 15 Pro, S24 Ultra)
-                1.5 => 8,   // Very Good (Pixel 9 Pro)
-                2.0 => 7,   // Good (imperceptible to most)
-                3.0 => 6,   // Above Average
-                4.0 => 5,   // Average (noticeable to trained eyes)
-                5.0 => 4,   // Below Average
-                6.0 => 3,   // Poor
-                8.0 => 2,   // Very Poor
+            'ranges' => [
+                ['min' => 0.5, 'score' => 10],        // 0.0 - 0.5
+                ['min' => 1.0, 'score' => 9],      // 0.51 - 1.0
+                ['min' => 1.5, 'score' => 8],     // 1.01 - 1.5
+                ['min' => 2.0, 'score' => 7],          // 1.51 - 2.0
+                ['min' => 3.0, 'score' => 6], // 2.01 - 3.0
+                ['min' => 4.0, 'score' => 5],       // 3.01 - 4.0
+                ['min' => 5.0, 'score' => 4], // 4.01 - 5.0
+                ['min' => 6.0, 'score' => 3],          // 5.01 - 6.0
+                ['min' => 8.0, 'score' => 2],     // 6.01 - 8.0
+                ['min' => 99, 'score' => 1],    // > 8.0
             ],
             'default' => 5,
-            'inverse' => true, // Lower is better
-            'info_text' => 'Measures color accuracy. Lower is better. ΔE < 2 is imperceptible to human eye.',
+            'inverse' => true,
+            'info_text' => 'Measures the difference between the displayed color and the original color. Values below 2.0 are generally indistinguishable to the human eye.',
         ],
 
         'response_time_ms' => [
@@ -376,7 +377,7 @@ return [
                 'optional' => 8, // User can toggle DC dimming on/off
                 'no' => 5,       // No DC dimming (relies on PWM)
             ],
-            'default' => 5,
+            'default' => 0,
             'info_text' => 'DC dimming eliminates PWM flicker at low brightness, reducing eye strain.',
         ],
         // PROTECTION & DURABILITY Total Weight 5 points

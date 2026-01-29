@@ -710,9 +710,9 @@ class PhoneApiController extends Controller
         $s = $specs->keyBy('category')
             ->map(fn($spec) => json_decode($spec->specifications, true) ?: []);
         // $res = extractBrightness($s['display']['brightness'] ?? "", "typical");
-        // echo "<pre>";
-        // print_r($res);
-        // exit;
+        echo "<pre>";
+        print_r($s['display']);
+        exit;
         $benchmark = getBenchmark($s['performance']['benchmark'] ?? '');
         $buildMaterials = buildMaterials($s['build']['build'] ?? '');
         $mobileDimensions = getMobileDimensions($s['build']['dimensions'] ?? []);
