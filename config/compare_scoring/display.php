@@ -90,6 +90,23 @@ return [
                 ['min' => 600, 'score' => 4],
                 ['min' => 500, 'score' => 3],
             ],
+
+            'inference' => [
+                'conditions' => [
+                    'brightness_typical' => null,
+                    'brightness_peak'    => ['min' => 2000],
+                    'hdr_support'        => ['not_null' => true],
+                ],
+
+                // 👇 VALUE inference (not score)
+                'value_map' => [
+                    ['min_peak' => 3000, 'value' => 1400],
+                    ['min_peak' => 2500, 'value' => 1300],
+                    ['min_peak' => 2000, 'value' => 1200],
+                ],
+
+                'reasoning' => 'Estimated from peak brightness + HDR capability',
+            ],
             'default' => 2,
         ],
         'sustained_brightness' => [
@@ -345,7 +362,7 @@ return [
         ],
 
         //  EYE COMFORT & HEALTH Total Weight 7 points
-        'pwm_dimming_frequency' => [
+        'pwm_frequency' => [
             'label' => 'PWM Dimming Frequency',
             'weight' => 10,
             'unit' => [

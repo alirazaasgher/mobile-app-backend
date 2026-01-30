@@ -17,6 +17,10 @@ class CompareScoreService
     ): array {
         $profileConfig = config("compare_scoring.compare_profiles.$profile", []);
         $specConfigs = $profileConfig[$category]['specs'] ?? [];
+        // ✅ NEW: Apply inferences before scoring
+
+
+        $values = $this->applyInferences($values, $specConfigs);
         $scoredSpecs = [];
         $categoryScore = 0;
         foreach ($specConfigs as $specKey => $specConfig) {
@@ -68,6 +72,133 @@ class CompareScoreService
         ];
     }
 
+    /**
+     * Apply inference rules to fill missing values
+     */
+    protected function applyInferences(
+        array $values,
+        array $specConfigs,
+    ): array {
+        foreach ($specConfigs as $specKey => $specConfig) {
+            // Skip if value already exists
+            if (array_key_exists($specKey, $values) && $values[$specKey] !== null) {
+                continue;
+            }
+
+            // Check if this spec has inference rules
+            $inference = $specConfig['inference'] ?? null;
+            if (!$inference) {
+                continue;
+            }
+
+            // Check if inference conditions are met
+            if (!$this->checkInferenceConditions($inference['conditions'] ?? [], $values)) {
+                continue;
+            }
+
+            if (isset($inference['value_map'])) {
+                $inferredValue = $this->inferValueFromMap(
+                    $inference['value_map'],
+                    $values
+                );
+
+                if ($inferredValue !== null) {
+                    $values[$specKey] = $inferredValue;
+                }
+            }
+        }
+
+        return $values;
+    }
+
+    /**
+     * Infer a value based on related spec values using a value map
+     */
+    protected function inferValueFromMap(array $valueMap, array $values): ?float
+    {
+        // Get peak brightness for mapping
+        $peakBrightness = $values['brightness_peak'] ?? null;
+
+        if ($peakBrightness === null) {
+            return null;
+        }
+
+        // Find the first matching tier
+        foreach ($valueMap as $tier) {
+            $minPeak = $tier['min_peak'] ?? 0;
+
+            if ($peakBrightness >= $minPeak) {
+                return $tier['value'];
+            }
+        }
+
+        // Fallback to last tier if no match
+        return end($valueMap)['value'] ?? null;
+    }
+
+    /**
+     * Check if all inference conditions are met
+     */
+    protected function checkInferenceConditions(array $conditions, array $values): bool
+    {
+        foreach ($conditions as $key => $condition) {
+
+            // CONDITION 1: Key must be missing / null
+            if ($condition === null) {
+                if (array_key_exists($key, $values) && $values[$key] !== null && $values[$key] !== '') {
+                    return false;
+                }
+                continue;
+            }
+
+            // CONDITION 2: Key must exist
+            if (!array_key_exists($key, $values)) {
+                return false;
+            }
+
+            $value = $values[$key];
+            // CONDITION 3: Boolean match
+            if (is_bool($condition)) {
+                $valueBool = filter_var($value, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE);
+                if ($valueBool !== $condition) {
+                    return false;
+                }
+                continue;
+            }
+
+            // CONDITION 4: Array-based rules
+            if (is_array($condition)) {
+
+                // not_null check
+                if (isset($condition['not_null']) && $condition['not_null'] === true) {
+                    if ($value === null || $value === '' || $value === 0) {
+                        return false;
+                    }
+                }
+
+                // min check
+                if (isset($condition['min']) && $value < $condition['min']) {
+                    return false;
+                }
+
+                // max check
+                if (isset($condition['max']) && $value > $condition['max']) {
+                    return false;
+                }
+
+                continue; // 🚨 THIS WAS MISSING
+            }
+
+            // CONDITION 5: Exact scalar match
+            if ($value !== $condition) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+
     protected function applyContextualAdjustments(string $category, array $values, array $scoredSpecs, string $profile): array
     {
         $adjustments = [];
@@ -84,9 +215,9 @@ class CompareScoreService
             $screenSize = (float)($values['size'] ?? 0);
             $ppi = (int)($values['pixel_density'] ?? 0);
             $hasAdaptive = ($values['adaptive_refresh_rate'] ?? 'no') !== 'no';
-            $colorBits = (int)($values['color_depth_bits'] ?? 8);
-            $pwmFrequency = (int)($values['pwm_dimming_frequency'] ?? 0);
-            $panelType = strtolower($values['panel_type'] ?? '');
+            $colorBits = (int)($values['color_depth'] ?? 8);
+            $pwmFrequency = (int)($values['pwm_frequency'] ?? 0);
+            $panelType = strtolower($values['type'] ?? '');
             $contrastRatio = $values['contrast_ratio'] ?? '';
 
             // ==================================================================
@@ -475,7 +606,7 @@ class CompareScoreService
     protected function normalizeString(string $value): string
     {
         // Replace various hyphen/dash types with standard hyphen
-        $value = str_replace(['‑', '–', '—', '−', '_'], '-', $value);
+        $value = str_replace(['-', '-', '—', '-', '_'], '-', $value);
 
         // Normalize whitespace
         $value = preg_replace('/\s+/', ' ', trim($value));

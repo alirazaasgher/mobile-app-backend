@@ -46,7 +46,7 @@ class MobileController extends Controller
                     ['key' => 'resolution', 'label' => 'Resolution', 'type' => 'text', 'placeholder' => '2772 x 1280 (~447ppi)'],
                     ['key' => 'aspect_ratio', 'label' => 'Aspect Ratio', 'type' => 'text', 'placeholder' => '19.5:9'],
                     ['key' => 'refresh_rate', 'label' => 'Refresh Rate', 'type' => 'text', 'placeholder' => '120Hz'],
-                    ['key' => 'adaptive_refresh_rate_range', 'label' => 'Adaptive Refresh Rate Range', 'type' => 'text', 'placeholder' => 'e.g. 1-120 Hz'],
+                    ['key' => 'adaptive_refresh_rate', 'label' => 'Adaptive Refresh Rate', 'type' => 'text', 'placeholder' => 'e.g. 1-120 Hz'],
                     ['key' => 'pwm_frequency', 'label' => 'PWM Frequency', 'type' => 'text', 'placeholder' => '2160Hz'],
                     ['key' => 'brightness', 'label' => 'Brightness', 'type' => 'text', 'placeholder' => 'Peak 3200 nits'],
                     ['key' => 'color_depth', 'label' => 'Color Depth', 'type' => 'text', 'placeholder' => '12-bit (68.7 billion colors)'],
