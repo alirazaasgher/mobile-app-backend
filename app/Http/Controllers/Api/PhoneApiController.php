@@ -753,7 +753,7 @@ class PhoneApiController extends Controller
                     'storage_type' => $s['memory']['storage_type'] ?? null,
                     'ram_type' => $s['memory']['ram_type'] ?? null,
                     'instant_touch_sampling_rate' => preg_replace('/\D+/', '', $s['performance']['instant_touch_sampling_rate'] ?? null),
-                    'antutu_score_(v10)' => $benchmark['antutu'] ?? null,
+                    //'antutu_score_(v10)' => $benchmark['antutu'] ?? null,
                     'card_slot' => $s['memory']['card_slot'] ?? 'NO'
 
                 ], $profile),
