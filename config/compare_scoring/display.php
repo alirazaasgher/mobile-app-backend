@@ -2,63 +2,65 @@
 return [
     'label' => 'Display',
     'specs' => [
-        //SCREEN QUALITY Total Weight 19 points
+        'type' => [
+            'label' => 'Display Type',
+            'weight' => 25, // Reduced from 30
+            'scale' => [
+                'ltpo amoled' => 10,
+                'ltpo oled' => 10,
+                'amoled' => 9,
+                'oled' => 9,
+                'super amoled' => 9,
+                'dynamic amoled' => 9,
+                'p-oled' => 8,
+                'super retina xdr' => 10,
+                'ips lcd' => 6,
+                'lcd' => 5,
+                'tft' => 3,
+                'pls' => 5,
+            ],
+            'default' => 4,
+        ],
+        'refresh_rate' => [
+            'label' => 'Refresh Rate',
+            'weight' => 15, // Reduced from 20
+            'unit' => [
+                'value' => 'Hz',
+                'position' => 'after',
+                'space' => false
+            ],
+            'scale' => [
+                185 => 10,
+                165 => 10,
+                144 => 10,
+                120 => 9,
+                90 => 7,
+                60 => 5,
+            ],
+            'default' => 5,
+        ],
         'pixel_density' => [
             'label' => 'Pixel Density (PPI)',
-            'weight' => 12,
+            'weight' => 15, // Reduced from 20
             'unit' => [
                 'value' => '(PPI)',
                 'position' => 'after',
                 'space' => true
             ],
             'ranges' => [
-                ['min' => 550, 'score' => 10], // Elite 2026 (e.g., Sony 4K/8K or Ultra QHD+)
-                ['min' => 500, 'score' => 9],  // Premium Flagship (S26 Ultra)
-                ['min' => 460, 'score' => 8],  // Standard Flagship (iPhone 17/18 Pro)
-                ['min' => 420, 'score' => 7],  // 2026 Upper Mid-range
-                ['min' => 380, 'score' => 6],  // 2026 Standard Mid-range
-                ['min' => 320, 'score' => 5],  // 2026 Budget (FHD+ 6.7")
-                ['min' => 280, 'score' => 4],
+                ['min' => 500, 'score' => 10],
+                ['min' => 450, 'score' => 9],
+                ['min' => 400, 'score' => 8],
+                ['min' => 350, 'score' => 7],
+                ['min' => 300, 'score' => 6],
+                ['min' => 250, 'score' => 5],
+                ['min' => 200, 'score' => 4],
             ],
-            'default' => 2,
+            'default' => 3,
         ],
-        'contrast_ratio' => [
-            'label' => 'Contrast Ratio',
-            'weight' => 10,
-            'unit' => [
-                'value' => ':1',
-                'position' => 'after',
-                'space' => false
-            ],
-            'ranges' => [
-                // ELITE: Tandem OLED / MLA+ / MicroLED
-                ['min' => 8000000, 'score' => 10, 'label' => 'Elite (Tandem OLED)'],
-
-                // FLAGSHIP: Standard High-End OLED
-                ['min' => 2000000, 'score' => 9.5, 'label' => 'Perfect Blacks'],
-
-                // ENTRY OLED / TOP MINI-LED:
-                ['min' => 1000000, 'score' => 9, 'label' => 'Excellent'],
-
-                // PREMIUM LCD: Mini-LED with High Zone Count
-                ['min' => 100000, 'score' => 7.5, 'label' => 'High Contrast LCD'],
-
-                // MID-RANGE: IPS Black Technology
-                ['min' => 2000, 'score' => 5, 'label' => 'Above Average LCD'],
-
-                // STANDARD: IPS / VA panels
-                ['min' => 1000, 'score' => 3, 'label' => 'Standard'],
-
-                // BUDGET:
-                ['min' => 0, 'score' => 1, 'label' => 'Poor'],
-            ],
-            'default' => 0,
-            'info_text' => 'Contrast ratio defines the depth of blacks. 8,000,000:1 and above indicates cutting-edge OLED tech with virtually perfect black levels.',
-        ],
-        // BRIGHTNESS & VISIBILITY Total Weight 24 points
-        'brightness_peak' => [
+        'brightness_(peak)' => [
             'label' => 'Peak Brightness',
-            'weight' => 14,
+            'weight' => 10, // Reduced from 15
             'unit' => [
                 'value' => 'nits',
                 'position' => 'after',
@@ -76,396 +78,176 @@ return [
             ],
             'default' => 2,
         ],
-        'brightness_typical' => [
+        'brightness_(typical)' => [
             'label' => 'Typical Brightness',
-            'weight' => 5,
+            'weight' => 8, // New spec
             'unit' => [
                 'value' => 'nits',
                 'position' => 'after',
                 'space' => true
             ],
             'ranges' => [
-                ['min' => 1800, 'score' => 10],
-                ['min' => 1600, 'score' => 9.5], // Elite 2026 (M14/M15 OLED Panels)
-                ['min' => 1400, 'score' => 9],
-                ['min' => 1200, 'score' => 8],
-                ['min' => 1000, 'score' => 7],
-                ['min' => 800, 'score' => 6],  // 2026 Good Mid-range
-                ['min' => 700, 'score' => 5],  // 2026 Average
-                ['min' => 600, 'score' => 4],
-                ['min' => 500, 'score' => 3],
-            ],
-
-            'inference' => [
-                'conditions' => [
-                    'brightness_typical' => null,
-                    'brightness_peak' => ['min' => 2000],
-                    'hdr_support' => ['not_null' => true],
-                ],
-
-                // 👇 VALUE inference (not score)
-                'value_map' => [
-                    ['min_peak' => 3000, 'value' => 1400],
-                    ['min_peak' => 2500, 'value' => 1300],
-                    ['min_peak' => 2000, 'value' => 1200],
-                ],
-
-                'reasoning' => 'Estimated from peak brightness + HDR capability',
+                ['min' => 1500, 'score' => 10],
+                ['min' => 1200, 'score' => 9],
+                ['min' => 1000, 'score' => 8],
+                ['min' => 800, 'score' => 7],
+                ['min' => 600, 'score' => 6],
+                ['min' => 500, 'score' => 5],
+                ['min' => 400, 'score' => 4],
+                ['min' => 300, 'score' => 3],
             ],
             'default' => 2,
         ],
-        'sustained_brightness' => [
-            'label' => 'Sustained Brightness',
-            'weight' => 0,
+        'touch_sampling_rate' => [
+            'label' => 'Touch Sampling Rate',
+            'weight' => 7, // New spec - important for gaming
             'unit' => [
-                'value' => 'nits',
+                'value' => 'Hz',
                 'position' => 'after',
                 'space' => false
             ],
-            'ranges' => [
-                ['min' => 2200, 'score' => 10], // Elite 2026 (Tandem OLED / MLA+)
-                ['min' => 2000, 'score' => 9],  // Premium Flagship
-                ['min' => 1800, 'score' => 8],  // Standard Flagship
-                ['min' => 1500, 'score' => 7],
-                ['min' => 1200, 'score' => 5],  // Average 2026
-                ['min' => 800, 'score' => 3],
+            'scale' => [
+                720 => 10,
+                480 => 9,
+                360 => 8,
+                300 => 7,
+                240 => 6,
+                180 => 5,
+                120 => 4,
             ],
-            'default' => 2,
-
+            'default' => 3,
         ],
-        'reflectance_ratio' => [
-            'label' => 'Reflectance Ratio',
-            'weight' => 0,
-            'unit' => [
-                'value' => '%',
-                'position' => 'after',
-                'space' => false
-            ],
-            'ranges' => [
-                // ELITE: Anti-Reflective Armor (75%+ reduction)
-                ['max' => 1.2, 'score' => 10], // S26 Ultra / Armor 2 Standard
-                ['max' => 1.5, 'score' => 9.5], // S25 Ultra / Elite AR Coatings
-                ['max' => 2.0, 'score' => 9],   // iPhone 17 Pro / Early AR Glass
-
-                // HIGH TIER: Premium Glass with basic AR
-                ['max' => 3.0, 'score' => 8],   // Top-tier Chinese Flagships (Xiaomi/Vivo)
-                ['max' => 4.0, 'score' => 7],   // Standard Flagship (Victus 2/3)
-
-                // MID TIER: Standard Glossy Glass
-                ['max' => 4.5, 'score' => 6],   // Most Mid-range phones
-                ['max' => 5.5, 'score' => 5],   // Standard 2023-2024 glass
-
-                // BUDGET/LEGACY: High Glare
-                ['max' => 7.0, 'score' => 3],   // Budget panels with air gaps
-                ['max' => 10.0, 'score' => 1],  // Highly reflective old panels
-            ],
-            'default' => 5,
-        ],
-
-        //COLOR & HDR Total Weight 16 points
         'hdr_support' => [
             'label' => 'HDR Support',
-            'weight' => 9,
+            'weight' => 5, // New spec
             'scale' => [
-                // ELITE: Triple Dynamic Metadata + Ultra HDR (2026 Ultra Flagships)
-                'dolby vision 2, hdr10+ advanced, hdr vivid, ultra hdr' => 10,
-                'dolby vision, hdr10+, hdr vivid' => 10,
+                // Triple HDR (Premium flagship)
+                'hdr10+, dolby vision, hdr vivid' => 10,
+                'hdr10+, dolby vision, hdr10' => 10,
+                'dolby vision, hdr vivid, hdr10' => 10,
 
-                // TOP TIER: Dual Premium Formats (The "Universal" Flagship)
-                'dolby vision, hdr10+' => 10,
-                'dolby vision 2, hdr10' => 10,
-                'hdr10+ advanced, hdr vivid' => 9.5,
+                // Dual HDR with Dolby Vision (Top tier)
+                'dolby vision, hdr10' => 10,
+                'hdr10+, dolby vision' => 10,
+                'dolby vision, hdr vivid' => 10,
 
-                // HIGH TIER: Single Premium with Ultra HDR Support
-                'dolby vision, ultra hdr' => 9,
-                'hdr10+, ultra hdr' => 8.5,
-                'dolby vision' => 8,
+                // Dual HDR combinations (High tier)
+                'hdr10+, hdr vivid' => 9,
+                'hdr10+, hdr10' => 9,
+                'hdr vivid, hdr10' => 9,
 
-                // MID TIER: Open standards
-                'hdr10+, hdr10' => 7.5,
-                'hdr vivid' => 7,
-                'hdr10' => 6.5,
+                // Single premium HDR (Mid-high tier)
+                'dolby vision' => 9,
+                'hdr10+' => 8,
+                'hdr vivid' => 8,
 
-                // BUDGET/LEGACY:
-                'hdr' => 5,
+                // Standard HDR (Mid tier)
+                'hdr10' => 7,
+                'hdr' => 6,
+
+                // Basic HD support (Low tier)
                 'hd' => 3,
+
+                // No HDR/HD
                 'no' => 0,
             ],
             'default' => 0,
         ],
-        'color_depth' => [
-            'label' => 'Color Depth',
-            'weight' => 7,
-            'scale' => [
-                // ELITE: 2026 Content Creator Tier
-                '12-bit (true)' => 10,  // Pro cinema sensors/displays
-                '12-bit' => 9.5, // Often 10-bit + FRC in marketing
-                '10-bit + frc' => 9.5, // Effective 12-bit experience
-
-                // TOP TIER: The 2026 Flagship Baseline
-                '10-bit (true)' => 9,   // Standard for S26/iPhone 18 Pro
-                '10-bit' => 8.5,
-
-                // MID TIER: 2023/2024 Legacy Flagship
-                '8-bit + frc' => 7.5, // Effective 10-bit (Standard Mid-range)
-
-                // BUDGET / LEGACY:
-                '8-bit' => 5,   // Obsolete for HDR content
-                '6-bit + frc' => 3,   // Very low-end panels
-                'none' => 0,
-            ],
-            'default' => 5,
-        ],
-        'colour_gamut' => [
-            'label' => 'DCI-P3 Color Gamut',
-            'weight' => 0,
+        'screen_ratio' => [
+            'label' => 'Screen-to-Body Ratio',
+            'weight' => 5, // New spec
             'unit' => [
                 'value' => '%',
                 'position' => 'after',
                 'space' => false
             ],
             'ranges' => [
-                ['min' => 100, 'score' => 10],
-                ['min' => 98, 'score' => 9],
-                ['min' => 95, 'score' => 8],
-                ['min' => 90, 'score' => 7],
-                ['min' => 85, 'score' => 6],
-                ['min' => 80, 'score' => 5],
-                ['min' => 70, 'score' => 3],
-                ['min' => 0, 'score' => 1],
+                ['min' => 92, 'score' => 10],
+                ['min' => 90, 'score' => 9],
+                ['min' => 87, 'score' => 8],
+                ['min' => 84, 'score' => 7],
+                ['min' => 80, 'score' => 6],
+                ['min' => 75, 'score' => 5],
+                ['min' => 70, 'score' => 4],
             ],
-            'default' => 0,
-            'info_text' => 'DCI-P3 represents the display’s color range. Higher coverage improves HDR accuracy and color richness.',
+            'default' => 3,
         ],
-
-        'color_accuracy_delta_e' => [
-            'label' => 'Color Accuracy (Delta E)',
-            'weight' => 0,
+        'size' => [
+            'label' => 'Screen Size',
+            'weight' => 3, // Reduced from 5
             'unit' => [
-                'value' => 'ΔE',
+                'value' => 'inch',
                 'position' => 'after',
                 'space' => true
             ],
             'ranges' => [
-                ['min' => 0.5, 'score' => 10],        // 0.0 - 0.5
-                ['min' => 1.0, 'score' => 9],      // 0.51 - 1.0
-                ['min' => 1.5, 'score' => 8],     // 1.01 - 1.5
-                ['min' => 2.0, 'score' => 7],          // 1.51 - 2.0
-                ['min' => 3.0, 'score' => 6], // 2.01 - 3.0
-                ['min' => 4.0, 'score' => 5],       // 3.01 - 4.0
-                ['min' => 5.0, 'score' => 4], // 4.01 - 5.0
-                ['min' => 6.0, 'score' => 3],          // 5.01 - 6.0
-                ['min' => 8.0, 'score' => 2],     // 6.01 - 8.0
-                ['min' => 99, 'score' => 1],    // > 8.0
+                ['min' => 6.5, 'max' => 6.9, 'score' => 9],
+                ['min' => 6.1, 'max' => 6.49, 'score' => 8],
+                ['min' => 5.8, 'max' => 6.09, 'score' => 7],
+                ['min' => 5.4, 'max' => 5.79, 'score' => 7],
+                ['min' => 7.0, 'max' => 7.5, 'score' => 8],
+                ['min' => 5.0, 'max' => 5.39, 'score' => 5],
+                ['min' => 4.5, 'max' => 4.99, 'score' => 4],
             ],
-            'default' => 5,
-            'inverse' => true,
-            'info_text' => 'Measures the difference between the displayed color and the original color. Values below 2.0 are generally indistinguishable to the human eye.',
+            'default' => 6,
         ],
-
-        'response_time_ms' => [
-            'label' => 'Response Time',
-            'weight' => 0, // Unweighted - gaming-specific feature
-            'unit' => [
-                'value' => 'ms',
-                'position' => 'after',
-                'space' => false
-            ],
-            'scale' => [
-                1 => 10,    // Elite Gaming (OLED)
-                2 => 9,     // Excellent (Fast OLED)
-                3 => 8,     // Very Good (Standard OLED)
-                5 => 7,     // Good (Fast LCD)
-                8 => 6,     // Above Average (LCD)
-                12 => 5,    // Average (Standard LCD)
-                16 => 4,    // Below Average
-                20 => 3,    // Poor
-                25 => 2,    // Very Poor (ghosting visible)
-            ],
-            'default' => 5,
-            'inverse' => true, // Lower is better
-            'info_text' => 'Time for pixels to change color. Lower is better for fast motion/gaming. OLED typically 1-3ms, LCD 5-20ms.',
-        ],
-
-        // PERFORMANCE & SMOOTHNESS Total Weight 22 points
-        'refresh_rate' => [
-            'label' => 'Refresh Rate',
-            'weight' => 9,
-            'unit' => [
-                'value' => 'Hz',
-                'position' => 'after',
-                'space' => false
-            ],
-            'scale' => [
-                185 => 10, // Ultra-Gaming
-                165 => 10, // Pro-Gaming
-                144 => 9,  // Performance Flagship (Motorola Edge 70)
-                120 => 8,  // Universal Standard (S26, iPhone 17/18)
-                90 => 5,  // Legacy Budget
-                60 => 2,  // Obsolete
-            ],
-            'default' => 2,
-        ],
-        'adaptive_refresh_rate' => [
-            'label' => 'Adaptive Refresh Rate',
-            'weight' => 10,
-            'unit' => [
-                'value' => 'Hz',
-                'position' => 'after',
-                'space' => false
-            ],
-            'scale' => [
-                '0.5-165' => 10, // Ultra-Gaming LTPO 4.0
-                '1-165' => 9.5,
-                '1-144' => 9,   // High-end Performance
-                '1-120' => 8.5, // Standard Flagship (S26, iPhone 18)
-                '10-120' => 6,   // Mid-range (Step-based)
-                'fixed' => 1,   // Obsolete
-            ],
-            'default' => 1,
-
-        ],
-        'touch_sampling_rate' => [
-            'label' => 'Touch Sampling Rate',
-            'weight' => 4,
-            'unit' => [
-                'value' => 'Hz',
-                'position' => 'after',
-                'space' => false
-            ],
-            'scale' => [
-                2000 => 10, // Elite/Gaming (e.g., Tecno Spark 40 Pro @ 2160Hz)
-                1200 => 9,  // Premium Flagship
-                720 => 8,  // Standard Flagship (S26 Ultra / iPhone 17 Pro)
-                480 => 7,
-                360 => 6,  // Mid-range Standard
-                240 => 5,  // Budget Standard
-                120 => 4,
-            ],
-            'default' => 2,
-        ],
-        'min_refresh_rate' => [
-            'label' => 'Minimum Refresh Rate',
-            'weight' => 0, // Unweighted - used for contextual validation only
-            'unit' => [
-                'value' => 'Hz',
-                'position' => 'after',
-                'space' => false
-            ],
-            'scale' => [
-                1 => 10,   // Premium LTPO (iPhone 15 Pro, S24 Ultra, Pixel 9 Pro)
-                10 => 9,   // Excellent LTPO (OnePlus 12, Xiaomi 14 Pro)
-                24 => 8,   // Good Adaptive (Find X7, Realme GT 6)
-                30 => 7,   // Standard Adaptive
-                48 => 6,   // Basic Adaptive
-                60 => 5,   // Fake Adaptive (60-120Hz only)
-                90 => 3,   // Poor Adaptive
-                120 => 1,  // No Adaptive (fixed rate)
-            ],
-            'default' => 1,
-            'info_text' => 'Lower is better for battery efficiency. Premium LTPO displays can drop to 1Hz.',
-        ],
-
-        //  EYE COMFORT & HEALTH Total Weight 7 points
-        'pwm' => [
-            'label' => 'PWM Dimming Frequency',
-            'weight' => 11,
-            'unit' => [
-                'value' => 'Hz',
-                'position' => 'after',
-                'space' => false
-            ],
-            'ranges' => [
-                ['min' => 5000, 'score' => 10], // "Risk-Free" Tier
-                ['min' => 4320, 'score' => 9.5],
-                ['min' => 3840, 'score' => 9],  // Flagship Minimum
-                ['min' => 2160, 'score' => 7],  // Mid-range High
-                ['min' => 1920, 'score' => 6],
-                ['min' => 480, 'score' => 2],  // Obsolete/High Strain
-            ],
-            'default' => 3,
-
-        ],
-        'dc_dimming' => [
-            'label' => 'DC Dimming',
-            'weight' => 0, // Unweighted - used for contextual validation with PWM
-            'unit' => [
-                'value' => '',
-                'position' => 'after',
-                'space' => false
-            ],
-            'scale' => [
-                'yes' => 10,     // Has DC dimming (flicker-free)
-                'optional' => 8, // User can toggle DC dimming on/off
-                'no' => 5,       // No DC dimming (relies on PWM)
-            ],
-            'default' => 0,
-            'info_text' => 'DC dimming eliminates PWM flicker at low brightness, reducing eye strain.',
-        ],
-        // PROTECTION & DURABILITY Total Weight 5 points
         'glass_protection' => [
             'label' => 'Glass Protection',
-            'weight' => 6,
+            'weight' => 7, // Reduced from 10
             'scale' => [
-                // ELITE: 2026 "No-Protector" Generation
-                'gorilla glass ultra-high strength' => 10, // Rumored for S26 Ultra
-                'gorilla armor 2' => 10, // S25 Ultra standard
-                'ceramic shield 2' => 10, // iPhone 17/18 Pro
-                'dragon crystal glass 2.0' => 10, // Xiaomi 15/16 series
-                'kunlun glass 3' => 10, // Huawei Pura 80 / Mate 80
+                // Latest generation (2024-2025)
+                'victus 3' => 10,
+                'ceramic shield (latest)' => 10,
+                'dragon crystal glass 3' => 10,
+                'gorilla glass armor 2' => 10,
+                'gorilla glass armor' => 10,
 
-                // TOP TIER: 2024-2025 Flagship Standards
-                'gorilla glass armor' => 9.5,
-                'victus 3' => 9.5,
-                'ceramic shield (latest)' => 9.5,
-                'dragon crystal glass' => 9.5,
-                'kunlun glass 2' => 9.5,
-
-                // RECENT FLAGSHIP: 2023-2024
+                // Recent flagship (2023-2024)
                 'victus 2' => 9,
                 'ceramic shield' => 9,
                 'kunlun glass' => 9,
-                'gorilla glass victus+' => 8.5,
-                'panda king kong glass' => 8.5,
+                'dragon crystal glass 2' => 9,
+                'gorilla glass victus+' => 9,
+                'panda king kong glass' => 9,
 
-                // MID-TIER & LEGACY
+                // Mid-tier flagship (2022-2023)
                 'victus' => 8,
-                'gorilla glass 7i' => 7.5,
+                'gorilla glass 7' => 8,
+                'gorilla glass 7i' => 8,
+                'victus+' => 8,
+                'dragon crystal glass' => 8,
+                'schott xensation up' => 8,
+
+                // Older flagship / Modern mid-range (2020-2021)
                 'gorilla glass 6' => 7,
                 'dragontrail pro' => 7,
+                'asahi glass' => 7,
+
+                // Mid-range (2018-2019)
                 'gorilla glass 5' => 6,
+                'dragontail glass' => 6,
+                'schott xensation' => 6,
+                'agc dragontrail' => 6,
+
+                // Budget / Older phones (2016-2017)
+                'gorilla glass 4' => 5,
+                'gorilla glass 3' => 5,
                 'panda glass' => 5,
+                'dragontrail x' => 5,
+
+                // Entry-level / Very old
+                'gorilla glass 2' => 4,
+                'gorilla glass' => 4,
                 'soda-lime glass' => 3,
+                'tempered glass' => 3,
+                'aluminosilicate glass' => 3,
+
+                // Generic/Unknown
+                'toughened glass' => 2,
+                'reinforced glass' => 2,
+                'standard glass' => 1,
             ],
             'default' => 2,
-        ],
-        //  FEATURES & EXTRAS Total Weight 7 points
-        'display_features' => [
-            'label' => 'Display Features',
-            'weight' => 3,
-            'scale' => [
-                // ELITE: 2026 Health & AI Bundle
-                'circadian friendly, ai provisual engine, tuv 5-star eye comfort' => 10,
-                'ai super resolution, flicker-free, 10-bit color' => 9.5,
-
-                // FLAGSHIP: 2025-2026 Standard Bundle
-                'tuv eye comfort 3.0, high-frequency pwm, anti-glare' => 9,
-                'aqua touch 2.0, intelligent eye care 4.0' => 9, // OnePlus/Oppo 2025-2026
-                'eye-safe display, dc dimming' => 8.5,
-
-                // HIGH TIER: 2023-2024 Premium
-                'low blue light (hardware), flicker-free' => 8,
-                'hdr10 playback, 100% dci-p3' => 7.5,
-
-                // MID TIER: Standard Certifications
-                'tuv rheinland certified, eye comfort mode' => 6.5,
-                'reading mode, sunlight mode' => 5.5,
-
-                // BUDGET/LEGACY:
-                'basic eye care' => 4,
-                'none' => 0,
-            ],
-            'default' => 0,
         ],
     ],
 ];
