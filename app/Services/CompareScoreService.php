@@ -20,10 +20,8 @@ class CompareScoreService
         // ✅ NEW: Apply inferences before scoring
 
 
-        $values = $this->applyInferences($values, $specConfigs);
-        echo "<pre>";
-        print_r($values);
-        exit;
+        // $values = $this->applyInferences($values, $specConfigs);
+
         $scoredSpecs = [];
         $categoryScore = 0;
         foreach ($values as $specKey => $value) {
@@ -57,13 +55,13 @@ class CompareScoreService
             ];
 
         }
-        $adjustments = $this->applyContextualAdjustments($category, $values, $scoredSpecs, $profileConfig);
-        $categoryScore += $adjustments['total_adjustment'];
+        //$adjustments = $this->applyContextualAdjustments($category, $values, $scoredSpecs, $profileConfig);
+        //$categoryScore += $adjustments['total_adjustment'];
         return [
             'score' => round($categoryScore, 2),
             'out_of' => 100,
             'specs' => $scoredSpecs,
-            'adjustments' => $adjustments['details'],
+            //'adjustments' => $adjustments['details'],
         ];
     }
 
