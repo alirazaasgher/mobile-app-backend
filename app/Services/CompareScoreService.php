@@ -21,49 +21,44 @@ class CompareScoreService
 
 
         $values = $this->applyInferences($values, $specConfigs);
+        echo "<pre>";
+        print_r($values);
+        exit;
         $scoredSpecs = [];
         $categoryScore = 0;
-        foreach ($specConfigs as $specKey => $specConfig) {
+        foreach ($values as $specKey => $value) {
+            if (isset($specConfigs[$specKey])) {
 
-            // Check if the value exists
-            if (!array_key_exists($specKey, $values)) {
-                continue;
+                $specConfig = $specConfigs[$specKey];
+                $score = $this->scoreSpec($value, $specConfig);
+
+                if ($score !== null) {
+                    $specWeight = $specConfig['weight'];
+                    $contribution = ($score / 10) * $specWeight;
+                    $categoryScore += $contribution;
+
+                    $scoredSpecs[$specKey] = [
+                        'value' => $this->formatValueWithUnit($value, $specConfig),
+                        'score' => $score,
+                        'out_of' => 10,
+                        'base_weight' => $specWeight,
+                        'contribution' => round($contribution, 2),
+                    ];
+                    continue;
+                }
             }
 
-            $value = $values[$specKey];
-            $score = $this->scoreSpec($value, $specConfig);
-            // Skip if scoring failed
-            if ($score === null) {
-                continue;
-            }
-
-            $specWeight = $specConfig['weight'];
-            $contribution = ($score / 10) * $specWeight;
-            $categoryScore += $contribution;
-
-            // Store scored spec
+            // Otherwise → meta spec (no score), but KEEP POSITION
             $scoredSpecs[$specKey] = [
-                'value' => $this->formatValueWithUnit($value, $specConfig),
-                'score' => $score,
-                'out_of' => 10,
-                'base_weight' => $specWeight,
-                'contribution' => round($contribution, 2),
-            ];
-        }
-
-        $adjustments = $this->applyContextualAdjustments($category, $values, $scoredSpecs, $profile);
-        $categoryScore += $adjustments['total_adjustment'];
-
-        // Handle meta specs
-        foreach (array_diff_key($values, $specConfigs) as $metaKey => $metaValue) {
-            $scoredSpecs[$metaKey] = [
-                'value' => is_bool($metaValue) ? ($metaValue ? 'Yes' : 'No') : $metaValue,
+                'value' => is_bool($value) ? ($value ? 'Yes' : 'No') : $value,
                 'score' => null,
                 'out_of' => null,
                 'weight' => null,
             ];
-        }
 
+        }
+        $adjustments = $this->applyContextualAdjustments($category, $values, $scoredSpecs, $profileConfig);
+        $categoryScore += $adjustments['total_adjustment'];
         return [
             'score' => round($categoryScore, 2),
             'out_of' => 100,
@@ -186,10 +181,8 @@ class CompareScoreService
                     return false;
                 }
 
-                continue; // 🚨 THIS WAS MISSING
+                continue;
             }
-
-            // CONDITION 5: Exact scalar match
             if ($value !== $condition) {
                 return false;
             }
@@ -199,43 +192,33 @@ class CompareScoreService
     }
 
 
-    protected function applyContextualAdjustments(string $category, array $values, array $scoredSpecs, string $profile): array
+    protected function applyContextualAdjustments(string $category, array $values, array $scoredSpecs, array $profileConfig): array
     {
+
         $adjustments = [];
         $totalAdjustment = 0;
-
         if ($category === 'display') {
             // Extract and sanitize all values
-            $brightness_sdr = (int)($values['brightness_typical'] ?? 0);
-            $brightness_hdr = (int)($values['brightness_peak'] ?? 0);
-            $sustainedBrightness = (int)($values['sustained_brightness'] ?? 0);
+            $brightness_sdr = (int) ($values['brightness_typical'] ?? 0);
+            $brightness_hdr = (int) ($values['brightness_peak'] ?? 0);
+            $sustainedBrightness = (int) ($values['sustained_brightness'] ?? 0);
             $hasHDR = ($values['hdr_support'] ?? 'no') !== 'no';
-            $refreshRate = (int)($values['refresh_rate'] ?? 0);
-            $touchSampling = (int)($values['touch_sampling_rate'] ?? 0);
-            $screenSize = (float)($values['size'] ?? 0);
-            $ppi = (int)($values['pixel_density'] ?? 0);
+            $refreshRate = (int) ($values['refresh_rate'] ?? 0);
+            $touchSampling = (int) ($values['touch_sampling_rate'] ?? 0);
+            $screenSize = (float) ($values['size'] ?? 0);
+            $ppi = (int) ($values['pixel_density'] ?? 0);
             $hasAdaptive = ($values['adaptive_refresh_rate'] ?? 'no') !== 'no';
-            $colorBits = (int)($values['color_depth'] ?? 8);
-            $pwmFrequency = (int)($values['pwm_frequency'] ?? 0);
+            $colorBits = (int) ($values['color_depth'] ?? 8);
+            $pwmFrequency = (int) ($values['pwm_frequency'] ?? 0);
             $panelType = strtolower($values['type'] ?? '');
             $contrastRatio = $values['contrast_ratio'] ?? '';
+            $isLCD = str_contains($panelType, 'lcd') || str_contains($panelType, 'ips');
 
             // ==================================================================
             // 1. SDR/HDR Efficiency Analysis
             // ==================================================================
             if ($brightness_hdr > 0 && $brightness_sdr > 0) {
                 $sdr_efficiency_ratio = $brightness_sdr / $brightness_hdr;
-
-                // Bonus for displays that maintain high SDR brightness
-                if ($sdr_efficiency_ratio > 0.6) {
-                    $bonus = 1.0;
-                    $totalAdjustment += $bonus;
-                    $adjustments[] = [
-                        'type' => 'bonus',
-                        'reason' => "Excellent SDR efficiency ({$brightness_sdr}nits SDR, {$brightness_hdr}nits HDR)",
-                        'value' => $bonus,
-                    ];
-                }
 
                 // Penalty for displays with huge HDR numbers but poor SDR
                 if ($brightness_hdr > 2000 && $brightness_sdr < 800 && $sdr_efficiency_ratio < 0.4) {
@@ -247,19 +230,6 @@ class CompareScoreService
                         'value' => $penalty,
                     ];
                 }
-            }
-
-            // ==================================================================
-            // 2. Exceptional Brightness Bonus
-            // ==================================================================
-            if ($hasHDR && $brightness_hdr > 1800 && $brightness_sdr > 1000) {
-                $bonus = 2.5;
-                $totalAdjustment += $bonus;
-                $adjustments[] = [
-                    'type' => 'bonus',
-                    'reason' => "Exceptional brightness (SDR: {$brightness_sdr}nits, HDR: {$brightness_hdr}nits)",
-                    'value' => $bonus,
-                ];
             }
 
             // ==================================================================
@@ -279,55 +249,44 @@ class CompareScoreService
             // 4. PWM Dimming / Eye Strain (CRITICAL FOR HEALTH)
             // ==================================================================
             if ($pwmFrequency > 0 && $pwmFrequency < 1000) {
-                $penalty = -2.0;
+                $penalty = match (true) {
+                    $pwmFrequency < 250 => -2.5,  // very bad, severe flicker
+                    $pwmFrequency < 500 => -2.0,  // bad
+                    $pwmFrequency < 1000 => -1.0,  // noticeable but mild
+                };
                 $totalAdjustment += $penalty;
                 $adjustments[] = [
                     'type' => 'penalty',
                     'reason' => "Low PWM frequency ({$pwmFrequency}Hz) may cause eye strain for sensitive users",
                     'value' => $penalty,
                 ];
-            } elseif ($pwmFrequency >= 3840 || ($values['dc_dimming'] ?? false)) {
-                $bonus = 1.5;
-                $totalAdjustment += $bonus;
-                $adjustments[] = [
-                    'type' => 'bonus',
-                    'reason' => $pwmFrequency >= 3840
-                        ? "High PWM frequency ({$pwmFrequency}Hz) - flicker-free display"
-                        : "DC dimming enabled - flicker-free display",
-                    'value' => $bonus,
-                ];
             }
 
             // ==================================================================
             // 5. Refresh Rate vs Touch Sampling Validation
             // ==================================================================
-            if ($refreshRate >= 120 && $touchSampling < 240) {
-                $penalty = -2.0;
-                $totalAdjustment += $penalty;
-                $adjustments[] = [
-                    'type' => 'penalty',
-                    'reason' => "High refresh rate ({$refreshRate}Hz) without proportional touch sampling ({$touchSampling}Hz)",
-                    'value' => $penalty,
-                ];
-            }
+            if ($refreshRate >= 120 && $touchSampling > 0) {
+                $touchRatio = $touchSampling / $refreshRate;
 
-            // ==================================================================
-            // 6. Complete Gaming Display Package
-            // ==================================================================
-            if ($refreshRate >= 120 && $touchSampling >= 360 && $hasAdaptive) {
-                $bonus = 2.0;
-                $totalAdjustment += $bonus;
-                $adjustments[] = [
-                    'type' => 'bonus',
-                    'reason' => "Excellent gaming display ({$refreshRate}Hz refresh, {$touchSampling}Hz touch, adaptive refresh)",
-                    'value' => $bonus,
-                ];
+                if ($touchRatio < 1.5) {
+                    $penalty = match (true) {
+                        $touchRatio < 1.0 => -2.0,  // touch sampling is lower than refresh rate
+                        $touchRatio < 1.5 => -1.0,  // close but not proportional
+                    };
+                    $totalAdjustment += $penalty;
+                    $adjustments[] = [
+                        'type' => 'penalty',
+                        'reason' => "High refresh rate ({$refreshRate}Hz) without proportional touch sampling ({$touchSampling}Hz)",
+                        'value' => $penalty,
+                    ];
+                }
             }
 
             // ==================================================================
             // 7. PPI vs Screen Size (REFINED WITH SOFT/HARD PENALTIES)
             // ==================================================================
             if ($screenSize > 6.7) {
+
                 if ($ppi < 360) {
                     // Hard penalty for unacceptable sharpness
                     $penalty = -3.0;
@@ -337,7 +296,7 @@ class CompareScoreService
                         'reason' => "Large screen ({$screenSize}\") with unacceptable pixel density ({$ppi} PPI)",
                         'value' => $penalty,
                     ];
-                } elseif ($ppi >= 360 && $ppi < 400) {
+                } elseif ($ppi < 400) {
                     // Soft penalty for mediocre sharpness
                     $penalty = -1.5;
                     $totalAdjustment += $penalty;
@@ -360,28 +319,25 @@ class CompareScoreService
                     'reason' => "HDR support claimed but lacks 10-bit color depth (only {$colorBits}-bit)",
                     'value' => $penalty,
                 ];
+            } else if ($colorBits >= 10 && $hasHDR && $isOLED && $ppi >= 400 && $refreshRate >= 120) {
+                $bonus = match (true) {
+                    $colorBits >= 12 => 1.5,
+                    $colorBits >= 10 => 1.0, // Now catches 10-bit panels
+                };
+                $totalAdjustment += $bonus;
+                $adjustments[] = [
+                    'type' => 'bonus',
+                    'reason' => "{$colorBits}-bit color depth with HDR, OLED, {$ppi} PPI, and {$refreshRate}Hz refresh - excellent display",
+                    'value' => $bonus,
+                ];
             }
 
             // ==================================================================
             // 9. Contrast Ratio Analysis (SAFE STRING HANDLING)
             // ==================================================================
             // Clean contrast ratio string (handles "5,000,000:1", "Infinite", etc.)
-            $contrastRatioLower = strtolower(trim($contrastRatio));
             $cleanContrast = (int) filter_var($contrastRatio, FILTER_SANITIZE_NUMBER_INT);
-
-            $isOLED = str_contains($panelType, 'oled') || str_contains($panelType, 'amoled');
             $isLCD = str_contains($panelType, 'lcd') || str_contains($panelType, 'ips');
-
-            // OLED Infinite Contrast Bonus
-            if ($isOLED && ($contrastRatioLower === 'infinite' || $cleanContrast > 1000000)) {
-                $bonus = 1.5;
-                $totalAdjustment += $bonus;
-                $adjustments[] = [
-                    'type' => 'bonus',
-                    'reason' => 'True infinite contrast ratio (OLED technology)',
-                    'value' => $bonus,
-                ];
-            }
 
             // LCD Poor Contrast Penalty
             if ($isLCD && $cleanContrast > 0 && $cleanContrast < 1500) {
@@ -398,31 +354,10 @@ class CompareScoreService
             // 10. Adaptive Refresh Rate Quality (LTPO vs LTPS)
             // ==================================================================
             if ($hasAdaptive) {
-                $isLTPO = str_contains($panelType, 'ltpo');
-                $minRefreshRate = (int)($values['min_refresh_rate'] ?? $refreshRate);
+                $minRefreshRate = (int) ($values['min_refresh_rate'] ?? $refreshRate);
+                $range = $refreshRate - $minRefreshRate;
 
-                // Premium LTPO with 1Hz capability
-                if ($isLTPO && $minRefreshRate <= 1 && $isOLED) {
-                    $bonus = 2.0;
-                    $totalAdjustment += $bonus;
-                    $adjustments[] = [
-                        'type' => 'bonus',
-                        'reason' => "Premium LTPO technology with 1Hz-{$refreshRate}Hz adaptive refresh - exceptional battery efficiency",
-                        'value' => $bonus,
-                    ];
-                }
-                // Good adaptive refresh (down to 10-24Hz)
-                elseif ($minRefreshRate > 1 && $minRefreshRate <= 24) {
-                    $bonus = 1.0;
-                    $totalAdjustment += $bonus;
-                    $adjustments[] = [
-                        'type' => 'bonus',
-                        'reason' => "Good adaptive refresh range ({$minRefreshRate}Hz-{$refreshRate}Hz)",
-                        'value' => $bonus,
-                    ];
-                }
-                // Fake "adaptive" that only goes to 60Hz
-                elseif ($minRefreshRate >= 60 && $refreshRate >= 120) {
+                if ($refreshRate >= 120 && $range < 60) {
                     $penalty = -1.0;
                     $totalAdjustment += $penalty;
                     $adjustments[] = [
@@ -445,55 +380,6 @@ class CompareScoreService
                 $adjustments[] = [
                     'type' => 'penalty',
                     'reason' => "Unnecessarily high resolution ({$ppi} PPI) for {$screenSize}\" screen - impacts battery with minimal visual benefit",
-                    'value' => $penalty,
-                ];
-            }
-
-            // ==================================================================
-            // 12. Outdoor Usability (Brightness + Reflectance)
-            // ==================================================================
-            if ($brightness_hdr > 2000 && $brightness_sdr > 1000) {
-                $reflectance = (float)($values['reflectance_ratio'] ?? 100);
-
-                if ($reflectance > 0 && $reflectance < 4.5) {
-                    $bonus = 1.5;
-                    $totalAdjustment += $bonus;
-                    $adjustments[] = [
-                        'type' => 'bonus',
-                        'reason' => "Exceptional outdoor visibility (high brightness + low reflectance: {$reflectance}%)",
-                        'value' => $bonus,
-                    ];
-                }
-            }
-
-            // ==================================================================
-            // 13. Glass Protection Reality Check
-            // ==================================================================
-            $glassProtection = strtolower($values['glass_protection'] ?? '');
-
-            // Bonus for premium protection
-            if (
-                str_contains($glassProtection, 'victus 2') ||
-                str_contains($glassProtection, 'victus 3') ||
-                str_contains($glassProtection, 'ceramic shield')
-            ) {
-                $bonus = 1.0;
-                $totalAdjustment += $bonus;
-                $adjustments[] = [
-                    'type' => 'bonus',
-                    'reason' => 'Top-tier glass protection (latest generation)',
-                    'value' => $bonus,
-                ];
-            }
-
-            // Penalty for no protection on premium device
-            $phonePrice = (int)($values['price'] ?? 0);
-            if (empty($glassProtection) && $phonePrice > 600) {
-                $penalty = -2.0;
-                $totalAdjustment += $penalty;
-                $adjustments[] = [
-                    'type' => 'penalty',
-                    'reason' => 'No glass protection on premium device',
                     'value' => $penalty,
                 ];
             }

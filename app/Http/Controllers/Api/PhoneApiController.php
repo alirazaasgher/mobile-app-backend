@@ -680,27 +680,6 @@ class PhoneApiController extends Controller
                 'charts' => $chartData,
             ],
         ]);
-        // Attach relationships
-        $attachData = function ($collection) use ($searchIndexes, $brands) {
-            return $collection->map(function ($phone) use ($searchIndexes, $brands) {
-                $phone->brand = $brands[$phone->brand_id] ?? null;
-                $phone->searchIndex = $searchIndexes[$phone->id] ?? (object) [
-                    'ram' => null,
-                    'storage' => null,
-                    'min_price_usd' => null,
-                    'storage_type' => null,
-                    'ram_type' => null,
-                    'min_price' => null,
-                ];
-                return $phone;
-            });
-        };
-        $phones = $attachData($phones);
-        PhoneResource::$hideDetails = true;
-        return response()->json([
-            'success' => true,
-            'data' => $phones->map(fn($phone) => new PhoneResource($phone, true)),
-        ]);
     }
 
     public function scorePhone($specs, $scorer, $profile)
@@ -733,50 +712,38 @@ class PhoneApiController extends Controller
             $reverceCharging = $s['battery']['reverse'] ?? '';
             $screenGlassType = extractScreenGlassType($s['display']['protection'] ?? null);
             $formatGlassProtection = formatGlassProtection($screenGlassType ?? []);
-            $res =   $scorer->scoreCategory('display', [
-                'size' => extractSize($s['display']['size'] ?? null),
-                'type' => getShortDisplay($s['display']['type'] ?? null),
-                'resolution' => shortResolution($s['display']['resolution'] ?? null),
-                'refresh_rate' => extractNumber($s['display']['refresh_rate'] ?? null),
-                'screen_ratio' => (float) str_replace('%', '', $s['display']['screen_to_body_ratio'] ?? "N/A"),
-                'aspect_ratio' => $s['display']['aspect_ratio'] ?? null,
-                'hdr_support' => getHdrSupport($s['display']['features'] ?? ""),
-                "pixel_density" => extractPpi($s['display']['resolution'] ?? null),
-                'brightness_peak' => extractBrightness($s['display']['brightness'] ?? "", "peak"),
-                // 'brightness_typical' => extractBrightness($s['display']['brightness'] ?? "", "typical"),
-                'pwm_frequency' => extractNumber($s['display']['pwm_frequency'] ?? null),
-                'glass_protection' => $formatGlassProtection,
-                'touch_sampling_rate' => preg_replace('/\D+/', '', $s['display']['touch_sampling_rate'] ?? null),
-                'adaptive_refresh_rate_range' => preg_replace('/\D+/', '', $s['display']['adaptive_refresh_rate_range'] ?? null),
-                'contrast_ratio' => $s['display']['contrast_ratio'] ?? null,
-                "color_depth" => $s['display']['color_depth'] ?? null,
-                'always_on_display' => $s['display']['always_on_display'] ?? 'NO',
-                'has_branded_glass' => $screenGlassType['has_branded_glass'] ?? null,
-            ], $profile);
-            echo "<pre>";
-            print_r($res);
-            exit;
             return [
                 'display' => $scorer->scoreCategory('display', [
+                    // Core panel basics
                     'size' => extractSize($s['display']['size'] ?? null),
                     'type' => getShortDisplay($s['display']['type'] ?? null),
                     'resolution' => shortResolution($s['display']['resolution'] ?? null),
-                    'refresh_rate' => extractNumber($s['display']['refresh_rate'] ?? null),
-                    'screen_ratio' => (float) str_replace('%', '', $s['display']['screen_to_body_ratio'] ?? "N/A"),
                     'aspect_ratio' => $s['display']['aspect_ratio'] ?? null,
-                    'hdr_support' => getHdrSupport($s['display']['features'] ?? ""),
-                    "pixel_density" => extractPpi($s['display']['resolution'] ?? null),
-                    'brightness_peak' => extractBrightness($s['display']['brightness'] ?? "", "peak"),
-                    'brightness_typical' => extractBrightness($s['display']['brightness'] ?? "", "typical"),
-                    'pwm_frequency' => extractNumber($s['display']['pwm_frequency'] ?? null),
-                    'glass_protection' => $formatGlassProtection,
-                    'touch_sampling_rate' => preg_replace('/\D+/', '', $s['display']['touch_sampling_rate'] ?? null),
+                    'screen_ratio' => (float) str_replace('%', '', $s['display']['screen_to_body_ratio'] ?? 'N/A'),
+                    'pixel_density' => extractPpi($s['display']['resolution'] ?? null),
+
+                    // Motion & responsiveness
+                    'refresh_rate' => extractNumber($s['display']['refresh_rate'] ?? null),
                     'adaptive_refresh_rate' => preg_replace('/\D+/', '', $s['display']['adaptive_refresh_rate_range'] ?? null),
-                    'contrast_ratio' => $s['display']['contrast_ratio'] ?? null,
-                    "color_depth" => $s['display']['color_depth'] ?? null,
-                    'always_on_display' => $s['display']['always_on_display'] ?? 'NO',
+                    'touch_sampling_rate' => preg_replace('/\D+/', '', $s['display']['touch_sampling_rate'] ?? null),
+
+                    // Brightness & visibility
+                    'brightness_peak' => extractBrightness($s['display']['brightness'] ?? '', 'peak'),
+                    'brightness_typical' => extractBrightness($s['display']['brightness'] ?? '', 'typical'),
+                    'contrast_ratio' => isset($s['display']['contrast_ratio'])
+                        ? str_replace(',', '', explode(':', $s['display']['contrast_ratio'])[0])
+                        : null,
+                    'hdr_support' => getHdrSupport($s['display']['features'] ?? ''),
+
+                    // Eye care & protection
+                    'pwm' => extractNumber($s['display']['pwm_frequency'] ?? null),
+                    'glass_protection' => $formatGlassProtection,
                     'has_branded_glass' => $screenGlassType['has_branded_glass'] ?? null,
+
+                    // Features
+                    'always_on_display' => $s['display']['always_on_display'] ?? 'NO',
                 ], $profile),
+
                 'performance' => $scorer->scoreCategory('performance', [
                     'chipset' => getShortChipset($s['performance']['chipset'] ?? null),
                     'ram' => $memoryParsed['ram'],

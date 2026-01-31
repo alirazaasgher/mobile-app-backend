@@ -5,7 +5,7 @@ return [
         //SCREEN QUALITY Total Weight 19 points
         'pixel_density' => [
             'label' => 'Pixel Density (PPI)',
-            'weight' => 9.62,
+            'weight' => 12,
             'unit' => [
                 'value' => '(PPI)',
                 'position' => 'after',
@@ -24,36 +24,41 @@ return [
         ],
         'contrast_ratio' => [
             'label' => 'Contrast Ratio',
-            'weight' => 8.65,
-            'scale' => [
-                // ELITE: Tandem OLED / Micro-OLED / MLA+
-                '5,000,000:1' => 10,
-                'infinite' => 10, // Common marketing for OLED
+            'weight' => 10,
+            'unit' => [
+                'value' => ':1',
+                'position' => 'after',
+                'space' => false
+            ],
+            'ranges' => [
+                // ELITE: Tandem OLED / MLA+ / MicroLED
+                ['min' => 8000000, 'score' => 10, 'label' => 'Elite (Tandem OLED)'],
 
-                // TOP TIER: Advanced 2025/2026 OLED Panels
-                '2,000,000:1' => 9.5,
-                '1,500,000:1' => 9,
+                // FLAGSHIP: Standard High-End OLED
+                ['min' => 2000000, 'score' => 9.5, 'label' => 'Perfect Blacks'],
 
-                // STANDARD FLAGSHIP: Baseline OLED
-                '1,000,000:1' => 8.5,
+                // ENTRY OLED / TOP MINI-LED:
+                ['min' => 1000000, 'score' => 9, 'label' => 'Excellent'],
 
-                // HIGH-END LCD / MINI-LED:
-                '100,000:1' => 7, // Dynamic Local Dimming
-                '10,000:1' => 6, // High-end Mini-LED
+                // PREMIUM LCD: Mini-LED with High Zone Count
+                ['min' => 100000, 'score' => 7.5, 'label' => 'High Contrast LCD'],
 
-                // MID-TIER LCD:
-                '2,000:1' => 4, // IPS Black Tech
-                '1,500:1' => 3, // Standard IPS
-                '1,000:1' => 2, // Budget LCD
+                // MID-RANGE: IPS Black Technology
+                ['min' => 2000, 'score' => 5, 'label' => 'Above Average LCD'],
 
-                'none' => 0,
+                // STANDARD: IPS / VA panels
+                ['min' => 1000, 'score' => 3, 'label' => 'Standard'],
+
+                // BUDGET:
+                ['min' => 0, 'score' => 1, 'label' => 'Poor'],
             ],
             'default' => 0,
+            'info_text' => 'Contrast ratio defines the depth of blacks. 8,000,000:1 and above indicates cutting-edge OLED tech with virtually perfect black levels.',
         ],
         // BRIGHTNESS & VISIBILITY Total Weight 24 points
         'brightness_peak' => [
             'label' => 'Peak Brightness',
-            'weight' => 9.62,
+            'weight' => 14,
             'unit' => [
                 'value' => 'nits',
                 'position' => 'after',
@@ -73,7 +78,7 @@ return [
         ],
         'brightness_typical' => [
             'label' => 'Typical Brightness',
-            'weight' => 5.77, // New spec
+            'weight' => 5,
             'unit' => [
                 'value' => 'nits',
                 'position' => 'after',
@@ -94,8 +99,8 @@ return [
             'inference' => [
                 'conditions' => [
                     'brightness_typical' => null,
-                    'brightness_peak'    => ['min' => 2000],
-                    'hdr_support'        => ['not_null' => true],
+                    'brightness_peak' => ['min' => 2000],
+                    'hdr_support' => ['not_null' => true],
                 ],
 
                 // 👇 VALUE inference (not score)
@@ -111,7 +116,7 @@ return [
         ],
         'sustained_brightness' => [
             'label' => 'Sustained Brightness',
-            'weight' => 8,
+            'weight' => 0,
             'unit' => [
                 'value' => 'nits',
                 'position' => 'after',
@@ -130,7 +135,7 @@ return [
         ],
         'reflectance_ratio' => [
             'label' => 'Reflectance Ratio',
-            'weight' => 6,
+            'weight' => 0,
             'unit' => [
                 'value' => '%',
                 'position' => 'after',
@@ -160,7 +165,7 @@ return [
         //COLOR & HDR Total Weight 16 points
         'hdr_support' => [
             'label' => 'HDR Support',
-            'weight' => 7.69,
+            'weight' => 9,
             'scale' => [
                 // ELITE: Triple Dynamic Metadata + Ultra HDR (2026 Ultra Flagships)
                 'dolby vision 2, hdr10+ advanced, hdr vivid, ultra hdr' => 10,
@@ -190,7 +195,7 @@ return [
         ],
         'color_depth' => [
             'label' => 'Color Depth',
-            'weight' => 7.69,
+            'weight' => 7,
             'scale' => [
                 // ELITE: 2026 Content Creator Tier
                 '12-bit (true)' => 10,  // Pro cinema sensors/displays
@@ -213,7 +218,7 @@ return [
         ],
         'colour_gamut' => [
             'label' => 'DCI-P3 Color Gamut',
-            'weight' => 3,
+            'weight' => 0,
             'unit' => [
                 'value' => '%',
                 'position' => 'after',
@@ -285,7 +290,7 @@ return [
         // PERFORMANCE & SMOOTHNESS Total Weight 22 points
         'refresh_rate' => [
             'label' => 'Refresh Rate',
-            'weight' => 6.73,
+            'weight' => 9,
             'unit' => [
                 'value' => 'Hz',
                 'position' => 'after',
@@ -303,7 +308,7 @@ return [
         ],
         'adaptive_refresh_rate' => [
             'label' => 'Adaptive Refresh Rate',
-            'weight' => 7.69,
+            'weight' => 10,
             'unit' => [
                 'value' => 'Hz',
                 'position' => 'after',
@@ -322,7 +327,7 @@ return [
         ],
         'touch_sampling_rate' => [
             'label' => 'Touch Sampling Rate',
-            'weight' => 4.81,
+            'weight' => 4,
             'unit' => [
                 'value' => 'Hz',
                 'position' => 'after',
@@ -362,9 +367,9 @@ return [
         ],
 
         //  EYE COMFORT & HEALTH Total Weight 7 points
-        'pwm_frequency' => [
+        'pwm' => [
             'label' => 'PWM Dimming Frequency',
-            'weight' => 10,
+            'weight' => 11,
             'unit' => [
                 'value' => 'Hz',
                 'position' => 'after',
@@ -378,7 +383,7 @@ return [
                 ['min' => 1920, 'score' => 6],
                 ['min' => 480, 'score' => 2],  // Obsolete/High Strain
             ],
-            'default' => 2,
+            'default' => 3,
 
         ],
         'dc_dimming' => [
@@ -400,7 +405,7 @@ return [
         // PROTECTION & DURABILITY Total Weight 5 points
         'glass_protection' => [
             'label' => 'Glass Protection',
-            'weight' => 4.81,
+            'weight' => 6,
             'scale' => [
                 // ELITE: 2026 "No-Protector" Generation
                 'gorilla glass ultra-high strength' => 10, // Rumored for S26 Ultra
@@ -437,7 +442,7 @@ return [
         //  FEATURES & EXTRAS Total Weight 7 points
         'display_features' => [
             'label' => 'Display Features',
-            'weight' => 3.85,
+            'weight' => 3,
             'scale' => [
                 // ELITE: 2026 Health & AI Bundle
                 'circadian friendly, ai provisual engine, tuv 5-star eye comfort' => 10,
