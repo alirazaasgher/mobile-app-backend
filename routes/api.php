@@ -22,6 +22,7 @@ Route::middleware(['verify.api.signature'])->group(function () {
         Route::get('/phones/{slug}', [PhoneApiController::class, 'show'])->name('phones.show');
         Route::get('/phones/getSimilarMobiles', [PhoneApiController::class, 'similar_mobiles']);
         Route::get('/getPhoneBySlug', [PhoneApiController::class, 'getPhoneBySlug']);
+        Route::post('/phones/display-score', [PhoneApiController::class, 'getDisplayScore']);
     });
 
     // 🔍 Search endpoints - 20/min

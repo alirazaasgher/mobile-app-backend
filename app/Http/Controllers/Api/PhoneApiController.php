@@ -11,6 +11,8 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Cache;
 use App\Http\Resources\PhoneResource;
 use App\Http\Resources\PhoneListResource;
+use App\Services\CompareScoreService;
+use App\Services\PhoneService;
 use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\DB;
 use PhpParser\Node\Expr\FuncCall;
@@ -18,10 +20,11 @@ use PhpParser\Node\Expr\FuncCall;
 class PhoneApiController extends Controller
 {
     protected PhoneSearchService $phoneSearchService;
-
-    public function __construct(PhoneSearchService $phoneSearchService)
+    protected $phoneService;
+    public function __construct(PhoneSearchService $phoneSearchService, PhoneService $phoneService)
     {
         $this->phoneSearchService = $phoneSearchService;
+        $this->phoneService = $phoneService;
     }
 
     /**
@@ -610,38 +613,81 @@ class PhoneApiController extends Controller
             'slugs.*' => 'string|exists:phones,slug',
             'profile' => 'nullable|string|in:balanced,gaming,camera,battery,budget_conscious,media_consumer,business_professional',
         ]);
+
         $slugs = $validated['slugs'];
         $profile = $validated['profile'] ?? 'balanced';
-        $phones = Phone::select('id', 'name', 'brand_id', 'slug', 'release_date', 'primary_image', 'primary_color', 'updated_at', 'is_popular', 'status')
-            ->with('specifications') // Load specifications relationship
+        $phones = Phone::select(
+            'id',
+            'name',
+            'brand_id',
+            'slug',
+            'release_date',
+            'primary_image',
+            'primary_color',
+            'updated_at',
+            'is_popular',
+            'status'
+        )
+            ->with(['specifications' => function ($query) {
+                $query->select('phone_id', 'category', 'specifications');
+            }])
             ->whereIn('slug', $slugs)
             ->get();
-        $allBrandIds = $phones->pluck('brand_id')->unique()->toArray();
-        $usedPhoneIds = $phones->pluck('id')->unique()->toArray();
-        $brands = DB::table('brands')
-            ->select('id', 'name')
-            ->whereIn('id', $allBrandIds)
-            ->get()
-            ->keyBy('id');
 
-        // Load search indices (already optimized)
-        $searchIndexes = DB::table('phone_search_indices')
-            ->select(
-                'phone_id',
-                'min_ram AS ram',
-                'min_storage AS storage',
-                'min_price_usd',
-                'storage_type',
-                'ram_type',
-                'min_price_pkr as min_price'
-            )
-            ->whereIn('phone_id', array_unique($usedPhoneIds))
-            ->get()
-            ->keyBy('phone_id');
-        $scorer = app(\App\Services\CompareScoreService::class);
-        $scoredPhones = $phones->map(function ($phone) use ($searchIndexes, $brands, $scorer, $profile) {
-            $phone->brand = $brands[$phone->brand_id] ?? null;
-            $phone->searchIndex = $searchIndexes[$phone->id] ?? (object) [
+        // Early return if no phones found
+        if ($phones->isEmpty()) {
+            return response()->json(['error' => 'No phones found'], 404);
+        }
+
+        // Step 2: Extract IDs in one go
+        $phoneIds = $phones->pluck('id')->all();
+        $brandIds = $phones->pluck('brand_id')->unique()->all();
+
+        // Step 3: Parallel data loading (more efficient than sequential)
+        [$brands, $searchIndexes] = [
+            DB::table('brands')
+                ->select('id', 'name', 'logo') // Add logo if needed
+                ->whereIn('id', $brandIds)
+                ->get()
+                ->keyBy('id'),
+
+            DB::table('phone_search_indices')
+                ->select(
+                    'phone_id',
+                    'min_ram AS ram',
+                    'min_storage AS storage',
+                    'min_price_usd',
+                    'storage_type',
+                    'ram_type',
+                    'min_price_pkr AS min_price'
+                )
+                ->whereIn('phone_id', $phoneIds)
+                ->get()
+                ->keyBy('phone_id')
+        ];
+
+        // Step 4: Pre-calculate all scores (MAJOR PERFORMANCE BOOST)
+        $allScores = $phones->mapWithKeys(function ($phone) use ($profile) {
+            // Create a simple array: category => decoded specs
+            $specsByCategory = $phone->specifications
+                ->mapWithKeys(function ($spec) {
+                    // Decode JSON and key by category
+                    return [
+                        $spec->category => json_decode($spec->specifications, true) ?: []
+                    ];
+                });
+
+            // Map each category to its score
+            $scores = $specsByCategory->mapWithKeys(function ($specData, $category) use ($profile) {
+                return [$category => $this->phoneService->scoreByCategory($category, $specData, $profile)];
+            });
+
+            return [$phone->id => $scores];
+        });
+        $scoredPhones = $phones->map(function ($phone) use ($searchIndexes, $brands, $allScores) {
+            $phone->brand = $brands[$phone->brand_id] ?? (object)['id' => null, 'name' => 'Unknown'];
+
+            $phone->searchIndex = $searchIndexes[$phone->id] ?? (object)[
                 'ram' => null,
                 'storage' => null,
                 'min_price_usd' => null,
@@ -650,10 +696,16 @@ class PhoneApiController extends Controller
                 'min_price' => null,
             ];
 
-            // Get phone specifications (adjust based on your existing spec extraction logic)
-            $specs = $phone->specifications; // or however you access specs
-            // Score all categories
-            $phone->scores = $this->scorePhone($specs, $scorer, $profile);
+            // Assign pre-calculated scores
+            $phone->scores = $allScores[$phone->id] ?? [];
+
+            // Optional: Calculate overall score
+            $phone->overallScore = !empty($phone->scores)
+                ? round(array_sum($phone->scores) / count($phone->scores), 1)
+                : 0;
+
+            // Clean up - remove specifications from response if not needed
+            unset($phone->specifications);
 
             return $phone;
         });
@@ -680,175 +732,6 @@ class PhoneApiController extends Controller
                 'charts' => $chartData,
             ],
         ]);
-    }
-
-    public function scorePhone($specs, $scorer, $profile)
-    {
-        $s = $specs->keyBy('category')
-            ->map(fn($spec) => json_decode($spec->specifications, true) ?: []);
-        $benchmark = getBenchmark($s['performance']['benchmark'] ?? '');
-        $buildMaterials = buildMaterials($s['build']['build'] ?? '');
-        $mobileDimensions = getMobileDimensions($s['build']['dimensions'] ?? []);
-        $cameraApertures = extractCameraApertures($s['main_camera']);
-        $cameraOpticalZoom = extractOpticalZoom($s['main_camera']);
-        $cameratabilization = extractStabilization($s['main_camera']);
-        $cameraSetup = parseCameraSetup($s['main_camera']['setup']);
-        $cameraFlash = getFlash($s['main_camera']);
-        $cameraVideo = extractVideo($s['main_camera']['video']);
-        $setup = $s['selfie_camera']['setup'] ?? ''; // e.g., "Single (50 MP)"
-        // Extract the first number
-        preg_match('/\d+/', $setup, $matches);
-        $frontCameraSetup = $matches[0] ?? null;
-        $object = [];
-        foreach ($cameraSetup as $value) {
-            // Dynamically use 'type' as key and 'mp' as value
-            $key = $value['type']; // e.g., 'rear', 'front', 'wide'
-            $object[$key] = $value['mp'] ?? null; // fallback to null if 'mp' is missing
-        }
-        $memoryParsed = parseMemory($s['memory']['memory'] ?? '');
-        try {
-            $wiredChargingSpec = $s['battery']['charging_speed'] ?? '';
-            $wirlessCharging = $s['battery']['wireless'] ?? '';
-            $reverceCharging = $s['battery']['reverse'] ?? '';
-            $screenGlassType = extractScreenGlassType($s['display']['protection'] ?? null);
-            $formatGlassProtection = formatGlassProtection($screenGlassType ?? []);
-            return [
-                'display' => $scorer->scoreCategory('display', [
-                    // Core panel basics
-                    'size' => extractSize($s['display']['size'] ?? null),
-                    'type' => getShortDisplay($s['display']['type'] ?? null),
-                    'resolution' => shortResolution($s['display']['resolution'] ?? null),
-                    'aspect_ratio' => $s['display']['aspect_ratio'] ?? null,
-                    'screen_ratio' => (float) str_replace('%', '', $s['display']['screen_to_body_ratio'] ?? 'N/A'),
-                    'pixel_density' => extractPpi($s['display']['resolution'] ?? null),
-
-                    // Motion & responsiveness
-                    'refresh_rate' => extractNumber($s['display']['refresh_rate'] ?? null),
-                    'adaptive_refresh_rate' => preg_replace('/\D+/', '', $s['display']['adaptive_refresh_rate_range'] ?? null),
-                    'touch_sampling_rate' => preg_replace('/\D+/', '', $s['display']['touch_sampling_rate'] ?? null),
-
-                    // Brightness & visibility
-                    'brightness_peak' => extractBrightness($s['display']['brightness'] ?? '', 'peak'),
-                    'brightness_typical' => extractBrightness($s['display']['brightness'] ?? '', 'typical'),
-                    'contrast_ratio' => isset($s['display']['contrast_ratio'])
-                        ? str_replace(',', '', explode(':', $s['display']['contrast_ratio'])[0])
-                        : null,
-                    'hdr_support' => getHdrSupport($s['display']['features'] ?? ''),
-
-                    // Eye care & protection
-                    'pwm' => extractNumber($s['display']['pwm_frequency'] ?? null),
-                    'glass_protection' => $formatGlassProtection,
-                    'has_branded_glass' => $screenGlassType['has_branded_glass'] ?? null,
-
-                    // Features
-                    'always_on_display' => $s['display']['always_on_display'] ?? 'NO',
-                ], $profile),
-
-                'performance' => $scorer->scoreCategory('performance', [
-                    'chipset' => getShortChipset($s['performance']['chipset'] ?? null),
-                    'ram' => $memoryParsed['ram'],
-                    'storage_capacity' => $memoryParsed['storage'],
-                    'cpu' => cpuType($s['performance']['cpu']) ?? null,
-                    'gpu' => $s['performance']['gpu'] ?? null,
-                    'storage_type' => $s['memory']['storage_type'] ?? null,
-                    'ram_type' => $s['memory']['ram_type'] ?? null,
-                    'instant_touch_sampling_rate' => preg_replace('/\D+/', '', $s['performance']['instant_touch_sampling_rate'] ?? null),
-                    //'antutu_score_(v10)' => $benchmark['antutu'] ?? null,
-                    'card_slot' => $s['memory']['card_slot'] ?? 'NO'
-
-                ], $profile),
-                'camera' => $scorer->scoreCategory(
-                    'camera',
-                    array_merge(
-                        $object,
-                        $cameraApertures, // dynamic camera keys
-                        [
-                            'optical_zoom' => $cameraOpticalZoom,
-                            'stabilization' => $cameratabilization,
-                            'flash' => $cameraFlash,
-                            'front' => $frontCameraSetup ?? null,
-                            'video_resolution' => $cameraVideo ?? null,
-                            'front_video' => extractVideo($s['selfie_camera']['video']) ?? null,
-                        ]
-                    ),
-                    $profile
-                ),
-                'battery' => $scorer->scoreCategory(
-                    'battery',
-                    [
-                        "type" => parseBatteryType($s['battery']['type']),
-                        'capacity' => parseBatteryCapacity($s['battery']['capacity']) ?? null,
-                        'Fast' => parseFastChargingToWatts($wiredChargingSpec),
-                        'Wirless' => parseFastChargingToWatts($wirlessCharging ?? 0),
-                        'Reverce' => parseFastChargingToWatts($reverceCharging ?? 0),
-                    ],
-                    $profile
-                ),
-                'build' => $scorer->scoreCategory(
-                    'build',
-                    [
-                        'dimensions' => $mobileDimensions['dimensions'] ?? null,
-                        'thickness' => $mobileDimensions['thickness'] ?? null,
-                        'weight' => $s['build']['weight'] !== null
-                            ? (float) preg_replace('/[^0-9.]/', '', $s['build']['weight'])
-                            : null,
-                        'build_material' => $buildMaterials['build_material'] ?? null,
-                        'back_material' => $buildMaterials['back_material'] ?? null,
-                        'ip_rating' => shortIPRating($s['build']['ip_rating']) ?? null,
-                    ],
-                    $profile
-                ),
-
-                'features' => $scorer->scoreCategory(
-                    'features',
-                    [
-                        'nfc' => $s['connectivity']['nfc'] ?? null,
-                        'stereo_speakers' => $s['audio']['stereo'] ?? null,
-                        '3.5mm_jack' => $s['audio']['3.5mm_jack'] ?? null,
-                        "infrared" => $s['connectivity']['infrared'] ?? null,
-                        'wifi' => formatWifiValue($s['connectivity']['wifi']),
-                        'bluetooth_version' => isset($s['connectivity']['bluetooth'])
-                            ? (preg_match('/v([\d.]+)/i', $s['connectivity']['bluetooth'], $m) ? $m[1] : null)
-                            : null,
-                        'usb' => formatUsbLabel($s['connectivity']['usb']),
-                    ],
-                    $profile
-                ),
-                // 'software' => $scorer->scoreCategory(
-                //     'software',
-                //     [
-                //         'os' => mobileVersion($s['performance']['os'] ?? null),
-                //         'update_policy' => $s['performance']['update_policy'] ?? null, // e.g., "3 years security updates"
-                //         'extra_features' => $s['software']['features'] ?? null, // e.g., gestures, multitasking, AI features
-                //     ],
-                //     $profile
-                // ),
-                // 'value' => $scorer->scoreCategory(
-                //     'value',
-                //     [
-                //         'price' => $s['pricing']['price'] ?? null,
-                //         'spec_score_sum' => array_sum([
-                //             $s['performance']['chipset_score'] ?? 0,
-                //             $s['camera']['score'] ?? 0,
-                //             $s['battery']['score'] ?? 0,
-                //             $s['display']['score'] ?? 0,
-                //             $s['build']['score'] ?? 0,
-                //             $s['features']['score'] ?? 0,
-                //         ]),
-                //         'price_performance_ratio' => isset($s['pricing']['price']) && isset($s['performance']['chipset_score'])
-                //             ? $s['performance']['chipset_score'] / $s['pricing']['price']
-                //             : null,
-                //     ],
-                //     $profile
-                // ),
-            ];
-        } catch (\Exception $e) {
-            \Log::error("Error in getCompareSpecsAttribute for phone: " . $e->getMessage());
-            echo "<pre>";
-            print_r($e->getMessage());
-            exit;
-            return ['key' => [], 'expandable' => []];
-        }
     }
 
     private function generateVerdict($phones, $profile)
@@ -1210,16 +1093,6 @@ class PhoneApiController extends Controller
         }
 
         return implode(', ', $items) . ', and ' . $last;
-    }
-
-    private function getOtherPhone($currentPhone, $phones)
-    {
-        foreach ($phones as $phone) {
-            if ($phone !== $currentPhone) {
-                return $phone;
-            }
-        }
-        return '';
     }
 
     /**
@@ -1594,6 +1467,76 @@ class PhoneApiController extends Controller
             ->select('phones.*') // keep full Phone model for resource
             ->limit(6)
             ->get();
+    }
+
+    public function getDisplayScore(Request $request)
+    {
+        $validated = $request->validate([
+            'category' => 'required|string|in:display,battery,performance,camera',
+            'phone_id' => 'nullable|integer|exists:phones,id',
+        ]);
+
+        $category = $validated['category'];
+        $excludePhoneId = $validated['phone_id'] ?? null;
+
+        // Build query
+        $query = Phone::select(
+            'id',
+            'name',
+            'brand_id',
+            'slug',
+            'release_date',
+            'primary_image',
+            'primary_color',
+            'updated_at',
+            'is_popular',
+        )
+            ->with([
+                'brand:id,name', // Include brand info
+                'specifications' => function ($query) use ($category) {
+                    $query->where('category', $category)
+                        ->select('phone_id', 'category', 'score', 'details');
+                }
+            ])
+            ->where('status', 'active') // Only active phones
+            ->whereHas('specifications', function ($query) use ($category) {
+                // Only phones that have this category score
+                $query->where('category', $category);
+            });
+
+        // Exclude specific phone if provided
+        if ($excludePhoneId) {
+            $query->whereNot('id', $excludePhoneId);
+        }
+
+        // Get phones and sort by category score
+        $phones = $query->get()->map(function ($phone) use ($category) {
+            // Extract the score from specifications
+            $specification = $phone->specifications->first();
+
+            return [
+                'id' => $phone->id,
+                'name' => $phone->name,
+                'brand' => $phone->brand->name ?? 'Unknown',
+                'slug' => $phone->slug,
+                'displayScore' => $specification->score ?? 0,
+                'image' => $phone->primary_image,
+                'color' => $phone->primary_color,
+                'releaseDate' => $phone->release_date,
+                'keyFeatures' => $specification->details['key_features'] ?? [],
+            ];
+        })
+            ->sortByDesc('displayScore')
+            ->values() // Re-index array
+            ->toArray();
+
+        return response()->json([
+            'category' => ucfirst($category) . ' Score',
+            'categoryId' => $category,
+            'rankedPhones' => $phones,
+            'totalPhones' => count($phones),
+            'currentSort' => 'score',
+        ]);
     }
 
     private function executeFilterQuery($filters, $perPage, $page)

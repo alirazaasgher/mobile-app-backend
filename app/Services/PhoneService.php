@@ -14,9 +14,16 @@ use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Collection;
 
 class PhoneService
 {
+
+    protected $compareScoreService;
+    public function __construct(CompareScoreService $compareScoreService)
+    {
+        $this->compareScoreService = $compareScoreService;
+    }
     /**
      * Get filtered phones with pagination
      */
@@ -838,5 +845,335 @@ class PhoneService
                 'colorHex' => $color->hex_code,
             ])
             ->toArray();
+    }
+
+    public function scoreByCategory(string $category, array $specs, string $profile)
+    {
+        switch ($category) {
+            case 'display':
+                return $this->scoreDisplay($specs, $profile);
+            case 'performance':
+                return $this->scorePerformance($specs, $profile);
+
+            case 'camera':
+                return $this->scoreCamera($specs, $profile);
+
+            case 'battery':
+                return $this->scoreBattery($specs, $profile);
+
+            case 'build':
+                return $this->scoreBuild($specs, $profile);
+
+            case 'features':
+                return $this->scoreFeatures($specs, $profile);
+
+            default:
+                return;
+        }
+    }
+
+    protected function scoreDisplay(array $s, string $profile)
+    {
+        $screenGlassType = extractScreenGlassType($s['display']['protection'] ?? null);
+        $formatGlassProtection = formatGlassProtection($screenGlassType ?? []);
+        return $this->compareScoreService->scoreCategory('display', [
+            // Core panel basics
+            'size' => extractSize($s['display']['size'] ?? null),
+            'type' => getShortDisplay($s['display']['type'] ?? null),
+            'resolution' => shortResolution($s['display']['resolution'] ?? null),
+            'aspect_ratio' => $s['display']['aspect_ratio'] ?? null,
+            'screen_ratio' => (float) str_replace('%', '', $s['display']['screen_to_body_ratio'] ?? 'N/A'),
+            'pixel_density' => extractPpi($s['display']['resolution'] ?? null),
+
+            // Motion & responsiveness
+            'refresh_rate' => extractNumber($s['display']['refresh_rate'] ?? null),
+            'adaptive_refresh_rate' => preg_replace('/\D+/', '', $s['display']['adaptive_refresh_rate_range'] ?? null),
+            'touch_sampling_rate' => preg_replace('/\D+/', '', $s['display']['touch_sampling_rate'] ?? null),
+
+            // Brightness & visibility
+            'brightness_peak' => extractBrightness($s['display']['brightness'] ?? '', 'peak'),
+            'brightness_typical' => extractBrightness($s['display']['brightness'] ?? '', 'typical'),
+            'contrast_ratio' => isset($s['display']['contrast_ratio'])
+                ? str_replace(',', '', explode(':', $s['display']['contrast_ratio'])[0])
+                : null,
+            'hdr_support' => getHdrSupport($s['display']['features'] ?? ''),
+
+            // Eye care & protection
+            'pwm' => extractNumber($s['display']['pwm_frequency'] ?? null),
+            'glass_protection' => $formatGlassProtection,
+            'has_branded_glass' => $screenGlassType['has_branded_glass'] ?? null,
+
+            // Features
+            'always_on_display' => $s['display']['always_on_display'] ?? 'NO'
+        ], $profile);
+    }
+
+    protected function scorePerformance(array $s, string $profile)
+    {
+        $memoryParsed = parseMemory($s['memory']['memory'] ?? '');
+        return $this->compareScoreService->scoreCategory('performance', [
+            'chipset' => getShortChipset($s['performance']['chipset'] ?? null),
+            'ram' => $memoryParsed['ram'],
+            'storage_capacity' => $memoryParsed['storage'],
+            'cpu' => cpuType($s['performance']['cpu']) ?? null,
+            'gpu' => $s['performance']['gpu'] ?? null,
+            'storage_type' => $s['memory']['storage_type'] ?? null,
+            'ram_type' => $s['memory']['ram_type'] ?? null,
+            'instant_touch_sampling_rate' => preg_replace('/\D+/', '', $s['performance']['instant_touch_sampling_rate'] ?? null),
+            //'antutu_score_(v10)' => $benchmark['antutu'] ?? null,
+            'card_slot' => $s['memory']['card_slot'] ?? 'NO'
+        ], $profile);
+    }
+
+    protected function scoreCamera(array $s, string $profile)
+    {
+        $cameraApertures = extractCameraApertures($s['main_camera']);
+        $cameraOpticalZoom = extractOpticalZoom($s['main_camera']);
+        $cameratabilization = extractStabilization($s['main_camera']);
+        $cameraSetup = parseCameraSetup($s['main_camera']['setup']);
+        $cameraFlash = getFlash($s['main_camera']);
+        $cameraVideo = extractVideo($s['main_camera']['video']);
+        $setup = $s['selfie_camera']['setup'] ?? ''; // e.g., "Single (50 MP)"
+        // Extract the first number
+        preg_match('/\d+/', $setup, $matches);
+        $frontCameraSetup = $matches[0] ?? null;
+        $object = [];
+        foreach ($cameraSetup as $value) {
+            // Dynamically use 'type' as key and 'mp' as value
+            $key = $value['type']; // e.g., 'rear', 'front', 'wide'
+            $object[$key] = $value['mp'] ?? null; // fallback to null if 'mp' is missing
+        }
+        return $this->compareScoreService->scoreCategory(
+            'camera',
+            array_merge(
+                $object,
+                $cameraApertures, // dynamic camera keys
+                [
+                    'optical_zoom' => $cameraOpticalZoom,
+                    'stabilization' => $cameratabilization,
+                    'flash' => $cameraFlash,
+                    'front' => $frontCameraSetup ?? null,
+                    'video_resolution' => $cameraVideo ?? null,
+                    'front_video' => extractVideo($s['selfie_camera']['video']) ?? null,
+                ]
+            ),
+            $profile
+        );
+    }
+
+    protected function scoreBattery(array $s, string $profile)
+    {
+        $wiredChargingSpec = $s['battery']['charging_speed'] ?? '';
+        $wirlessCharging = $s['battery']['wireless'] ?? '';
+        $reverceCharging = $s['battery']['reverse'] ?? '';
+        return $this->compareScoreService->scoreCategory('battery', [
+            "type" => parseBatteryType($s['battery']['type']),
+            'capacity' => parseBatteryCapacity($s['battery']['capacity']) ?? null,
+            'Fast' => parseFastChargingToWatts($wiredChargingSpec),
+            'Wirless' => parseFastChargingToWatts($wirlessCharging ?? 0),
+            'Reverce' => parseFastChargingToWatts($reverceCharging ?? 0),
+        ], $profile);
+    }
+
+
+    protected function scoreBuild(array $s, string $profile)
+    {
+        $buildMaterials = buildMaterials($s['build']['build'] ?? '');
+        $mobileDimensions = getMobileDimensions($s['build']['dimensions'] ?? []);
+        return $this->compareScoreService->scoreCategory('build', [
+            'dimensions' => $mobileDimensions['dimensions'] ?? null,
+            'thickness' => $mobileDimensions['thickness'] ?? null,
+            'weight' => $s['build']['weight'] !== null
+                ? (float) preg_replace('/[^0-9.]/', '', $s['build']['weight'])
+                : null,
+            'build_material' => $buildMaterials['build_material'] ?? null,
+            'back_material' => $buildMaterials['back_material'] ?? null,
+            'ip_rating' => shortIPRating($s['build']['ip_rating']) ?? null,
+        ], $profile);
+    }
+
+
+    protected function scoreFeatures(array $s, string $profile)
+    {
+        return $this->compareScoreService->scoreCategory('features', [
+            'nfc' => $s['connectivity']['nfc'] ?? null,
+            'stereo_speakers' => $s['audio']['stereo'] ?? null,
+            '3.5mm_jack' => $s['audio']['3.5mm_jack'] ?? null,
+            "infrared" => $s['connectivity']['infrared'] ?? null,
+            'wifi' => formatWifiValue($s['connectivity']['wifi']),
+            'bluetooth_version' => isset($s['connectivity']['bluetooth'])
+                ? (preg_match('/v([\d.]+)/i', $s['connectivity']['bluetooth'], $m) ? $m[1] : null)
+                : null,
+            'usb' => formatUsbLabel($s['connectivity']['usb']),
+        ], $profile);
+    }
+
+    public function scorePhone($specs, $profile)
+    {
+        $s = $specs->keyBy('category')
+            ->map(fn($spec) => json_decode($spec->specifications, true) ?: []);
+        $benchmark = getBenchmark($s['performance']['benchmark'] ?? '');
+        $buildMaterials = buildMaterials($s['build']['build'] ?? '');
+        $mobileDimensions = getMobileDimensions($s['build']['dimensions'] ?? []);
+        $cameraApertures = extractCameraApertures($s['main_camera']);
+        $cameraOpticalZoom = extractOpticalZoom($s['main_camera']);
+        $cameratabilization = extractStabilization($s['main_camera']);
+        $cameraSetup = parseCameraSetup($s['main_camera']['setup']);
+        $cameraFlash = getFlash($s['main_camera']);
+        $cameraVideo = extractVideo($s['main_camera']['video']);
+        $setup = $s['selfie_camera']['setup'] ?? ''; // e.g., "Single (50 MP)"
+        // Extract the first number
+        preg_match('/\d+/', $setup, $matches);
+        $frontCameraSetup = $matches[0] ?? null;
+        $object = [];
+        foreach ($cameraSetup as $value) {
+            // Dynamically use 'type' as key and 'mp' as value
+            $key = $value['type']; // e.g., 'rear', 'front', 'wide'
+            $object[$key] = $value['mp'] ?? null; // fallback to null if 'mp' is missing
+        }
+        $memoryParsed = parseMemory($s['memory']['memory'] ?? '');
+        try {
+            $wiredChargingSpec = $s['battery']['charging_speed'] ?? '';
+            $wirlessCharging = $s['battery']['wireless'] ?? '';
+            $reverceCharging = $s['battery']['reverse'] ?? '';
+            $screenGlassType = extractScreenGlassType($s['display']['protection'] ?? null);
+            $formatGlassProtection = formatGlassProtection($screenGlassType ?? []);
+            return [
+                'display' => $this->compareScoreService->scoreCategory('display', [
+                    // Core panel basics
+                    'size' => extractSize($s['display']['size'] ?? null),
+                    'type' => getShortDisplay($s['display']['type'] ?? null),
+                    'resolution' => shortResolution($s['display']['resolution'] ?? null),
+                    'aspect_ratio' => $s['display']['aspect_ratio'] ?? null,
+                    'screen_ratio' => (float) str_replace('%', '', $s['display']['screen_to_body_ratio'] ?? 'N/A'),
+                    'pixel_density' => extractPpi($s['display']['resolution'] ?? null),
+
+                    // Motion & responsiveness
+                    'refresh_rate' => extractNumber($s['display']['refresh_rate'] ?? null),
+                    'adaptive_refresh_rate' => preg_replace('/\D+/', '', $s['display']['adaptive_refresh_rate_range'] ?? null),
+                    'touch_sampling_rate' => preg_replace('/\D+/', '', $s['display']['touch_sampling_rate'] ?? null),
+
+                    // Brightness & visibility
+                    'brightness_peak' => extractBrightness($s['display']['brightness'] ?? '', 'peak'),
+                    'brightness_typical' => extractBrightness($s['display']['brightness'] ?? '', 'typical'),
+                    'contrast_ratio' => isset($s['display']['contrast_ratio'])
+                        ? str_replace(',', '', explode(':', $s['display']['contrast_ratio'])[0])
+                        : null,
+                    'hdr_support' => getHdrSupport($s['display']['features'] ?? ''),
+
+                    // Eye care & protection
+                    'pwm' => extractNumber($s['display']['pwm_frequency'] ?? null),
+                    'glass_protection' => $formatGlassProtection,
+                    'has_branded_glass' => $screenGlassType['has_branded_glass'] ?? null,
+
+                    // Features
+                    'always_on_display' => $s['display']['always_on_display'] ?? 'NO',
+                ], $profile),
+
+                'performance' =>  $this->compareScoreService->scoreCategory('performance', [
+                    'chipset' => getShortChipset($s['performance']['chipset'] ?? null),
+                    'ram' => $memoryParsed['ram'],
+                    'storage_capacity' => $memoryParsed['storage'],
+                    'cpu' => cpuType($s['performance']['cpu']) ?? null,
+                    'gpu' => $s['performance']['gpu'] ?? null,
+                    'storage_type' => $s['memory']['storage_type'] ?? null,
+                    'ram_type' => $s['memory']['ram_type'] ?? null,
+                    'instant_touch_sampling_rate' => preg_replace('/\D+/', '', $s['performance']['instant_touch_sampling_rate'] ?? null),
+                    //'antutu_score_(v10)' => $benchmark['antutu'] ?? null,
+                    'card_slot' => $s['memory']['card_slot'] ?? 'NO'
+
+                ], $profile),
+                'camera' =>  $this->compareScoreService->scoreCategory(
+                    'camera',
+                    array_merge(
+                        $object,
+                        $cameraApertures, // dynamic camera keys
+                        [
+                            'optical_zoom' => $cameraOpticalZoom,
+                            'stabilization' => $cameratabilization,
+                            'flash' => $cameraFlash,
+                            'front' => $frontCameraSetup ?? null,
+                            'video_resolution' => $cameraVideo ?? null,
+                            'front_video' => extractVideo($s['selfie_camera']['video']) ?? null,
+                        ]
+                    ),
+                    $profile
+                ),
+                'battery' =>  $this->compareScoreService->scoreCategory(
+                    'battery',
+                    [
+                        "type" => parseBatteryType($s['battery']['type']),
+                        'capacity' => parseBatteryCapacity($s['battery']['capacity']) ?? null,
+                        'Fast' => parseFastChargingToWatts($wiredChargingSpec),
+                        'Wirless' => parseFastChargingToWatts($wirlessCharging ?? 0),
+                        'Reverce' => parseFastChargingToWatts($reverceCharging ?? 0),
+                    ],
+                    $profile
+                ),
+                'build' =>  $this->compareScoreService->scoreCategory(
+                    'build',
+                    [
+                        'dimensions' => $mobileDimensions['dimensions'] ?? null,
+                        'thickness' => $mobileDimensions['thickness'] ?? null,
+                        'weight' => $s['build']['weight'] !== null
+                            ? (float) preg_replace('/[^0-9.]/', '', $s['build']['weight'])
+                            : null,
+                        'build_material' => $buildMaterials['build_material'] ?? null,
+                        'back_material' => $buildMaterials['back_material'] ?? null,
+                        'ip_rating' => shortIPRating($s['build']['ip_rating']) ?? null,
+                    ],
+                    $profile
+                ),
+
+                'features' =>  $this->compareScoreService->scoreCategory(
+                    'features',
+                    [
+                        'nfc' => $s['connectivity']['nfc'] ?? null,
+                        'stereo_speakers' => $s['audio']['stereo'] ?? null,
+                        '3.5mm_jack' => $s['audio']['3.5mm_jack'] ?? null,
+                        "infrared" => $s['connectivity']['infrared'] ?? null,
+                        'wifi' => formatWifiValue($s['connectivity']['wifi']),
+                        'bluetooth_version' => isset($s['connectivity']['bluetooth'])
+                            ? (preg_match('/v([\d.]+)/i', $s['connectivity']['bluetooth'], $m) ? $m[1] : null)
+                            : null,
+                        'usb' => formatUsbLabel($s['connectivity']['usb']),
+                    ],
+                    $profile
+                ),
+                // 'software' => $scorer->scoreCategory(
+                //     'software',
+                //     [
+                //         'os' => mobileVersion($s['performance']['os'] ?? null),
+                //         'update_policy' => $s['performance']['update_policy'] ?? null, // e.g., "3 years security updates"
+                //         'extra_features' => $s['software']['features'] ?? null, // e.g., gestures, multitasking, AI features
+                //     ],
+                //     $profile
+                // ),
+                // 'value' => $scorer->scoreCategory(
+                //     'value',
+                //     [
+                //         'price' => $s['pricing']['price'] ?? null,
+                //         'spec_score_sum' => array_sum([
+                //             $s['performance']['chipset_score'] ?? 0,
+                //             $s['camera']['score'] ?? 0,
+                //             $s['battery']['score'] ?? 0,
+                //             $s['display']['score'] ?? 0,
+                //             $s['build']['score'] ?? 0,
+                //             $s['features']['score'] ?? 0,
+                //         ]),
+                //         'price_performance_ratio' => isset($s['pricing']['price']) && isset($s['performance']['chipset_score'])
+                //             ? $s['performance']['chipset_score'] / $s['pricing']['price']
+                //             : null,
+                //     ],
+                //     $profile
+                // ),
+            ];
+        } catch (\Exception $e) {
+            \Log::error("Error in getCompareSpecsAttribute for phone: " . $e->getMessage());
+            echo "<pre>";
+            print_r($e->getMessage());
+            exit;
+            return ['key' => [], 'expandable' => []];
+        }
     }
 }
