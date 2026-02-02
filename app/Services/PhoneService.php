@@ -847,29 +847,16 @@ class PhoneService
             ->toArray();
     }
 
-    public function scoreByCategory(string $category, array $specs, string $profile)
+    public function scoreByCategory(array $specs, string $profile):array
     {
-        switch ($category) {
-            case 'display':
-                return $this->scoreDisplay($specs, $profile);
-            case 'performance':
-                return $this->scorePerformance($specs, $profile);
-
-            case 'camera':
-                return $this->scoreCamera($specs, $profile);
-
-            case 'battery':
-                return $this->scoreBattery($specs, $profile);
-
-            case 'build':
-                return $this->scoreBuild($specs, $profile);
-
-            case 'features':
-                return $this->scoreFeatures($specs, $profile);
-
-            default:
-                return;
-        }
+        return [
+            'display' => $this->scoreDisplay($specs, $profile),
+            'performance' => $this->scorePerformance($specs, $profile),
+            'camera' => $this->scoreCamera($specs, $profile),
+            'battery' => $this->scoreBattery($specs, $profile),
+            'build' => $this->scoreBuild($specs, $profile),
+            'features' => $this->scoreFeatures($specs, $profile),
+        ];
     }
 
     protected function scoreDisplay(array $s, string $profile)
@@ -1070,7 +1057,7 @@ class PhoneService
                     'always_on_display' => $s['display']['always_on_display'] ?? 'NO',
                 ], $profile),
 
-                'performance' =>  $this->compareScoreService->scoreCategory('performance', [
+                'performance' => $this->compareScoreService->scoreCategory('performance', [
                     'chipset' => getShortChipset($s['performance']['chipset'] ?? null),
                     'ram' => $memoryParsed['ram'],
                     'storage_capacity' => $memoryParsed['storage'],
@@ -1083,7 +1070,7 @@ class PhoneService
                     'card_slot' => $s['memory']['card_slot'] ?? 'NO'
 
                 ], $profile),
-                'camera' =>  $this->compareScoreService->scoreCategory(
+                'camera' => $this->compareScoreService->scoreCategory(
                     'camera',
                     array_merge(
                         $object,
@@ -1099,7 +1086,7 @@ class PhoneService
                     ),
                     $profile
                 ),
-                'battery' =>  $this->compareScoreService->scoreCategory(
+                'battery' => $this->compareScoreService->scoreCategory(
                     'battery',
                     [
                         "type" => parseBatteryType($s['battery']['type']),
@@ -1110,7 +1097,7 @@ class PhoneService
                     ],
                     $profile
                 ),
-                'build' =>  $this->compareScoreService->scoreCategory(
+                'build' => $this->compareScoreService->scoreCategory(
                     'build',
                     [
                         'dimensions' => $mobileDimensions['dimensions'] ?? null,
@@ -1125,7 +1112,7 @@ class PhoneService
                     $profile
                 ),
 
-                'features' =>  $this->compareScoreService->scoreCategory(
+                'features' => $this->compareScoreService->scoreCategory(
                     'features',
                     [
                         'nfc' => $s['connectivity']['nfc'] ?? null,

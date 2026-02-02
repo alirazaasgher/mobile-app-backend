@@ -17,8 +17,6 @@ class CompareScoreService
     ): array {
         $profileConfig = config("compare_scoring.compare_profiles.$profile", []);
         $specConfigs = $profileConfig[$category]['specs'] ?? [];
-        // ✅ NEW: Apply inferences before scoring
-
 
         // $values = $this->applyInferences($values, $specConfigs);
 
@@ -26,7 +24,6 @@ class CompareScoreService
         $categoryScore = 0;
         foreach ($values as $specKey => $value) {
             if (isset($specConfigs[$specKey])) {
-
                 $specConfig = $specConfigs[$specKey];
                 $score = $this->scoreSpec($value, $specConfig);
 
