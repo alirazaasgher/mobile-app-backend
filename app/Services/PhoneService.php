@@ -523,7 +523,7 @@ class PhoneService
      */
     public function saveSpecifications($phone, array $specs, callable $searchableTextGetter, $update = false): bool
     {
-
+        $scores = $this->scoreByCategory($specs, 'balanced');
         foreach ($specs as $category => $categorySpecs) {
             // skip if all values empty
             if (!array_filter($categorySpecs)) {
@@ -552,16 +552,8 @@ class PhoneService
                     'max_visible' => $max_visible
                 ]
             );
-
-            // foreach ($categorySpecs as $k => $v) {
-            //     if (!in_array($k, ['expandable', 'max_visible'])) {
-            //         $mergedSpecs[$k] = $v;
-            //     }
-            // }
         }
         return true;
-
-        // return $mergedSpecs;
     }
 
     /**
@@ -847,8 +839,12 @@ class PhoneService
             ->toArray();
     }
 
-    public function scoreByCategory(array $specs, string $profile):array
+    public function scoreByCategory(array $specs, string $profile): array
     {
+        $res = $this->scoreDisplay($specs, $profile);
+        echo "<pre>";
+        print_r($res);
+        exit;
         return [
             'display' => $this->scoreDisplay($specs, $profile),
             'performance' => $this->scorePerformance($specs, $profile),
@@ -863,6 +859,13 @@ class PhoneService
     {
         $screenGlassType = extractScreenGlassType($s['display']['protection'] ?? null);
         $formatGlassProtection = formatGlassProtection($screenGlassType ?? []);
+        $brightnessTypical = extractBrightness($s['display']['brightness'] ?? '', 'typical');
+        $brightnessHBM     = extractBrightness($s['display']['brightness'] ?? '', 'hbm');
+        $brightnessPeak    = extractBrightness($s['display']['brightness'] ?? '', 'peak');
+        $effectiveBrightness =
+            $brightnessTypical
+            ?? $brightnessHBM
+            ?? $brightnessPeak;
         return $this->compareScoreService->scoreCategory('display', [
             // Core panel basics
             'size' => extractSize($s['display']['size'] ?? null),
@@ -876,20 +879,19 @@ class PhoneService
             'refresh_rate' => extractNumber($s['display']['refresh_rate'] ?? null),
             'adaptive_refresh_rate' => preg_replace('/\D+/', '', $s['display']['adaptive_refresh_rate_range'] ?? null),
             'touch_sampling_rate' => preg_replace('/\D+/', '', $s['display']['touch_sampling_rate'] ?? null),
-
             // Brightness & visibility
-            'brightness_peak' => extractBrightness($s['display']['brightness'] ?? '', 'peak'),
-            'brightness_typical' => extractBrightness($s['display']['brightness'] ?? '', 'typical'),
+            'brightness' => $effectiveBrightness,
+            'brightness_typical' => $brightnessTypical,
+            'brightness_hbm'     => $brightnessHBM,
+            'brightness_peak'    => $brightnessPeak,
             'contrast_ratio' => isset($s['display']['contrast_ratio'])
                 ? str_replace(',', '', explode(':', $s['display']['contrast_ratio'])[0])
                 : null,
             'hdr_support' => getHdrSupport($s['display']['features'] ?? ''),
-
             // Eye care & protection
             'pwm' => extractNumber($s['display']['pwm_frequency'] ?? null),
             'glass_protection' => $formatGlassProtection,
             'has_branded_glass' => $screenGlassType['has_branded_glass'] ?? null,
-
             // Features
             'always_on_display' => $s['display']['always_on_display'] ?? 'NO'
         ], $profile);

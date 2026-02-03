@@ -9,7 +9,7 @@ class CompareScoreService
     /* -------------------------------
        PUBLIC API
     --------------------------------*/
-
+//$values = $this->applyInferences($values, $specConfigs);
     public function scoreCategory(
         string $category,
         array $values,
@@ -17,8 +17,8 @@ class CompareScoreService
     ): array {
         $profileConfig = config("compare_scoring.compare_profiles.$profile", []);
         $specConfigs = $profileConfig[$category]['specs'] ?? [];
-
-        // $values = $this->applyInferences($values, $specConfigs);
+ 
+        
 
         $scoredSpecs = [];
         $categoryScore = 0;
@@ -52,8 +52,8 @@ class CompareScoreService
             ];
 
         }
-        //$adjustments = $this->applyContextualAdjustments($category, $values, $scoredSpecs, $profileConfig);
-        //$categoryScore += $adjustments['total_adjustment'];
+        $adjustments = $this->applyContextualAdjustments($category, $values, $scoredSpecs, $profileConfig);
+        $categoryScore += $adjustments['total_adjustment'];
         return [
             'score' => round($categoryScore, 2),
             'out_of' => 100,
@@ -80,7 +80,6 @@ class CompareScoreService
             if (!$inference) {
                 continue;
             }
-
             // Check if inference conditions are met
             if (!$this->checkInferenceConditions($inference['conditions'] ?? [], $values)) {
                 continue;

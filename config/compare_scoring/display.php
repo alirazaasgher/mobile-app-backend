@@ -60,7 +60,7 @@ return [
         ],
         'brightness_(peak)' => [
             'label' => 'Peak Brightness',
-            'weight' => 10, // Reduced from 15
+            'weight' => 0,
             'unit' => [
                 'value' => 'nits',
                 'position' => 'after',
@@ -80,7 +80,7 @@ return [
         ],
         'brightness_(typical)' => [
             'label' => 'Typical Brightness',
-            'weight' => 8, // New spec
+            'weight' => 0, // New spec
             'unit' => [
                 'value' => 'nits',
                 'position' => 'after',
@@ -96,6 +96,61 @@ return [
                 ['min' => 400, 'score' => 4],
                 ['min' => 300, 'score' => 3],
             ],
+            'inference' => [
+                'conditions' => [
+                    'brightness_typical' => null,
+                    'brightness_peak' => ['min' => 2000],
+                    'hdr_support' => ['not_null' => true],
+                ],
+
+                // 👇 VALUE inference (not score)
+                'value_map' => [
+                    ['min_peak' => 3000, 'value' => 1400],
+                    ['min_peak' => 2500, 'value' => 1300],
+                    ['min_peak' => 2000, 'value' => 1200],
+                ],
+
+                'reasoning' => 'Estimated from peak brightness + HDR capability',
+            ],
+            'default' => 2,
+        ],
+        'brightness' => [
+            'label' => 'Brightness',
+            'weight' => 10,
+            'unit' => [
+                'value' => 'nits',
+                'position' => 'after',
+                'space' => true
+            ],
+
+            'ranges' => [
+                ['min' => 2000, 'score' => 10],
+                ['min' => 1500, 'score' => 9],
+                ['min' => 1200, 'score' => 8],
+                ['min' => 900,  'score' => 7],
+                ['min' => 600,  'score' => 6],
+                ['min' => 400,  'score' => 5],
+            ],
+
+            'inference' => [
+                'conditions' => [
+                    'brightness_hbm' => null,  // HBM missing
+                    'brightness_typical' => null,  // Typical missing
+                    'brightness_peak' => ['min' => 1500],  // But peak exists
+                ],
+
+                // Estimate HBM from peak (conservative ratios)
+                'value_map' => [
+                    ['min_peak' => 3500, 'value' => 1700],  // ~49%
+                    ['min_peak' => 3000, 'value' => 1400],  // ~47%
+                    ['min_peak' => 2500, 'value' => 1100],  // ~44%
+                    ['min_peak' => 2000, 'value' => 900],   // ~45%
+                    ['min_peak' => 1500, 'value' => 700],   // ~47%
+                ],
+
+                'reasoning' => 'Estimated real-world brightness from peak specification',
+            ],
+
             'default' => 2,
         ],
         'touch_sampling_rate' => [
