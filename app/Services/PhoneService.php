@@ -857,44 +857,98 @@ class PhoneService
 
     protected function scoreDisplay(array $s, string $profile)
     {
-        $screenGlassType = extractScreenGlassType($s['display']['protection'] ?? null);
-        $formatGlassProtection = formatGlassProtection($screenGlassType ?? []);
-        $brightnessTypical = extractBrightness($s['display']['brightness'] ?? '', 'typical');
-        $brightnessHBM     = extractBrightness($s['display']['brightness'] ?? '', 'hbm');
-        $brightnessPeak    = extractBrightness($s['display']['brightness'] ?? '', 'peak');
-        $effectiveBrightness =
-            $brightnessTypical
-            ?? $brightnessHBM
-            ?? $brightnessPeak;
-        return $this->compareScoreService->scoreCategory('display', [
-            // Core panel basics
-            'size' => extractSize($s['display']['size'] ?? null),
-            'type' => getShortDisplay($s['display']['type'] ?? null),
-            'resolution' => shortResolution($s['display']['resolution'] ?? null),
-            'aspect_ratio' => $s['display']['aspect_ratio'] ?? null,
-            'screen_ratio' => (float) str_replace('%', '', $s['display']['screen_to_body_ratio'] ?? 'N/A'),
-            'pixel_density' => extractPpi($s['display']['resolution'] ?? null),
+        // 1. Validate input structure
+        if (!isset($s['display'])) {
+            return $this->compareScoreService->scoreCategory('display', [], $profile);
+        }
 
-            // Motion & responsiveness
-            'refresh_rate' => extractNumber($s['display']['refresh_rate'] ?? null),
-            'adaptive_refresh_rate' => preg_replace('/\D+/', '', $s['display']['adaptive_refresh_rate_range'] ?? null),
-            'touch_sampling_rate' => preg_replace('/\D+/', '', $s['display']['touch_sampling_rate'] ?? null),
-            // Brightness & visibility
+        $display = $s['display'];
+
+        // 2. Extract with proper null handling
+        $screenGlassType = extractScreenGlassType($display['protection'] ?? null) ?? [];
+        $formatGlassProtection = formatGlassProtection($screenGlassType);
+
+        // 3. Brightness extraction with validation
+        $brightnessTypical = extractBrightness($display['brightness'] ?? '', 'typical');
+        $brightnessHBM = extractBrightness($display['brightness'] ?? '', 'hbm');
+        $brightnessPeak = extractBrightness($display['brightness'] ?? '', 'peak');
+
+        // 4. Contrast ratio with safer extraction
+        $contrast_ratio = null;
+        if (isset($display['contrast_ratio'])) {
+            $parts = explode(':', (string)$display['contrast_ratio']);
+            if (!empty($parts[0])) {
+                $contrast_ratio = (int)str_replace([',', ' ', ':', ';'], '', $parts[0]);
+            }
+        }
+
+        // 5. Display type with fallback
+        $display_type = getShortDisplay($display['type'] ?? null) ?? '';
+        $isOled = stripos($display_type, 'oled') !== false;
+        $isAmoled = stripos($display_type, 'amoled') !== false;
+        $isLcd = stripos($display_type, 'lcd') !== false || stripos($display_type, 'ips') !== false;
+
+        // 6. PWM logic with better defaults
+        $pwmRaw = extractNumber($display['pwm_frequency'] ?? null);
+        if ($pwmRaw === null) {
+            if ($isOled || $isAmoled) {
+                // Use configurable default instead of hardcoded
+                $pwmRaw = config('display.defaults.oled_pwm', 480);
+            } elseif ($isLcd) {
+                $pwmRaw = config('display.defaults.lcd_pwm', 2000);
+            } else {
+                $pwmRaw = 0; // Unknown display type
+            }
+        }
+
+        // 7. Screen ratio with validation
+        $screen_ratio = null;
+        if (isset($display['screen_to_body_ratio'])) {
+            $ratio = $display['screen_to_body_ratio'];
+            $clean = preg_replace('/[^\d.]/', '', $ratio);
+            $screen_ratio = is_numeric($clean) ? (float)$clean : null;
+        }
+
+        // 8. Default contrast ratios (consider making these configurable)
+        if (!$contrast_ratio) {
+            if ($isOled || $isAmoled) {
+                $contrast_ratio = config('display.defaults.oled_contrast', 1000000);
+            } elseif ($isLcd) {
+                $contrast_ratio = config('display.defaults.lcd_contrast', 1500);
+            }
+        }
+
+        // 9. Effective brightness calculation
+        $effectiveBrightness = $brightnessHBM ?? $brightnessPeak ?? $brightnessTypical;
+
+        // 10. Prepare data array with all extracted values
+        $displayData = [
+            'size' => extractSize($display['size'] ?? null),
+            'type' => $display_type,
+            'resolution' => shortResolution($display['resolution'] ?? null),
+            'aspect_ratio' => $display['aspect_ratio'] ?? null,
+            'screen_ratio' => $screen_ratio,
+            'pixel_density' => extractPpi($display['resolution'] ?? null),
+            'refresh_rate' => extractNumber($display['refresh_rate'] ?? null),
+            'adaptive_refresh_rate' => preg_replace('/\D+/', '', $display['adaptive_refresh_rate_range'] ?? '') ?: null,
+            'touch_sampling_rate' => preg_replace('/\D+/', '', $display['touch_sampling_rate'] ?? '') ?: null,
             'brightness' => $effectiveBrightness,
             'brightness_typical' => $brightnessTypical,
-            'brightness_hbm'     => $brightnessHBM,
-            'brightness_peak'    => $brightnessPeak,
-            'contrast_ratio' => isset($s['display']['contrast_ratio'])
-                ? str_replace(',', '', explode(':', $s['display']['contrast_ratio'])[0])
-                : null,
-            'hdr_support' => getHdrSupport($s['display']['features'] ?? ''),
-            // Eye care & protection
-            'pwm' => extractNumber($s['display']['pwm_frequency'] ?? null),
+            'brightness_hbm' => $brightnessHBM,
+            'brightness_peak' => $brightnessPeak,
+            'contrast_ratio' => $contrast_ratio,
+            'contrast_score_master' => $contrast_ratio,
+            'hdr_support' => getHdrSupport($display['features'] ?? ''),
+            'pwm' => $pwmRaw,
+            'pwm_score_master' => $pwmRaw,
             'glass_protection' => $formatGlassProtection,
-            'has_branded_glass' => $screenGlassType['has_branded_glass'] ?? null,
-            // Features
-            'always_on_display' => $s['display']['always_on_display'] ?? 'NO'
-        ], $profile);
+            'has_branded_glass' => $screenGlassType['has_branded_glass'] ?? false,
+            'always_on_display' => isset($display['always_on_display'])
+                ? strtoupper($display['always_on_display']) === 'YES'
+                : false,
+        ];
+
+        return $this->compareScoreService->scoreCategory('display', $displayData, $profile);
     }
 
     protected function scorePerformance(array $s, string $profile)

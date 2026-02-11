@@ -9,58 +9,64 @@ class CompareScoreService
     /* -------------------------------
        PUBLIC API
     --------------------------------*/
-//$values = $this->applyInferences($values, $specConfigs);
-    public function scoreCategory(
-        string $category,
-        array $values,
-        string $profile = 'balanced'
-    ): array {
+    //$values = $this->applyInferences($values, $specConfigs);
+    public function scoreCategory(string $category, array $values, string $profile = 'display'): array
+    {
         $profileConfig = config("compare_scoring.compare_profiles.$profile", []);
-        $specConfigs = $profileConfig[$category]['specs'] ?? [];
- 
-        
+        $categoryConfig = $profileConfig[$category] ?? [];
+        $sectionWeights = $categoryConfig['weights'] ?? [];
+        $sections = $categoryConfig['categories'] ?? [];
 
-        $scoredSpecs = [];
         $categoryScore = 0;
-        foreach ($values as $specKey => $value) {
-            if (isset($specConfigs[$specKey])) {
-                $specConfig = $specConfigs[$specKey];
-                $score = $this->scoreSpec($value, $specConfig);
+        $scoredSpecs = [];
 
-                if ($score !== null) {
-                    $specWeight = $specConfig['weight'];
-                    $contribution = ($score / 10) * $specWeight;
-                    $categoryScore += $contribution;
+        foreach ($sections as $sectionKey => $groupSpecs) {
+            $sectionRunningScore = 0;
+            $weightSumOfPresentSpecs = 0;
 
-                    $scoredSpecs[$specKey] = [
-                        'value' => $this->formatValueWithUnit($value, $specConfig),
-                        'score' => $score,
-                        'out_of' => 10,
-                        'base_weight' => $specWeight,
-                        'contribution' => round($contribution, 2),
-                    ];
-                    continue;
+            // 1️⃣ First pass: Calculate the total weight of specs we actually HAVE
+            foreach ($groupSpecs as $specKey => $specConfig) {
+                if (isset($values[$specKey]) && $values[$specKey] !== null) {
+                    $weightSumOfPresentSpecs += $specConfig['weight'];
                 }
             }
 
-            // Otherwise → meta spec (no score), but KEEP POSITION
-            $scoredSpecs[$specKey] = [
-                'value' => is_bool($value) ? ($value ? 'Yes' : 'No') : $value,
-                'score' => null,
-                'out_of' => null,
-                'weight' => null,
-            ];
+            if ($weightSumOfPresentSpecs === 0) continue;
 
+            // 2️⃣ Second pass: Score and Normalize
+            foreach ($groupSpecs as $specKey => $specConfig) {
+                if (!isset($values[$specKey]) || $values[$specKey] === null) {
+                    continue;
+                }
+
+                $score = $this->scoreSpec($values[$specKey], $specConfig); // 0–10
+
+                // Normalize this spec's weight relative ONLY to what is present
+                $relativeWeight = $specConfig['weight'] / $weightSumOfPresentSpecs;
+                $sectionRunningScore += ($score / 10) * $relativeWeight;
+
+                $scoredSpecs[$specKey] = [
+                    'value'  => $this->formatValueWithUnit($values[$specKey], $specConfig),
+                    'score'  => $score,
+                    'weight' => $specConfig['weight'],
+                    'hidden' => $specConfig['hidden'] ?? false,
+                ];
+            }
+
+            // 3️⃣ Apply Section Weight
+            // If sectionWeight is 25 (for 25%), multiply by 0.25
+            $sectionWeightFactor = ($sectionWeights[$sectionKey] ?? 0) / 100;
+            $categoryScore += ($sectionRunningScore * $sectionWeightFactor) * 100;
         }
-        $adjustments = $this->applyContextualAdjustments($category, $values, $scoredSpecs, $profileConfig);
-        $categoryScore += $adjustments['total_adjustment'];
+
         return [
-            'score' => round($categoryScore, 2),
+            'score'  => round($categoryScore, 2),
             'out_of' => 100,
-            'specs' => $scoredSpecs,
-            //'adjustments' => $adjustments['details'],
+            'specs'  => $scoredSpecs,
         ];
     }
+    // $adjustments = $this->applyContextualAdjustments($category, $values, $scoredSpecs, $profileConfig);
+    //     $categoryScore += $adjustments['total_adjustment'];
 
     /**
      * Apply inference rules to fill missing values
