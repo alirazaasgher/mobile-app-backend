@@ -864,9 +864,11 @@ class PhoneService
 
 
         // 3. Brightness extraction with validation
-        $brightnessTypical = extractBrightness($display['brightness'] ?? '', 'typical');
-        $brightnessHBM = extractBrightness($display['brightness'] ?? '', 'hbm');
-        $brightnessPeak = extractBrightness($display['brightness'] ?? '', 'peak');
+        $brightnessData = extractAllBrightness($display['brightness'] ?? '');
+
+        $brightnessTypical = $brightnessData['typical'];
+        $brightnessHBM = $brightnessData['hbm'];
+        $brightnessPeak = $brightnessData['peak'];
 
         // 4. Contrast ratio with safer extraction
         $contrast_ratio = null;

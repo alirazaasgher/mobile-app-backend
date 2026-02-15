@@ -1324,28 +1324,36 @@ function extractPpi(?string $resolution, ?float $screenSize = null): ?int
     return null;
 }
 
-function extractBrightness(?string $brightness, string $type): ?string
+function extractAllBrightness(?string $brightness): array
 {
+    $result = [
+        'peak' => null,
+        'hbm' => null,
+        'typical' => null,
+    ];
+
     if (!$brightness) {
-        return null;
+        return $result;
     }
 
-    $type = strtolower($type);
-
-    // Normalize string
     $brightness = strtolower($brightness);
 
-    // Match: peak 3300 nits
-    if ($type === 'peak' && preg_match('/peak\s*(\d+)\s*nits/', $brightness, $matches)) {
-        return $matches[1];
+    preg_match_all('/(\d+)\s*nits[^\)]*(?:\(([^)]+)\))?/', $brightness, $matches, PREG_SET_ORDER);
+
+    foreach ($matches as $match) {
+        $value = (int) $match[1];
+        $label = $match[2] ?? '';
+
+        if (strpos($label, 'peak') !== false) {
+            $result['peak'] = $value;
+        } elseif (strpos($label, 'hbm') !== false) {
+            $result['hbm'] = $value;
+        } elseif (strpos($label, 'typical') !== false) {
+            $result['typical'] = $value;
+        }
     }
 
-    // Match: typical 3000 nits (even if separated by comma)
-    if ($type === 'typical' && preg_match('/typical[^\d]*(\d+)\s*nits/', $brightness, $matches)) {
-        return $matches[1];
-    }
-
-    return null;
+    return $result;
 }
 
 function extractScreenGlassType(?string $protection): ?array
