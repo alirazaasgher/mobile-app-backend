@@ -523,7 +523,7 @@ class PhoneService
      */
     public function saveSpecifications($phone, array $specs, callable $searchableTextGetter, $update = false): bool
     {
-        $scores = $this->scoreByCategory($specs, 'balanced');
+        // $scores = $this->scoreByCategory($specs, 'balanced');
         foreach ($specs as $category => $categorySpecs) {
             // skip if all values empty
             if (!array_filter($categorySpecs)) {
@@ -965,6 +965,9 @@ class PhoneService
 
     protected function scorePerformance(array $s, string $profile)
     {
+        echo "<pre>";
+        print_r($s['performance']);
+        exit;
         $antutu_score = $benchmark['antutu'] ?? null;
         $chipset = getShortChipset($s['performance']['chipset']) ?? null;
         $cooling_type = $s['performance']['cooling'] ?? null;
