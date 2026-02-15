@@ -181,7 +181,26 @@ return [
 
                 'default' => 2,
             ],
-            'brightness_hbm' => ['weight' => 0], // Most important for outdoors
+            'brightness_hbm' => [
+                'label' => 'HBM Brightness',
+                'weight' => 0,
+                'unit' => [
+                    'value' => 'nits',
+                    'position' => 'after',
+                    'space' => true
+                ],
+                'ranges' => [
+                    ['min' => 2000, 'score' => 10], // Elite Flagships (2026 standard)
+                    ['min' => 1700, 'score' => 9],  // Top-tier Premium
+                    ['min' => 1500, 'score' => 8],  // Standard Flagship
+                    ['min' => 1300, 'score' => 7],  // High Mid-range
+                    ['min' => 1100, 'score' => 6],  // Mid-range Baseline
+                    ['min' => 900, 'score' => 5],  // Budget High
+                    ['min' => 750, 'score' => 4],  // Budget Standard
+                    ['min' => 600, 'score' => 3],  // Entry Level
+                ],
+                'default' => 2,
+            ],
             'brightness_peak' => [
                 'label' => 'Peak Brightness',
                 'weight' => 0,
