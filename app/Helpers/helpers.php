@@ -2146,3 +2146,28 @@ function parseSimType(string $simHtml): string
     // 8. Single Physical SIM (Budget)
     return 'single sim';
 }
+
+function getSimplifiedCpuSpeed($cpuString): ?string
+{
+    if (!empty($cpuString)) {
+
+        // Allow spaces around x
+        preg_match_all('/(\d+)\s*x\s*(\d+\.?\d*)\s*GHz/i', $cpuString, $matches, PREG_SET_ORDER);
+
+        if (empty($matches)) {
+            return null;
+        }
+
+        $clusters = [];
+        foreach ($matches as $match) {
+            $coreCount = $match[1];
+            $frequency = $match[2];
+            $clusters[] = "$coreCount x $frequency GHz";
+        }
+
+        return implode(' & ', $clusters);
+    }
+
+    return null;
+}
+

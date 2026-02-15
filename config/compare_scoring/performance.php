@@ -128,9 +128,9 @@ return [
                 ],
                 'default' => 2,
             ],
-            'cpu' => [
+            'cpu_score' => [
                 'label' => 'CPU Cores',
-                'weight' => 25,
+                'weight' => 20,
                 'scale' => [
                     // 12+ cores (2024-2025 flagships)
                     '12-core' => 10,
@@ -186,7 +186,7 @@ return [
             ],
             'ai_capability' => [
                 'label' => 'AI Performance (NPU)',
-                'weight' => 20,
+                'weight' => 25,
                 'unit' => [
                     'value' => 'TOPS',
                     'position' => 'after',

@@ -965,11 +965,9 @@ class PhoneService
 
     protected function scorePerformance(array $s, string $profile)
     {
-        echo "<pre>";
-        print_r($s['performance']);
-        exit;
         $antutu_score = $benchmark['antutu'] ?? null;
         $chipset = getShortChipset($s['performance']['chipset']) ?? null;
+        $cpuSpeed = getSimplifiedCpuSpeed($s['performance']['cpu'] ?? '');
         $cooling_type = $s['performance']['cooling'] ?? null;
         $cooling_type_master = $cooling_type;
         // Only set if missing
@@ -989,6 +987,7 @@ class PhoneService
             'ram' => $memoryParsed['ram'],
             'storage_capacity' => $memoryParsed['storage'],
             'cpu' => cpuType($s['performance']['cpu']) ?? null,
+            'cpu_speed' => $cpuSpeed,
             'gpu' => $s['performance']['gpu'] ?? null,
             'storage_type' => $s['memory']['storage_type'] ?? null,
             'ram_type' => $s['memory']['ram_type'] ?? null,
