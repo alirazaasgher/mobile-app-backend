@@ -1338,18 +1338,30 @@ function extractAllBrightness(?string $brightness): array
 
     $brightness = strtolower($brightness);
 
-    preg_match_all('/(\d+)\s*nits[^\)]*(?:\(([^)]+)\))?/', $brightness, $matches, PREG_SET_ORDER);
+    // Match:
+    // 600nits (typical)
+    // 1200 nits (hbm)
+    // peak 3500 nits
+    preg_match_all('/
+        (?:
+            (peak|hbm|typical)[^\d]*?(\d+)\s*nits
+        )
+        |
+        (?:
+            (\d+)\s*nits\s*\((peak|hbm|typical)\)
+        )
+    /ix', $brightness, $matches, PREG_SET_ORDER);
 
     foreach ($matches as $match) {
-        $value = (int) $match[1];
-        $label = $match[2] ?? '';
 
-        if (strpos($label, 'peak') !== false) {
-            $result['peak'] = $value;
-        } elseif (strpos($label, 'hbm') !== false) {
-            $result['hbm'] = $value;
-        } elseif (strpos($label, 'typical') !== false) {
-            $result['typical'] = $value;
+        // Case: peak 3500 nits
+        if (!empty($match[1]) && !empty($match[2])) {
+            $result[$match[1]] = (int) $match[2];
+        }
+
+        // Case: 600nits (typical)
+        if (!empty($match[3]) && !empty($match[4])) {
+            $result[$match[4]] = (int) $match[3];
         }
     }
 
