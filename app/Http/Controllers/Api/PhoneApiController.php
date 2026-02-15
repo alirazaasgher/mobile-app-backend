@@ -1480,7 +1480,7 @@ class PhoneApiController extends Controller
      */
     private function formatChartData($phones, $profile)
     {
-        $categories = ['display', 'performance', 'camera', 'battery', 'build', 'features'];
+        $categories = ['display', 'performance', 'camera', 'battery', 'build', 'connectivity'];
 
         // Radar Chart Data
         $radarData = [];
