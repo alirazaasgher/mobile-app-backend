@@ -9,14 +9,14 @@ return [
             'battery' => 16,
             'software' => 10,
             'build' => 8,
-            'features' => 8,
+            'connectivity' => 8,
         ],
         "display" => require __DIR__ . '/display.php',
         "camera" => require __DIR__ . '/camera.php',
         "battery" => require __DIR__ . '/battery.php',
         "performance" => require __DIR__ . '/performance.php',
         "build" => require __DIR__ . '/build.php',
-        "features" => require __DIR__ . '/features.php'
+        "connectivity" => require __DIR__ . '/connectivity.php'
     ],
 
     'gaming' => [

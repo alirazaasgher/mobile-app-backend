@@ -2,11 +2,10 @@
 return [
     'label' => 'Display',
     'weights' => [
-        'panel_quality' => 33,
-        'brightness'    => 25,
-        'motion'        => 20,
-        'sharpness'     => 12,
-        'ergonomics'    => 10,
+        'panel_quality' => 40,
+        'brightness' => 25,
+        'motion' => 25,
+        'sharpness' => 10
     ],
 
     'categories' => [
@@ -30,9 +29,33 @@ return [
                 ],
                 'default' => 4,
             ],
-            'color_depth' => [
+            'colour_depth' => [
+                'label' => 'Color Depth',
+                'weight' => 0,
+                'scale' => [
+                    // ELITE: 2026 Content Creator Tier
+                    '12-bit (true)' => 10,  // Pro cinema sensors/displays
+                    '12-bit' => 9.5, // Often 10-bit + FRC in marketing
+                    '10-bit + frc' => 9.5, // Effective 12-bit experience
+
+                    // TOP TIER: The 2026 Flagship Baseline
+                    '10-bit (true)' => 9,   // Standard for S26/iPhone 18 Pro
+                    '10-bit' => 8.5,
+
+                    // MID TIER: 2023/2024 Legacy Flagship
+                    '8-bit + frc' => 7.5, // Effective 10-bit (Standard Mid-range)
+
+                    // BUDGET / LEGACY:
+                    '8-bit' => 5,   // Obsolete for HDR content
+                    '6-bit + frc' => 3,   // Very low-end panels
+                    'none' => 0,
+                ],
+                'default' => 5,
+            ],
+            'colour_depth_master' => [
                 'label' => 'Color Depth',
                 'weight' => 30,
+                'hidden' => true,
                 'scale' => [
                     // ELITE: 2026 Content Creator Tier
                     '12-bit (true)' => 10,  // Pro cinema sensors/displays
@@ -62,12 +85,15 @@ return [
                     'space' => false
                 ],
                 'ranges' => [
-                    ['min' => 5000, 'score' => 10], // "Risk-Free" Tier
+                    ['min' => 5000, 'score' => 10],
                     ['min' => 4320, 'score' => 9.5],
-                    ['min' => 3840, 'score' => 9],  // Flagship Minimum
-                    ['min' => 2160, 'score' => 7],  // Mid-range High
-                    ['min' => 1920, 'score' => 6],
-                    ['min' => 480, 'score' => 2],  // Obsolete/High Strain
+                    ['min' => 3840, 'score' => 9],
+                    ['min' => 2160, 'score' => 7],
+                    ['min' => 1920, 'score' => 6.5],
+                    ['min' => 1440, 'score' => 5.5],
+                    ['min' => 960, 'score' => 4.5],
+                    ['min' => 480, 'score' => 3],
+                    ['min' => 0, 'score' => 1],
                 ],
                 'default' => 3,
 
@@ -75,25 +101,29 @@ return [
             'pwm_score_master' => [
                 'label' => 'PWM Dimming Frequency',
                 'weight' => 35,
+                'hidden' => true,
                 'unit' => [
                     'value' => 'Hz',
                     'position' => 'after',
                     'space' => false
                 ],
                 'ranges' => [
-                    ['min' => 5000, 'score' => 10], // "Risk-Free" Tier
+                    ['min' => 5000, 'score' => 10],
                     ['min' => 4320, 'score' => 9.5],
-                    ['min' => 3840, 'score' => 9],  // Flagship Minimum
-                    ['min' => 2160, 'score' => 7],  // Mid-range High
-                    ['min' => 1920, 'score' => 6],
-                    ['min' => 480, 'score' => 2],  // Obsolete/High Strain
+                    ['min' => 3840, 'score' => 9],
+                    ['min' => 2160, 'score' => 7],
+                    ['min' => 1920, 'score' => 6.5],
+                    ['min' => 1440, 'score' => 5.5],
+                    ['min' => 960, 'score' => 4.5],
+                    ['min' => 480, 'score' => 3],
+                    ['min' => 0, 'score' => 1],
                 ],
                 'default' => 3,
 
             ],
             'contrast_ratio' => [
                 'label' => 'Contrast Ratio',
-                'weight' => 0,
+                'weight' => 15,
                 'unit' => [
                     'value' => ':1',
                     'position' => 'after',
@@ -124,33 +154,7 @@ return [
                 'default' => 0,
                 'info_text' => 'Contrast ratio defines the depth of blacks. 8,000,000:1 and above indicates cutting-edge OLED tech with virtually perfect black levels.',
             ],
-            'contrast_score_master' => [
-                'label' => 'Contrast (Internal)',
-                'weight' => 15,
-                'hidden' => true, // Flag for your UI loop
-                'ranges' => [
-                    // ELITE: Tandem OLED / MLA+ / MicroLED
-                    ['min' => 8000000, 'score' => 10, 'label' => 'Elite (Tandem OLED)'],
 
-                    // FLAGSHIP: Standard High-End OLED
-                    ['min' => 2000000, 'score' => 9.5, 'label' => 'Perfect Blacks'],
-
-                    // ENTRY OLED / TOP MINI-LED:
-                    ['min' => 1000000, 'score' => 9, 'label' => 'Excellent'],
-
-                    // PREMIUM LCD: Mini-LED with High Zone Count
-                    ['min' => 100000, 'score' => 7.5, 'label' => 'High Contrast LCD'],
-
-                    // MID-RANGE: IPS Black Technology
-                    ['min' => 2000, 'score' => 5, 'label' => 'Above Average LCD'],
-
-                    // STANDARD: IPS / VA panels
-                    ['min' => 1000, 'score' => 3, 'label' => 'Standard'],
-
-                    // BUDGET:
-                    ['min' => 0, 'score' => 1, 'label' => 'Poor'],
-                ],
-            ],
         ],
 
         'brightness' => [
@@ -177,7 +181,7 @@ return [
 
                 'default' => 2,
             ],
-            'brightness_hbm'     => ['weight' => 0], // Most important for outdoors
+            'brightness_hbm' => ['weight' => 0], // Most important for outdoors
             'brightness_peak' => [
                 'label' => 'Peak Brightness',
                 'weight' => 0,
@@ -269,7 +273,7 @@ return [
         'motion' => [
             'refresh_rate' => [
                 'label' => 'Refresh Rate',
-                'weight' => 45, // Reduced from 20
+                'weight' => 25, // Reduced from 20
                 'unit' => [
                     'value' => 'Hz',
                     'position' => 'after',
@@ -287,7 +291,7 @@ return [
             ],
             'adaptive_refresh_rate' => [
                 'label' => 'Adaptive Refresh Rate',
-                'weight' => 40,
+                'weight' => 45,
                 'unit' => [
                     'value' => 'Hz',
                     'position' => 'after',
@@ -306,7 +310,7 @@ return [
             ],
             'touch_sampling_rate' => [
                 'label' => 'Touch Sampling Rate',
-                'weight' => 15,
+                'weight' => 10,
                 'unit' => [
                     'value' => 'Hz',
                     'position' => 'after',
@@ -322,6 +326,26 @@ return [
                     120 => 4,
                 ],
                 'default' => 2,
+            ],
+            'instant_touch_sampling_rate' => [
+                'label' => 'Instant Touch Sampling Rate',
+                'weight' => 20,
+                'unit' => [
+                    'value' => 'Hz',
+                    'position' => 'after',
+                    'space' => false
+                ],
+                'scale' => [
+                    2560 => 10,   // ELITE: Xiaomi 15T / Gaming Flagships
+                    2160 => 9.5,  // FLAGSHIP KILLER: 2026 Pro-Midrange Standard
+                    1440 => 9,    // HIGH-END: Standard Premium Flagships
+                    1000 => 8.5,  // TOP-TIER: Apple/Samsung Peak Response
+                    720 => 8,    // STANDARD: Mainstream OLED
+                    480 => 6.5,  // MID-RANGE: High-quality LCD or Budget OLED
+                    240 => 4,    // ENTRY: Standard LCD response
+                    120 => 2,    // LEGACY: Old tech
+                ],
+                'default' => 1, // 240Hz is the safe "baseline" for any 2026 smartphone
             ],
         ], // Total: 100
 
@@ -364,68 +388,6 @@ return [
                 ],
                 'default' => 3,
             ],
-        ], // Total: 100
-
-        'ergonomics' => [
-            'glass_protection' => [
-                'label' => 'Glass Protection',
-                'weight' => 70,
-                'scale' => [
-                    // Latest generation (2024-2025)
-                    'victus 3' => 10,
-                    'ceramic shield (latest)' => 10,
-                    'dragon crystal glass 3' => 10,
-                    'gorilla glass armor 2' => 10,
-                    'gorilla glass armor' => 10,
-
-                    // Recent flagship (2023-2024)
-                    'victus 2' => 9,
-                    'ceramic shield' => 9,
-                    'kunlun glass' => 9,
-                    'dragon crystal glass 2' => 9,
-                    'gorilla glass victus+' => 9,
-                    'panda king kong glass' => 9,
-
-                    // Mid-tier flagship (2022-2023)
-                    'victus' => 8,
-                    'gorilla glass 7' => 8,
-                    'gorilla glass 7i' => 8,
-                    'victus+' => 8,
-                    'dragon crystal glass' => 8,
-                    'schott xensation up' => 8,
-
-                    // Older flagship / Modern mid-range (2020-2021)
-                    'gorilla glass 6' => 7,
-                    'dragontrail pro' => 7,
-                    'asahi glass' => 7,
-
-                    // Mid-range (2018-2019)
-                    'gorilla glass 5' => 6,
-                    'dragontail glass' => 6,
-                    'schott xensation' => 6,
-                    'agc dragontrail' => 6,
-
-                    // Budget / Older phones (2016-2017)
-                    'gorilla glass 4' => 5,
-                    'gorilla glass 3' => 5,
-                    'panda glass' => 5,
-                    'dragontrail x' => 5,
-
-                    // Entry-level / Very old
-                    'gorilla glass 2' => 4,
-                    'gorilla glass' => 4,
-                    'soda-lime glass' => 3,
-                    'tempered glass' => 3,
-                    'aluminosilicate glass' => 3,
-
-                    // Generic/Unknown
-                    'toughened glass' => 2,
-                    'reinforced glass' => 2,
-                    'standard glass' => 1,
-                ],
-                'default' => 2,
-            ],
-            // 'special_features' => ['weight' => 30], // Anti-reflective coating, etc.
-        ], // Total: 100
+        ],
     ],
 ];

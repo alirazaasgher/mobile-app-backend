@@ -12,57 +12,102 @@ class CompareScoreService
     //$values = $this->applyInferences($values, $specConfigs);
     public function scoreCategory(string $category, array $values, string $profile = 'display'): array
     {
-        $profileConfig = config("compare_scoring.compare_profiles.$profile", []);
-        $categoryConfig = $profileConfig[$category] ?? [];
+        // Cache config lookup
+        $categoryConfig = config("compare_scoring.compare_profiles.$profile.$category", []);
         $sectionWeights = $categoryConfig['weights'] ?? [];
         $sections = $categoryConfig['categories'] ?? [];
 
         $categoryScore = 0;
-        $scoredSpecs = [];
+        $tempScores = [];
+
+        // ✅ Calculate total weight of sections that have data
+        $totalActiveSectionWeight = 0;
+        $sectionScores = []; // Store section scores for later
 
         foreach ($sections as $sectionKey => $groupSpecs) {
             $sectionRunningScore = 0;
             $weightSumOfPresentSpecs = 0;
 
-            // 1️⃣ First pass: Calculate the total weight of specs we actually HAVE
-            foreach ($groupSpecs as $specKey => $specConfig) {
-                if (isset($values[$specKey]) && $values[$specKey] !== null) {
-                    $weightSumOfPresentSpecs += $specConfig['weight'];
-                }
-            }
-
-            if ($weightSumOfPresentSpecs === 0) continue;
-
-            // 2️⃣ Second pass: Score and Normalize
+            // Combined pass: calculate weight sum AND scores
             foreach ($groupSpecs as $specKey => $specConfig) {
                 if (!isset($values[$specKey]) || $values[$specKey] === null) {
                     continue;
                 }
 
-                $score = $this->scoreSpec($values[$specKey], $specConfig); // 0–10
+                $value = $values[$specKey];
+                $weightSumOfPresentSpecs += $specConfig['weight'];
 
-                // Normalize this spec's weight relative ONLY to what is present
-                $relativeWeight = $specConfig['weight'] / $weightSumOfPresentSpecs;
-                $sectionRunningScore += ($score / 10) * $relativeWeight;
+                // Extract numeric and display values
+                if ($specKey === 'sensor_size' && is_array($value)) {
+                    $numericValue = $value['value'];
+                    $displayValue = $value['display'];
+                } else {
+                    $numericValue = $displayValue = $value;
+                }
 
-                $scoredSpecs[$specKey] = [
-                    'value'  => $this->formatValueWithUnit($values[$specKey], $specConfig),
-                    'score'  => $score,
+                $score = $this->scoreSpec($numericValue, $specConfig);
+
+                $tempScores[$specKey] = [
+                    'value' => $this->formatValueWithUnit($displayValue, $specConfig),
+                    'score' => $score,
                     'weight' => $specConfig['weight'],
                     'hidden' => $specConfig['hidden'] ?? false,
+                    '_score' => $score,
                 ];
             }
 
-            // 3️⃣ Apply Section Weight
-            // If sectionWeight is 25 (for 25%), multiply by 0.25
-            $sectionWeightFactor = ($sectionWeights[$sectionKey] ?? 0) / 100;
-            $categoryScore += ($sectionRunningScore * $sectionWeightFactor) * 100;
+            if ($weightSumOfPresentSpecs === 0) {
+                continue;
+            }
+
+            // Calculate section score
+            foreach ($groupSpecs as $specKey => $specConfig) {
+                if (isset($tempScores[$specKey])) {
+                    $relativeWeight = $specConfig['weight'] / $weightSumOfPresentSpecs;
+                    $sectionRunningScore += ($tempScores[$specKey]['_score'] / 10) * $relativeWeight;
+                    unset($tempScores[$specKey]['_score']);
+                }
+            }
+
+            $sectionScorePercentage = $sectionRunningScore * 100;
+
+            // ✅ Store section score and track active weight
+            $sectionWeight = $sectionWeights[$sectionKey] ?? 0;
+            $sectionScores[$sectionKey] = [
+                'score' => $sectionScorePercentage,
+                'weight' => $sectionWeight
+            ];
+            $totalActiveSectionWeight += $sectionWeight;
+        }
+
+        // ✅ Normalize section weights and calculate category score
+        if ($totalActiveSectionWeight > 0) {
+            foreach ($sectionScores as $sectionData) {
+                $normalizedWeight = $sectionData['weight'] / $totalActiveSectionWeight;
+                $categoryScore += $sectionData['score'] * $normalizedWeight;
+            }
+        }
+
+        // Build output maintaining input order
+        $scoredSpecs = [];
+
+        foreach ($values as $specKey => $value) {
+            if ($value === null) {
+                continue;
+            }
+
+            $scoredSpecs[$specKey] = $tempScores[$specKey] ?? [
+                'value' => is_bool($value) ? ($value ? 'Yes' : 'No') : $value,
+                'score' => null,
+                'weight' => null,
+                'hidden' => false,
+            ];
         }
 
         return [
-            'score'  => round($categoryScore, 2),
+            'score' => round($categoryScore, 2),
             'out_of' => 100,
-            'specs'  => $scoredSpecs,
+            'specs' => $scoredSpecs,
         ];
     }
     // $adjustments = $this->applyContextualAdjustments($category, $values, $scoredSpecs, $profileConfig);

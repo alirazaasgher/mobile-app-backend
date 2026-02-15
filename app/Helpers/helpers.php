@@ -1085,40 +1085,43 @@ function getMobileDimensions($raw)
 
 
 
-function extractVideo(string $video): string
+function extractVideo(string $video): ?string
 {
-    $video = strtolower($video);
+    if (!empty($video)) {
+        $video = strtolower($video);
 
-    // 8K
-    if (preg_match('/8k@(\d+)fps/', $video, $m)) {
-        return '8k@' . $m[1] . 'fps';
-    }
-    if (str_contains($video, '8k')) {
-        return '8k';
+        // 8K
+        if (preg_match('/8k@(\d+)fps/', $video, $m)) {
+            return '8k@' . $m[1] . 'fps';
+        }
+        if (str_contains($video, '8k')) {
+            return '8k';
+        }
+
+        // 4K
+        if (preg_match('/4k@(\d+)fps/', $video, $m)) {
+            return '4k@' . $m[1] . 'fps';
+        }
+        if (str_contains($video, '4k')) {
+            return '4k';
+        }
+
+        // 1080p
+        if (preg_match('/1080p@(\d+)fps/', $video, $m)) {
+            return '1080p@' . $m[1] . 'fps';
+        }
+        if (str_contains($video, '1080p')) {
+            return '1080p';
+        }
+
+        // 720p
+        if (str_contains($video, '720p')) {
+            return '720p';
+        }
     }
 
-    // 4K
-    if (preg_match('/4k@(\d+)fps/', $video, $m)) {
-        return '4k@' . $m[1] . 'fps';
-    }
-    if (str_contains($video, '4k')) {
-        return '4k';
-    }
 
-    // 1080p
-    if (preg_match('/1080p@(\d+)fps/', $video, $m)) {
-        return '1080p@' . $m[1] . 'fps';
-    }
-    if (str_contains($video, '1080p')) {
-        return '1080p';
-    }
-
-    // 720p
-    if (str_contains($video, '720p')) {
-        return '720p';
-    }
-
-    return 'unknown';
+    return null;
 }
 
 function getFlash(array $camera): ?string
@@ -1816,4 +1819,330 @@ function getBenchmark($benchmark)
         'geekbench_single' => $geekSingle,
         'geekbench_multi' => $geekMulti,
     ];
+}
+
+function estimateThrottling($chipset): ?int
+{
+    if (preg_match('/Snapdragon 8 Gen 3/i', $chipset))
+        return 85;
+    if (preg_match('/Snapdragon 8 Gen 2/i', $chipset))
+        return 82;
+    if (preg_match('/Snapdragon 8\+? Gen 1/i', $chipset))
+        return 70;
+    if (preg_match('/Dimensity 9300/i', $chipset))
+        return 80;
+    if (preg_match('/Dimensity 9200/i', $chipset))
+        return 78;
+    if (preg_match('/Tensor G[34]/i', $chipset))
+        return 70;
+    if (preg_match('/Snapdragon 7 Gen/i', $chipset))
+        return 88;
+
+    return null; // Don't guess unknown chips
+}
+
+function estimateAICapability($chipset): ?int
+{
+    if (preg_match('/Snapdragon 8 Gen 3|A18 Pro/i', $chipset))
+        return 85;
+    if (preg_match('/Snapdragon 8 Gen 2|Dimensity 9300|Tensor G4/i', $chipset))
+        return 70;
+    if (preg_match('/Snapdragon 8 Gen 1|Tensor G3|A17 Pro/i', $chipset))
+        return 55;
+    if (preg_match('/Snapdragon 8s Gen 3|Snapdragon 7\+ Gen/i', $chipset))
+        return 50;
+    if (preg_match('/Dimensity 8[23]00/i', $chipset))
+        return 45;
+
+    return null;
+}
+function extractSensorSize($mainSensor)
+{
+    if (!empty($mainSensor)) {
+        // Extract sensor size like: 1/1.4", 1/1.56", 1/1.12"
+        preg_match('/(\d+)\/(\d+\.?\d*)"/', $mainSensor, $matches);
+
+        if (isset($matches[1]) && isset($matches[2])) {
+            $numerator = (float) $matches[1];   // 1
+            $denominator = (float) $matches[2]; // 1.4
+            $decimal = $numerator / $denominator; // For scoring
+            $fraction = $matches[0]; // "1/1.4\"" - For display
+
+            return [
+                'value' => $decimal,      // 0.714 (for scoring)
+                'display' => $fraction,   // "1/1.4\"" (for UI)
+            ];
+        }
+    }
+
+
+    return null;
+}
+
+function extractFrontAperture($sensor)
+{
+    if (!empty($mainSensor)) {
+        // Extract: "12 MP, f/2.2, (wide)"
+        preg_match('/f\/(\d+\.?\d*)/', $sensor, $matches);
+        return $matches[0] ?? null; // Returns "f/2.2"
+    }
+
+    return null;
+}
+
+function extractChargingTime(string $chargingSpeed): ?int
+{
+    // Match patterns like: "100% in 53 min", "0-100% in 25 minutes", "full charge in 30min"
+    if (preg_match('/(?:100%|full charge)\s+in\s+(\d+)\s*min/i', $chargingSpeed, $matches)) {
+        return (int) $matches[1];
+    }
+
+    if (preg_match('/0-100%\s+in\s+(\d+)\s*min/i', $chargingSpeed, $matches)) {
+        return (int) $matches[1];
+    }
+
+    return null;
+}
+
+function extractChargingTime50(string $chargingSpeed): ?int
+{
+    // Match patterns like: "50% in 12 min", "0-50% in 15 minutes"
+    if (preg_match('/50%\s+in\s+(\d+)\s*min/i', $chargingSpeed, $matches)) {
+        return (int) $matches[1];
+    }
+
+    if (preg_match('/0-50%\s+in\s+(\d+)\s*min/i', $chargingSpeed, $matches)) {
+        return (int) $matches[1];
+    }
+
+    return null;
+}
+
+function parseWirelessChargingToWatts($value)
+{
+    if (!$value || $value === 'N/A' || $value === '-' || $value === 'No') {
+        return 0;
+    }
+
+    $value = strtoupper(trim($value));
+
+    // Explicit wireless wattage
+    if (preg_match('/(\d+(?:\.\d+)?)\s*W\s+(?:WIRELESS|W\/LESS)/i', $value, $matches)) {
+        return floatval($matches[1]);
+    }
+
+    if (preg_match('/(?:WIRELESS|W\/LESS)\s+(\d+(?:\.\d+)?)\s*W/i', $value, $matches)) {
+        return floatval($matches[1]);
+    }
+
+    // Proprietary wireless charging
+    if (str_contains($value, '50W WIRELESS'))
+        return 50;  // Xiaomi/OPPO
+    if (str_contains($value, '30W WIRELESS'))
+        return 30;
+    if (str_contains($value, '25W WIRELESS'))
+        return 25;
+    if (str_contains($value, 'MAGSAFE'))
+        return 15;       // Apple
+    if (str_contains($value, 'QI2'))
+        return 15;           // Qi2 standard
+    if (str_contains($value, 'QI'))
+        return 7.5;           // Standard Qi
+
+    // Generic wireless
+    if (str_contains($value, 'WIRELESS CHARGING') || str_contains($value, 'WIRELESS')) {
+        return 10; // Assume basic wireless
+    }
+
+    // Any wattage in the string
+    if (preg_match('/(\d+(?:\.\d+)?)\s*W/i', $value, $matches)) {
+        return floatval($matches[1]);
+    }
+
+    return 0;
+}
+
+function parseFingerprintType(string $sensors = ''): ?string
+{
+    if (empty($sensors) || $sensors === 'N/A' || $sensors === '-') {
+        return null;
+    }
+
+    $sensors = strtolower(trim($sensors));
+
+    // No fingerprint at all
+    if (
+        strpos($sensors, 'fingerprint') === false &&
+        strpos($sensors, 'finger print') === false &&
+        strpos($sensors, 'fp') === false
+    ) {
+        return null;
+    }
+
+    // Extract text inside brackets/parentheses
+    $type = '';
+    if (preg_match('/fingerprint\s*\((.*?)\)/i', $sensors, $matches)) {
+        $type = strtolower(trim($matches[1]));
+    } elseif (preg_match('/fingerprint\s*\[(.*?)\]/i', $sensors, $matches)) {
+        $type = strtolower(trim($matches[1]));
+    } elseif (preg_match('/fingerprint[,\s]+([^,;]+)/i', $sensors, $matches)) {
+        // Match "Fingerprint, under display optical" format
+        $type = strtolower(trim($matches[1]));
+    } else {
+        // Fingerprint mentioned but no type specified
+        $type = $sensors;
+    }
+
+    // Priority-based detection (most specific first)
+
+    // 1. Ultrasonic (premium)
+    if (
+        strpos($type, 'ultrasonic') !== false ||
+        strpos($type, 'ultra sonic') !== false ||
+        strpos($type, '3d sonic') !== false
+    ) {
+        return 'ultrasonic in-display';
+    }
+
+    // 2. Optical in-display
+    if (
+        strpos($type, 'optical') !== false &&
+        (strpos($type, 'under display') !== false ||
+            strpos($type, 'in-display') !== false ||
+            strpos($type, 'under-display') !== false ||
+            strpos($type, 'screen') !== false)
+    ) {
+        return 'optical in-display';
+    }
+
+    // 3. Generic optical (assume in-display if not specified)
+    if (strpos($type, 'optical') !== false) {
+        return 'optical in-display';
+    }
+
+    // 4. Generic in-display (assume optical)
+    if (
+        strpos($type, 'under display') !== false ||
+        strpos($type, 'in-display') !== false ||
+        strpos($type, 'under-display') !== false ||
+        strpos($type, 'on-screen') !== false ||
+        strpos($type, 'screen') !== false
+    ) {
+        return 'optical in-display';
+    }
+
+    // 5. Side-mounted (common in mid-range)
+    if (
+        strpos($type, 'side') !== false ||
+        strpos($type, 'side-mounted') !== false ||
+        strpos($type, 'power button') !== false
+    ) {
+        return 'side-mounted';
+    }
+
+    // 6. Rear-mounted (older phones)
+    if (
+        strpos($type, 'rear') !== false ||
+        strpos($type, 'back') !== false ||
+        strpos($type, 'rear-mounted') !== false ||
+        strpos($type, 'back-mounted') !== false
+    ) {
+        return 'rear-mounted';
+    }
+
+    // 7. Front-mounted (home button)
+    if (
+        strpos($type, 'front') !== false ||
+        strpos($type, 'home button') !== false ||
+        strpos($type, 'front-mounted') !== false
+    ) {
+        return 'front-mounted';
+    }
+
+    // 8. Capacitive (generic)
+    if (strpos($type, 'capacitive') !== false) {
+        return 'capacitive';
+    }
+
+    // Fallback: if "fingerprint" exists but no specific type
+    return 'capacitive';
+}
+
+function parseSimType(string $simHtml): string
+{
+    if (empty($simHtml) || $simHtml === 'N/A' || $simHtml === '-') {
+        return 'single sim';
+    }
+
+    // Remove HTML tags first
+    $simText = strip_tags($simHtml);
+
+    // Decode HTML entities (&nbsp; etc.)
+    $simText = html_entity_decode($simText, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+
+    // Normalize whitespace and convert to lowercase
+    $simText = strtolower(trim($simText));
+    $simText = preg_replace('/\s+/', ' ', $simText); // Collapse multiple spaces
+
+    // Count different SIM types
+    $hasISim = stripos($simText, 'isim') !== false;
+    $hasESim = stripos($simText, 'esim') !== false;
+
+    // Count physical nano-SIM slots
+    preg_match_all('/nano-sim/i', $simText, $nanoMatches);
+    $nanoSimCount = count($nanoMatches[0]);
+
+    // Detect dual physical SIM
+    $hasDualPhysical = (
+        $nanoSimCount >= 2 ||
+        stripos($simText, 'dual sim') !== false ||
+        stripos($simText, 'dual-sim') !== false ||
+        stripos($simText, 'hybrid') !== false ||
+        stripos($simText, 'dual standby') !== false
+    );
+
+    // Count eSIM occurrences
+    preg_match_all('/esim/i', $simText, $esimMatches);
+    $esimCount = count($esimMatches[0]);
+    $hasDualESim = $esimCount >= 2;
+
+    // Priority-based detection
+
+    // 1. iSIM + eSIM + Physical NanoSIM (Ultra Premium)
+    if ($hasISim && $hasESim && $nanoSimCount >= 1) {
+        return 'iSIM + eSIM + NanoSIM';
+    }
+
+    // 2. iSIM + eSIM (2026 Premium)
+    if ($hasISim && $hasESim) {
+        return 'iSIM + eSIM';
+    }
+
+    // 3. Dual Physical + eSIM (2025/26 Flagship)
+    if ($hasDualPhysical && $hasESim) {
+        return 'dual sim + esim';
+    }
+
+    // 4. Dual eSIM (Apple style)
+    if ($hasDualESim && $nanoSimCount === 0) {
+        return 'dual esim';
+    }
+
+    // 5. Single Physical + eSIM (Standard Mid-range)
+    if ($nanoSimCount === 1 && $hasESim) {
+        return 'single sim + esim';
+    }
+
+    // 6. eSIM Only (No physical slot)
+    if ($hasESim && $nanoSimCount === 0 && !$hasDualPhysical) {
+        return 'esim only';
+    }
+
+    // 7. Dual Physical SIM (No eSIM)
+    if ($hasDualPhysical) {
+        return 'dual sim';
+    }
+
+    // 8. Single Physical SIM (Budget)
+    return 'single sim';
 }

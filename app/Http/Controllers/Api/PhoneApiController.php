@@ -686,7 +686,7 @@ class PhoneApiController extends Controller
                     : []
                 )
                 ->toArray();
-            $phone->scores = $this->phoneService->scoreByCategory($s, $profile);
+            $phone->scores = $this->phoneService->scoreByCategory($s, $phone->brand, $profile);
             return $phone;
         });
 
@@ -1452,22 +1452,26 @@ class PhoneApiController extends Controller
         $categoryWeights = $profileConfig['weights'] ?? [];
 
         $totalWeightedScore = 0;
-        $totalWeight = 0;
+        $totalActiveWeight = 0;
 
         foreach ($categoryScores as $category => $scoreData) {
-            $categoryWeight = $categoryWeights[$category] ?? 0;
-            $categoryScore = $scoreData['score'] ?? 0; // 0-100
+            $categoryScore = $scoreData['score'] ?? 0;
+
+            // Skip categories with no score
             if ($categoryScore <= 0) {
                 continue;
             }
-            $weightedScore = ($categoryScore / 100) * $categoryWeight;
-            // Category score is 0-100, so divide by 100 then multiply by weight
-            $totalWeightedScore += $weightedScore;
-            $totalWeight += $categoryWeight;
+
+            $categoryWeight = $categoryWeights[$category] ?? 0;
+
+            // Accumulate weighted scores directly
+            $totalWeightedScore += $categoryScore * $categoryWeight;
+            $totalActiveWeight += $categoryWeight;
         }
-        // Convert back to 0-100 scale
-        return $totalWeight > 0
-            ? round(($totalWeightedScore / $totalWeight) * 100, 2)
+
+        // Normalize: divide by total active weight (already on 0-100 scale)
+        return $totalActiveWeight > 0
+            ? round($totalWeightedScore / $totalActiveWeight, 2)
             : 0;
     }
 
