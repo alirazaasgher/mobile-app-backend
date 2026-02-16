@@ -12,9 +12,11 @@ class CompareScoreService
     //$values = $this->applyInferences($values, $specConfigs);
     public function scoreCategory(string $category, array $values, string $profile = 'display'): array
     {
+
+        // Cache config lookup
         $categoryConfig = config("compare_scoring.compare_profiles.$profile.$category", []);
 
-        // 1. GENERATE INFERRED VALUES (Use these for the Math)
+        // Apply inferences once
         $inferredValues = $this->applyInferences($category, $values, $categoryConfig);
 
         $sectionWeights = $categoryConfig['weights'] ?? [];
@@ -29,39 +31,42 @@ class CompareScoreService
             $sectionRunningScore = 0;
             $weightSumOfPresentSpecs = 0;
 
+            // First pass: calculate weights and scores
             foreach ($groupSpecs as $specKey => $specConfig) {
-                // ✅ Use INFERRED values here so math is always complete
                 if (!isset($inferredValues[$specKey]) || $inferredValues[$specKey] === null) {
                     continue;
                 }
 
                 $val = $inferredValues[$specKey];
-                $weightSumOfPresentSpecs += $specConfig['weight'];
+                $specWeight = $specConfig['weight'];
+                $weightSumOfPresentSpecs += $specWeight;
 
-                // Handle sensor_size array or simple numeric
-                $numericValue = (is_array($val) && isset($val['value'])) ? $val['value'] : $val;
-                $displayValue = (is_array($val) && isset($val['display'])) ? $val['display'] : $val;
+                // Optimize value extraction
+                $numericValue = is_array($val) ? ($val['value'] ?? $val) : $val;
+                $displayValue = is_array($val) ? ($val['display'] ?? $val) : $val;
 
                 $score = $this->scoreSpec($numericValue, $specConfig);
 
                 $tempScores[$specKey] = [
                     'value' => $this->formatValueWithUnit($displayValue, $specConfig),
                     'score' => $score,
-                    'weight' => $specConfig['weight'],
+                    'weight' => $specWeight,
                     'hidden' => $specConfig['hidden'] ?? false,
                     '_score' => $score,
                 ];
             }
 
-            if ($weightSumOfPresentSpecs === 0) continue;
+            if ($weightSumOfPresentSpecs === 0)
+                continue;
 
-            // Calculate section score
+            // Second pass: calculate section score (combined with normalization)
+            $invWeightSum = 1 / $weightSumOfPresentSpecs; // Calculate once
             foreach ($groupSpecs as $specKey => $specConfig) {
                 if (isset($tempScores[$specKey])) {
-                    $relativeWeight = $specConfig['weight'] / $weightSumOfPresentSpecs;
-                    $sectionRunningScore += ($tempScores[$specKey]['_score'] / 10) * $relativeWeight;
+                    $sectionRunningScore += ($tempScores[$specKey]['_score'] * $specConfig['weight']) / 10;
                 }
             }
+            $sectionRunningScore *= $invWeightSum;
 
             $sectionWeight = $sectionWeights[$sectionKey] ?? 0;
             $sectionScores[$sectionKey] = [
@@ -73,25 +78,37 @@ class CompareScoreService
 
         // Normalize and finalize Category Score
         if ($totalActiveSectionWeight > 0) {
+            $invTotalWeight = 1 / $totalActiveSectionWeight; // Calculate once
             foreach ($sectionScores as $sectionData) {
-                $categoryScore += $sectionData['score'] * ($sectionData['weight'] / $totalActiveSectionWeight);
+                $categoryScore += $sectionData['score'] * $sectionData['weight'];
             }
+            $categoryScore *= $invTotalWeight;
         }
-
-        // 2. BUILD DISPLAY OUTPUT (Filter out inferred specs)
+        // Build display output (only specs from original values)
         $scoredSpecs = [];
-        foreach ($values as $specKey => $originalValue) {
-            // ✅ Only add to the UI if it existed in the ORIGINAL $values array
-            if ($originalValue !== null && isset($tempScores[$specKey])) {
-                unset($tempScores[$specKey]['_score']); // Clean up temp math key
+        foreach ($values as $specKey => $value) {
+
+            // ❌ Skip if value is null
+            if ($value === null) {
+                continue;
+            }
+
+            if (isset($tempScores[$specKey])) {
                 $scoredSpecs[$specKey] = $tempScores[$specKey];
+            } else {
+                $scoredSpecs[$specKey] = [
+                    'value' => is_bool($value) ? ($value ? 'Yes' : 'No') : $value,
+                    'score' => null,
+                    'weight' => null,
+                    'hidden' => false,
+                ];
             }
         }
 
         return [
             'score' => round($categoryScore, 2),
             'out_of' => 100,
-            'specs' => $scoredSpecs, // Users only see verified specs
+            'specs' => $scoredSpecs,
         ];
     }
     // $adjustments = $this->applyContextualAdjustments($category, $values, $scoredSpecs, $profileConfig);
@@ -105,35 +122,42 @@ class CompareScoreService
         array $values,
         array $sections
     ): array {
-        if ($category === 'display') {
-            $brightnessConfig = $sections['categories']['brightness'] ?? [];
-            // 1. PROMOTE TYPICAL TO HBM (If Typical is set very high and HBM is missing)
-            if (!empty($values['brightness_typical']) && empty($values['brightness_hbm'])) {
-                if ($values['brightness_typical'] > 1000) {
-                    // If Typical is > 1000, it's almost certainly actually the HBM value
-                    $values['brightness_hbm'] = $values['brightness_typical'];
-                    // Reset typical to a realistic indoor sustained level (Manual Max)
-                    $values['brightness_typical'] = 800;
-                }
-            }
+        // Early return for non-display categories
+        if ($category !== 'display') {
+            return $values;
+        }
 
-            // 2. INFER MISSING TYPICAL FROM PEAK
-            if (empty($values['brightness_typical']) && !empty($values['brightness_peak'])) {
-                $mapping = $brightnessConfig['brightness_typical']['inference']['value_map'] ?? [];
-                foreach ($mapping as $map) {
-                    if ($values['brightness_peak'] >= $map['min_peak']) {
-                        $values['brightness_typical'] = $map['value'];
-                        break;
-                    }
-                }
-            }
+        $brightnessConfig = $sections['categories']['brightness'] ?? [];
 
-            // 3. INFER HBM FROM PEAK (If still empty)
-            if (empty($values['brightness_hbm']) && !empty($values['brightness_peak'])) {
-                // HBM is usually ~45-55% of Peak in modern high-efficiency panels
-                $values['brightness_hbm'] = round($values['brightness_peak'] * 0.50);
+        // 1. PROMOTE TYPICAL TO HBM
+        if (
+            !empty($values['brightness_typical']) &&
+            empty($values['brightness_hbm']) &&
+            $values['brightness_typical'] > 1000
+        ) {
+
+            $values['brightness_hbm'] = $values['brightness_typical'];
+            $values['brightness_typical'] = 800;
+        }
+
+        // 2. INFER MISSING TYPICAL FROM PEAK
+        if (empty($values['brightness_typical']) && !empty($values['brightness_peak'])) {
+            $mapping = $brightnessConfig['brightness_typical']['inference']['value_map'] ?? [];
+            $peakValue = $values['brightness_peak'];
+
+            foreach ($mapping as $map) {
+                if ($peakValue >= $map['min_peak']) {
+                    $values['brightness_typical'] = $map['value'];
+                    break;
+                }
             }
         }
+
+        // 3. INFER HBM FROM PEAK
+        if (empty($values['brightness_hbm']) && !empty($values['brightness_peak'])) {
+            $values['brightness_hbm'] = (int) ($values['brightness_peak'] * 0.50);
+        }
+
         return $values;
     }
 

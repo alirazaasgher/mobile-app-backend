@@ -690,8 +690,7 @@ class PhoneApiController extends Controller
             return $phone;
         });
 
-        $verdict = $this->generateVerdict($scoredPhones, $profile);
-
+        //$verdict = $this->generateVerdict($scoredPhones, $profile);
         $chartData = $this->formatChartData($scoredPhones, $profile);
         return response()->json([
             'success' => true,
@@ -707,8 +706,8 @@ class PhoneApiController extends Controller
                         'total_score' => $this->calculateTotalScore($phone->scores ?? [], $profile),
                     ];
                 }),
-                'verdict' => $verdict,
-                'winner' => $verdict['overall_recommendation']['recommended_phone'],
+                // 'verdict' => $verdict,
+                // 'winner' => $verdict['overall_recommendation']['recommended_phone'],
                 'charts' => $chartData,
             ],
         ]);

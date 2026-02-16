@@ -2167,27 +2167,35 @@ function parseSimType(string $simHtml): string
     return 'single sim';
 }
 
-function getSimplifiedCpuSpeed($cpuString): ?string
+function getSimplifiedCpuSpeed(string $cpuString): ?array
 {
-    if (!empty($cpuString)) {
-
-        // Allow spaces around x
-        preg_match_all('/(\d+)\s*x\s*(\d+\.?\d*)\s*GHz/i', $cpuString, $matches, PREG_SET_ORDER);
-
-        if (empty($matches)) {
-            return null;
-        }
-
-        $clusters = [];
-        foreach ($matches as $match) {
-            $coreCount = $match[1];
-            $frequency = $match[2];
-            $clusters[] = "$coreCount x $frequency GHz";
-        }
-
-        return implode(' & ', $clusters);
+    if (empty($cpuString)) {
+        return null;
     }
 
-    return null;
+    preg_match_all('/(\d+)\s*x\s*(\d+\.?\d*)\s*GHz/i', $cpuString, $matches, PREG_SET_ORDER);
+
+    if (empty($matches)) {
+        return null;
+    }
+
+    $clusters = [];
+    $highestFrequency = 0.0;
+
+    foreach ($matches as $match) {
+        $coreCount = (int) $match[1];
+        $frequency = (float) $match[2];
+
+        $clusters[] = "{$coreCount} x {$frequency} GHz";
+
+        if ($frequency > $highestFrequency) {
+            $highestFrequency = $frequency;
+        }
+    }
+
+    return [
+        'display' => implode(' & ', $clusters),
+        'value' => number_format($highestFrequency, 2)
+    ];
 }
 
