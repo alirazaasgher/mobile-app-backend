@@ -183,21 +183,20 @@ return [
             ],
             'brightness_hbm' => [
                 'label' => 'HBM Brightness',
-                'weight' => 0,
+                'weight' => 0, // Metadata only
                 'unit' => [
                     'value' => 'nits',
                     'position' => 'after',
                     'space' => true
                 ],
                 'ranges' => [
-                    ['min' => 2000, 'score' => 10], // Elite Flagships (2026 standard)
-                    ['min' => 1700, 'score' => 9],  // Top-tier Premium
-                    ['min' => 1500, 'score' => 8],  // Standard Flagship
-                    ['min' => 1300, 'score' => 7],  // High Mid-range
-                    ['min' => 1100, 'score' => 6],  // Mid-range Baseline
-                    ['min' => 900, 'score' => 5],  // Budget High
-                    ['min' => 750, 'score' => 4],  // Budget Standard
-                    ['min' => 600, 'score' => 3],  // Entry Level
+                    ['min' => 2000, 'score' => 10], // Elite (e.g., Pixel 9 Pro XL, S25 Ultra)
+                    ['min' => 1600, 'score' => 9],
+                    ['min' => 1300, 'score' => 8],  // Standard Flagship
+                    ['min' => 1100, 'score' => 7],
+                    ['min' => 900, 'score' => 6],   // High Mid-range
+                    ['min' => 700, 'score' => 5],
+                    ['min' => 500, 'score' => 3],   // Entry/Budget
                 ],
                 'default' => 2,
             ],
@@ -210,33 +209,31 @@ return [
                     'space' => true
                 ],
                 'ranges' => [
-                    ['min' => 4500, 'score' => 10],
-                    ['min' => 3500, 'score' => 9],
-                    ['min' => 2500, 'score' => 8],
-                    ['min' => 1800, 'score' => 7],
-                    ['min' => 1300, 'score' => 6],
-                    ['min' => 1000, 'score' => 5],
-                    ['min' => 800, 'score' => 4],
-                    ['min' => 600, 'score' => 3],
+                    ['min' => 5000, 'score' => 10], // 2026 Cutting Edge (Vivo/Oppo/Xiaomi)
+                    ['min' => 4000, 'score' => 9],
+                    ['min' => 3000, 'score' => 8],  // Current Top-Tier (Your 3200 falls here)
+                    ['min' => 2400, 'score' => 7],
+                    ['min' => 1800, 'score' => 6],
+                    ['min' => 1200, 'score' => 5],
+                    ['min' => 800, 'score' => 3],
                 ],
                 'default' => 2,
             ],
             'brightness_typical' => [
                 'label' => 'Typical Brightness',
-                'weight' => 0, // New spec
+                'weight' => 0,
                 'unit' => [
                     'value' => 'nits',
                     'position' => 'after',
                     'space' => true
                 ],
                 'ranges' => [
-                    ['min' => 1500, 'score' => 10],
-                    ['min' => 1200, 'score' => 9],
-                    ['min' => 1000, 'score' => 8],
-                    ['min' => 800, 'score' => 7],
-                    ['min' => 600, 'score' => 6],
-                    ['min' => 500, 'score' => 5],
-                    ['min' => 400, 'score' => 4],
+                    ['min' => 1200, 'score' => 10], // Extremely rare manual high-sustained
+                    ['min' => 1000, 'score' => 9],
+                    ['min' => 800, 'score' => 8],   // Standard Flagship Manual Max
+                    ['min' => 600, 'score' => 7],
+                    ['min' => 500, 'score' => 6],
+                    ['min' => 400, 'score' => 5],
                     ['min' => 300, 'score' => 3],
                 ],
                 'inference' => [
@@ -245,15 +242,12 @@ return [
                         'brightness_peak' => ['min' => 2000],
                         'hdr_support' => ['not_null' => true],
                     ],
-
-                    // 👇 VALUE inference (not score)
                     'value_map' => [
-                        ['min_peak' => 3000, 'value' => 1400],
-                        ['min_peak' => 2500, 'value' => 1300],
-                        ['min_peak' => 2000, 'value' => 1200],
+                        ['min_peak' => 4500, 'value' => 1000],
+                        ['min_peak' => 3000, 'value' => 800],  // Your 3200 nit phone gets 800 typical
+                        ['min_peak' => 2000, 'value' => 600],
                     ],
-
-                    'reasoning' => 'Estimated from peak brightness + HDR capability',
+                    'reasoning' => 'Typical indoor max estimated from HDR peak and panel efficiency',
                 ],
                 'default' => 2,
             ],

@@ -840,7 +840,10 @@ class PhoneService
     }
 
     public function scoreByCategory(array $specs, $brand, $profile): array
-    {
+    {$res = $this->scoreDisplay($specs, $brand->name, $profile);
+    echo "<pre>";
+    print_r($res);
+    exit;
         return [
             'display' => $this->scoreDisplay($specs, $brand->name, $profile),
             'performance' => $this->scorePerformance($specs, $profile),

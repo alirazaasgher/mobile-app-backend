@@ -12,38 +12,35 @@ class CompareScoreService
     //$values = $this->applyInferences($values, $specConfigs);
     public function scoreCategory(string $category, array $values, string $profile = 'display'): array
     {
-        // Cache config lookup
         $categoryConfig = config("compare_scoring.compare_profiles.$profile.$category", []);
+
+        // 1. GENERATE INFERRED VALUES (Use these for the Math)
+        $inferredValues = $this->applyInferences($category, $values, $categoryConfig);
+
         $sectionWeights = $categoryConfig['weights'] ?? [];
         $sections = $categoryConfig['categories'] ?? [];
 
         $categoryScore = 0;
         $tempScores = [];
-
-        // ✅ Calculate total weight of sections that have data
         $totalActiveSectionWeight = 0;
-        $sectionScores = []; // Store section scores for later
+        $sectionScores = [];
 
         foreach ($sections as $sectionKey => $groupSpecs) {
             $sectionRunningScore = 0;
             $weightSumOfPresentSpecs = 0;
 
-            // Combined pass: calculate weight sum AND scores
             foreach ($groupSpecs as $specKey => $specConfig) {
-                if (!isset($values[$specKey]) || $values[$specKey] === null) {
+                // ✅ Use INFERRED values here so math is always complete
+                if (!isset($inferredValues[$specKey]) || $inferredValues[$specKey] === null) {
                     continue;
                 }
 
-                $value = $values[$specKey];
+                $val = $inferredValues[$specKey];
                 $weightSumOfPresentSpecs += $specConfig['weight'];
 
-                // Extract numeric and display values
-                if ($specKey === 'sensor_size' && is_array($value)) {
-                    $numericValue = $value['value'];
-                    $displayValue = $value['display'];
-                } else {
-                    $numericValue = $displayValue = $value;
-                }
+                // Handle sensor_size array or simple numeric
+                $numericValue = (is_array($val) && isset($val['value'])) ? $val['value'] : $val;
+                $displayValue = (is_array($val) && isset($val['display'])) ? $val['display'] : $val;
 
                 $score = $this->scoreSpec($numericValue, $specConfig);
 
@@ -56,58 +53,45 @@ class CompareScoreService
                 ];
             }
 
-            if ($weightSumOfPresentSpecs === 0) {
-                continue;
-            }
+            if ($weightSumOfPresentSpecs === 0) continue;
 
             // Calculate section score
             foreach ($groupSpecs as $specKey => $specConfig) {
                 if (isset($tempScores[$specKey])) {
                     $relativeWeight = $specConfig['weight'] / $weightSumOfPresentSpecs;
                     $sectionRunningScore += ($tempScores[$specKey]['_score'] / 10) * $relativeWeight;
-                    unset($tempScores[$specKey]['_score']);
                 }
             }
 
-            $sectionScorePercentage = $sectionRunningScore * 100;
-
-            // ✅ Store section score and track active weight
             $sectionWeight = $sectionWeights[$sectionKey] ?? 0;
             $sectionScores[$sectionKey] = [
-                'score' => $sectionScorePercentage,
+                'score' => $sectionRunningScore * 100,
                 'weight' => $sectionWeight
             ];
             $totalActiveSectionWeight += $sectionWeight;
         }
 
-        // ✅ Normalize section weights and calculate category score
+        // Normalize and finalize Category Score
         if ($totalActiveSectionWeight > 0) {
             foreach ($sectionScores as $sectionData) {
-                $normalizedWeight = $sectionData['weight'] / $totalActiveSectionWeight;
-                $categoryScore += $sectionData['score'] * $normalizedWeight;
+                $categoryScore += $sectionData['score'] * ($sectionData['weight'] / $totalActiveSectionWeight);
             }
         }
 
-        // Build output maintaining input order
+        // 2. BUILD DISPLAY OUTPUT (Filter out inferred specs)
         $scoredSpecs = [];
-
-        foreach ($values as $specKey => $value) {
-            if ($value === null) {
-                continue;
+        foreach ($values as $specKey => $originalValue) {
+            // ✅ Only add to the UI if it existed in the ORIGINAL $values array
+            if ($originalValue !== null && isset($tempScores[$specKey])) {
+                unset($tempScores[$specKey]['_score']); // Clean up temp math key
+                $scoredSpecs[$specKey] = $tempScores[$specKey];
             }
-
-            $scoredSpecs[$specKey] = $tempScores[$specKey] ?? [
-                'value' => is_bool($value) ? ($value ? 'Yes' : 'No') : $value,
-                'score' => null,
-                'weight' => null,
-                'hidden' => false,
-            ];
         }
 
         return [
             'score' => round($categoryScore, 2),
             'out_of' => 100,
-            'specs' => $scoredSpecs,
+            'specs' => $scoredSpecs, // Users only see verified specs
         ];
     }
     // $adjustments = $this->applyContextualAdjustments($category, $values, $scoredSpecs, $profileConfig);
@@ -117,37 +101,39 @@ class CompareScoreService
      * Apply inference rules to fill missing values
      */
     protected function applyInferences(
+        string $category,
         array $values,
-        array $specConfigs,
+        array $sections
     ): array {
-        foreach ($specConfigs as $specKey => $specConfig) {
-            // Skip if value already exists
-            if (array_key_exists($specKey, $values) && $values[$specKey] !== null) {
-                continue;
-            }
-
-            // Check if this spec has inference rules
-            $inference = $specConfig['inference'] ?? null;
-            if (!$inference) {
-                continue;
-            }
-            // Check if inference conditions are met
-            if (!$this->checkInferenceConditions($inference['conditions'] ?? [], $values)) {
-                continue;
-            }
-
-            if (isset($inference['value_map'])) {
-                $inferredValue = $this->inferValueFromMap(
-                    $inference['value_map'],
-                    $values
-                );
-
-                if ($inferredValue !== null) {
-                    $values[$specKey] = $inferredValue;
+        if ($category === 'display') {
+            $brightnessConfig = $sections['categories']['brightness'] ?? [];
+            // 1. PROMOTE TYPICAL TO HBM (If Typical is set very high and HBM is missing)
+            if (!empty($values['brightness_typical']) && empty($values['brightness_hbm'])) {
+                if ($values['brightness_typical'] > 1000) {
+                    // If Typical is > 1000, it's almost certainly actually the HBM value
+                    $values['brightness_hbm'] = $values['brightness_typical'];
+                    // Reset typical to a realistic indoor sustained level (Manual Max)
+                    $values['brightness_typical'] = 800;
                 }
             }
-        }
 
+            // 2. INFER MISSING TYPICAL FROM PEAK
+            if (empty($values['brightness_typical']) && !empty($values['brightness_peak'])) {
+                $mapping = $brightnessConfig['brightness_typical']['inference']['value_map'] ?? [];
+                foreach ($mapping as $map) {
+                    if ($values['brightness_peak'] >= $map['min_peak']) {
+                        $values['brightness_typical'] = $map['value'];
+                        break;
+                    }
+                }
+            }
+
+            // 3. INFER HBM FROM PEAK (If still empty)
+            if (empty($values['brightness_hbm']) && !empty($values['brightness_peak'])) {
+                // HBM is usually ~45-55% of Peak in modern high-efficiency panels
+                $values['brightness_hbm'] = round($values['brightness_peak'] * 0.50);
+            }
+        }
         return $values;
     }
 
