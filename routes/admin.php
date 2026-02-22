@@ -1,6 +1,7 @@
 <?php
 use App\Http\Controllers\Admin\AuthController;
 use App\Http\Controllers\Admin\MobileController;
+use App\Http\Controllers\Admin\ChipsetController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Admin\DashboardController;
 Route::prefix('admin')->name('admin.')->group(function () {
@@ -13,6 +14,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
     Route::middleware(['admin'])->group(function () {
         Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
         Route::resource('mobiles', MobileController::class);  // CRUD
+        Route::resource('chipsets', ChipsetController::class);
         Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
     });
 });

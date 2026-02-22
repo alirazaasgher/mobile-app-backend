@@ -556,3 +556,7 @@ $network = ['technology', '2G bands', '3G bands', '4G bands', '5G bands', 'speed
   </form>
 </div>
 @endsection
+@push('scripts')
+  <script src="{{ asset('js/mobile.js?v=1') }}"></script>
+  <script src="{{ asset('js/quill-editor.js') }}"></script>
+@endpush

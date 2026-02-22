@@ -4,7 +4,7 @@ use App\Http\Controllers\Admin\AuthController;
 use App\Http\Controllers\Admin\MobileController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Admin\DashboardController;
-
+use App\Http\Controllers\Admin\ChipsetController;
 Route::get('/health', function () {
     return response()->json([
         'status' => 'ok',
@@ -26,5 +26,6 @@ Route::prefix('admin')->name('admin.')->group(function () {
             ->name('dashboard');
 
         Route::resource('mobiles', MobileController::class);
+        Route::resource('chipsets', ChipsetController::class);
     });
 });

@@ -645,7 +645,7 @@ class PhoneService
     /**
      * Upload single image
      */
-    protected function uploadSingleImage(UploadedFile $file, string $directory, string|null $oldPath = null): string
+    public function uploadSingleImage(UploadedFile $file, string $directory, string|null $oldPath = null): string
     {
 
         // Validate upload

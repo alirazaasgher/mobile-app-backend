@@ -1,5 +1,7 @@
 <?php
 
+use App\Http\Controllers\Admin\ChipsetController;
+use App\Http\Controllers\Api\ChipsetApiController;
 use App\Http\Controllers\Api\PhoneApiController;
 use Illuminate\Support\Facades\Route;
 Route::get('/clear-cache', function () {
@@ -15,6 +17,7 @@ Route::middleware(['verify.api.signature'])->group(function () {
     // 📄 Listing endpoints - 100/min
     Route::middleware('throttle:100,1')->group(function () {
         Route::get('/homepage', [PhoneApiController::class, 'index']);
+        Route::get('/soc', [ChipsetApiController::class, 'index']);
         Route::get('/brands', [PhoneApiController::class, 'brands']);
         Route::get('/phones/filters', [PhoneApiController::class, 'getFilterOptions']);
         Route::get('/getStaticFilters', [PhoneApiController::class, 'getStaticFilters']);
