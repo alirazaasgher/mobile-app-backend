@@ -23,6 +23,7 @@ Route::middleware(['verify.api.signature'])->group(function () {
         Route::get('/getStaticFilters', [PhoneApiController::class, 'getStaticFilters']);
         Route::get('/getAllCompareSlugs', [PhoneApiController::class, 'getAllCompareSlugs']);
         Route::get('/phones/{slug}', [PhoneApiController::class, 'show'])->name('phones.show');
+        Route::get('/soc/{slug}', [ChipsetApiController::class, 'show'])->name('soc.show');
         Route::get('/phones/getSimilarMobiles', [PhoneApiController::class, 'similar_mobiles']);
         Route::get('/getPhoneBySlug', [PhoneApiController::class, 'getPhoneBySlug']);
         Route::post('/phones/display-score', [PhoneApiController::class, 'getDisplayScore']);

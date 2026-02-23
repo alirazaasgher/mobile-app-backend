@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Brand;
+use App\Models\Chipset;
 use Illuminate\Http\Request;
 use App\Models\Phone;
 use App\Models\RamType;
@@ -24,6 +25,7 @@ class MobileController extends Controller
         $ram_type = RamType::all();
         $storage_type = StorageType::all();
         $allMobiles = Phone::all();
+        $allChipsets = Chipset::all();
         $specificationTemplates = [
             'build' => [
                 'expandable' => true,
@@ -172,7 +174,8 @@ class MobileController extends Controller
             'ramTypes' => $ram_type,
             'storageTypes' => $storage_type,
             'specificationTemplates' => $specificationTemplates,
-            'allMobiles' => $allMobiles
+            'allMobiles' => $allMobiles,
+            'allChipsets' => $allChipsets
         ]);
     }
 
@@ -201,6 +204,7 @@ class MobileController extends Controller
             'name' => 'required|string|max:255',
             'description' => 'nullable|string',
             'primary_color' => 'nullable|string|max:50',
+            'chipset_id' => 'required|int',
             'tagline' => 'nullable|string',
             'release_date' => 'nullable|date',
             'variants' => 'required|array|min:1',
@@ -230,6 +234,7 @@ class MobileController extends Controller
                 'description' => $validated['description'] ?? null, // Brand + Name
                 'tagline' => $validated['tagline'] ?? null,
                 'primary_color' => $validated['primary_color'] ?? null,
+                'chipset_id' => $validated['chipset_id'],
                 'release_date' => $validated['release_date'] ?? null,
                 'announced_date' => $request->input('announced_date'),
                 'status' => $request->input('status'),
@@ -330,6 +335,7 @@ class MobileController extends Controller
         $validated = $request->validate([
             'brand' => 'required|string',
             'name' => 'required|string|max:255',
+            'chipset_id' => 'required|int',
             'primary_color' => 'nullable|string|max:50',
             'slug' => 'nullable|string|max:50',
             'description' => 'nullable|string',
@@ -369,6 +375,7 @@ class MobileController extends Controller
                 'name' => $validated['name'],
                 'slug' => Str::slug($brandName . ' ' . $validated['name']), // Brand + Name
                 'primary_color' => $validated['primary_color'] ?? null,
+                'chipset_id' => $validated['chipset_id'],
                 'tagline' => $validated['tagline'] ?? null,
                 'release_date' => $validated['release_date'] ?? null,
                 'announced_date' => $request->input('announced_date') ?? null,

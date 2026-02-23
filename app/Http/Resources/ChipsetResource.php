@@ -18,6 +18,8 @@ class ChipsetResource extends JsonResource
             'announced_year' => $this->announced_year,
             'brand' => $this->brand->name,
             'brand_slug' => $this->brand->slug,
+            'specifications' => ChipsetSpecificationResource::collection($this->whenLoaded('specifications')),
+            'mobiles' => PhoneResource::collection($this->whenLoaded('mobiles')),
         ];
     }
 }

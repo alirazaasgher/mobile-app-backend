@@ -61,6 +61,19 @@ $network = ['technology', '2G bands', '3G bands', '4G bands', '5G bands', 'speed
           <input type="text" name="name" value="{{ old('name', $mobile->name ?? '') }}" class="form-control" required>
         </div>
       </div>
+       <div class="row g-3 mb-3">
+        <div class="col-md-6">
+          <label class="form-label fw-medium">Brand</label>
+          <select name="chipset_id" class="form-select">
+            <option value="">Select SoC</option>
+            @foreach ($allChipsets as $chipset)
+            <option value="{{ $chipset->id }}" {{ old('chipset_id', $mobile->chipset_id ?? '') == $chipset->id ? 'selected' : '' }}>
+              {{ $chipset->name }}
+            </option>
+            @endforeach
+          </select>
+        </div>
+      </div>
 
       <!-- Mobile Description -->
       <div class="mb-3">

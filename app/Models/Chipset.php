@@ -29,4 +29,9 @@ class Chipset extends Model
     {
         return $this->hasMany(ChipsetSpecification::class);
     }
+
+    public function mobiles()
+    {
+        return $this->hasMany(Phone::class);
+    }
 }

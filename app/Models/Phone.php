@@ -17,6 +17,7 @@ class Phone extends Model
         'description',
         'name',
         'tagline',
+        'chipset_id',
         'primary_image',
         'primary_color',
         'status',

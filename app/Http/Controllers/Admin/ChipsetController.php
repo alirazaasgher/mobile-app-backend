@@ -218,7 +218,7 @@ class ChipsetController extends Controller
             $chipset = Chipset::create([
                 'brand_id' => $validated['brand_id'],
                 'name' => $validated['name'],
-                'slug' => Str::slug($brandName . ' ' . $validated['name']), // Brand + Name
+                'slug' => Str::slug($validated['name']),
                 'announced_year' => $validated['announced_year'] ?? null,
                 'tier' => $validated['tier'],
             ]);
@@ -248,6 +248,9 @@ class ChipsetController extends Controller
 
     public function update(Request $request, $id)
     {
+        // echo "<pre>";
+        // print_r($request->all());
+        // exit;
 
         $validated = $request->validate([
             'name' => 'required|string|max:255',
@@ -268,7 +271,7 @@ class ChipsetController extends Controller
             $updateData = [
                 'brand_id' => $validated['brand_id'],
                 'name' => $validated['name'],
-                'slug' => Str::slug($brandName . ' ' . $validated['name']),
+                'slug' => Str::slug($validated['name']),
                 'announced_year' => $validated['announced_year'] ?? null,
                 'tier' => $validated['tier'],
             ];
