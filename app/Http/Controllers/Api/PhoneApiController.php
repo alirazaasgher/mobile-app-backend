@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Brand;
 use App\Models\Phone;
 use App\Services\PhoneSearchService;
+use App\Services\SocCompatibilityService;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Cache;
@@ -208,18 +209,23 @@ class PhoneApiController extends Controller
             'colors',
             'colors.images',
             'variants' => function ($query) {
-                // ->with(['ram_type:id,name', 'storage_type:id,name'])
-                $query->orderBy('storage')
-                    ->orderBy('pkr_price');
+                $query->orderBy('storage')->orderBy('pkr_price');
             },
-            // Competitors only need minimal info: id, name, slug, primary_image, brand_id
             'competitors' => function ($q) {
-                $q->select('phones.id', 'phones.name', 'brand_id', 'phones.slug', 'phones.primary_image') // minimal fields
-                    ->with('searchIndex'); // eager load searchIndex
+                $q->select('phones.id', 'phones.name', 'brand_id', 'phones.slug', 'phones.primary_image')
+                    ->with('searchIndex');
+            },
+
+            'chipset' => function ($q) {
+                $q->select('id', 'name', 'slug')
+                    ->with([
+                        'specifications',
+                    ]);
             }
-        ])
-            ->where('slug', $slug)
-            ->firstOrFail();
+        ])->where('slug', $slug)->firstOrFail();
+        $phoneSpecs = $phone->specifications->toArray();
+        $chipsetSpecs = $phone->chipset->specifications->toArray();
+        $compatibility = (new SocCompatibilityService($phoneSpecs, $chipsetSpecs))->check();
         $competitorIds = $phone->competitors->pluck('id')->toArray();
         $ramOptions = $phone->searchIndex->ram_options
             ? json_decode($phone->searchIndex->ram_options, true)
@@ -239,6 +245,7 @@ class PhoneApiController extends Controller
         return response()->json([
             'success' => true,
             'data' => new PhoneResource(resource: $phone),
+            'compatibility' => $compatibility,
             'similarMobiles' => PhoneResource::collection($similarMobiles),
         ]);
     }

@@ -38,14 +38,23 @@ class ChipsetApiController extends Controller
         $phone = Chipset::with([
             'brand:id,name',
             'specifications',
-            // Load mobiles and their nested brand relationship
             'mobiles' => function ($query) {
-                $query->select('id', 'name', 'slug', 'chipset_id', 'brand_id', 'primary_image')
-                    ->with('brand:id,name'); // Nest the brand selection here
+                $query->select(
+                    'phones.id',
+                    'phones.name',
+                    'phones.slug',
+                    'phones.chipset_id',
+                    'phones.brand_id',
+                    'phones.primary_image',
+                    'phones.status',
+                )->where('phones.deleted', 0)
+                    ->with([
+                        'brand:id,name',
+                        'searchIndex:phone_id,min_ram as ram,min_storage as storage,min_price_usd,min_price_pkr',
+                    ]);
             }
         ])->where('slug', $slug)
             ->firstOrFail();
-
         return response()->json([
             'success' => true,
             'data' => new ChipsetResource(resource: $phone),
