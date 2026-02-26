@@ -722,33 +722,33 @@ class PhoneApiController extends Controller
             $phone->scores = $this->phoneService->scoreByCategory($s, $phone->brand, $profile);
             return $phone;
         });
-        $primaryPhone = $phones->first();
-        $chipsetId = $primaryPhone->chipset_id;
-        $currentPrice = $primaryPhone->searchIndex->min_price_usd;
-        $chipsetMarketContext = [];
+        // $primaryPhone = $phones->first();
+        // $chipsetId = $primaryPhone->chipset_id;
+        // $currentPrice = $primaryPhone->searchIndex->min_price_usd;
+        // $chipsetMarketContext = [];
 
-        if ($chipsetId && $currentPrice) {
-            // Define the price "neighborhood" (e.g., +/- 20%)
-            $minPrice = $currentPrice * 0.8;
-            $maxPrice = $currentPrice * 1.2;
+        // if ($chipsetId && $currentPrice) {
+        //     // Define the price "neighborhood" (e.g., +/- 20%)
+        //     $minPrice = $currentPrice * 0.8;
+        //     $maxPrice = $currentPrice * 1.2;
 
-            $chipsetMarketContext = DB::table('phones as p')
-                ->join('phone_search_indices as psi', 'p.id', '=', 'psi.phone_id')
-                ->join('chipsets as c', 'c.id', '=', 'p.chipset_id')
-                ->select(
-                    'p.id',
-                    'p.name',
-                    'p.slug',
-                    'psi.min_price_usd as price',
-                    // 'psi.performance_score as score' // Assuming you store a pre-calculated score
-                )
-                ->where('p.chipset_id', $chipsetId)
-                // ->whereBetween('psi.min_price_usd', [$minPrice, $maxPrice])
-                // ->where('p.id', '!=', $primaryPhone->id) // Exclude the phone itself if you prefer
-                // // ->orderBy('psi.performance_score', 'desc')
-                // ->limit(10)
-                ->get();
-        }
+        //     $chipsetMarketContext = DB::table('phones as p')
+        //         ->join('phone_search_indices as psi', 'p.id', '=', 'psi.phone_id')
+        //         ->join('chipsets as c', 'c.id', '=', 'p.chipset_id')
+        //         ->select(
+        //             'p.id',
+        //             'p.name',
+        //             'p.slug',
+        //             'psi.min_price_usd as price',
+        //             // 'psi.performance_score as score' // Assuming you store a pre-calculated score
+        //         )
+        //         ->where('p.chipset_id', $chipsetId)
+        //         ->whereBetween('psi.min_price_usd', [$minPrice, $maxPrice])
+        //         ->where('p.id', '!=', $primaryPhone->id) // Exclude the phone itself if you prefer
+        //         // ->orderBy('psi.performance_score', 'desc')
+        //         ->limit(10)
+        //         ->get();
+        // }
         $chartData = $this->formatChartData($scoredPhones, $profile);
         return response()->json([
             'success' => true,
@@ -761,16 +761,16 @@ class PhoneApiController extends Controller
                         'phone_name' => $phone->name,
                         'primary_color' => $phone->primary_color,
                         'category_scores' => $phone->scores,
-                        'total_score' => $this->calculateTotalScore($phone->scores ?? [], $profile),
+                        // 'total_score' => $this->calculateTotalScore($phone->scores ?? [], $profile),
                     ];
                 }),
 
-                'charts' => $chartData,
-                'market_context' => [
-                    'chipset_name' => $primaryPhone->chipset->name ?? 'Unknown SoC',
-                    'peers' => $chipsetMarketContext,
-                    // 'avg_price_for_chip' => $chipsetMarketContext->avg('price')
-                ]
+                // 'charts' => $chartData,
+                // 'market_context' => [
+                //     'chipset_name' => $primaryPhone->chipset->name ?? 'Unknown SoC',
+                //     'peers' => $chipsetMarketContext,
+                //     'avg_price_for_chip' => $chipsetMarketContext->avg('price')
+                // ]
             ],
 
 
