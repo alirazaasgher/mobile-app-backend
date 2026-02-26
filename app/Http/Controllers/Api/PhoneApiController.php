@@ -213,16 +213,16 @@ class PhoneApiController extends Controller
                     ->with('searchIndex');
             },
 
-            'chipset' => function ($q) {
-                $q->select('id', 'name', 'slug')
-                    ->with([
-                        'specifications',
-                    ]);
-            }
+            // 'chipset' => function ($q) {
+            //     $q->select('id', 'name', 'slug')
+            //         ->with([
+            //             'specifications',
+            //         ]);
+            // }
         ])->where('slug', $slug)->firstOrFail();
-        $phoneSpecs = $phone->specifications->toArray();
-        $chipsetSpecs = $phone->chipset->specifications->toArray();
-        $compatibility = (new SocCompatibilityService($phoneSpecs, $chipsetSpecs))->check();
+        // $phoneSpecs = $phone->specifications->toArray();
+        // $chipsetSpecs = $phone->chipset->specifications->toArray();
+        // $compatibility = (new SocCompatibilityService($phoneSpecs, $chipsetSpecs))->check();
         $competitorIds = $phone->competitors->pluck('id')->toArray();
         $ramOptions = $phone->searchIndex->ram_options
             ? json_decode($phone->searchIndex->ram_options, true)
