@@ -628,6 +628,7 @@ class PhoneApiController extends Controller
             'name',
             'brand_id',
             'slug',
+            'chipset_id',
             'release_date',
             'primary_image',
             'primary_color',
@@ -696,8 +697,33 @@ class PhoneApiController extends Controller
             $phone->scores = $this->phoneService->scoreByCategory($s, $phone->brand, $profile);
             return $phone;
         });
+        $primaryPhone = $phones->first();
+        $chipsetId = $primaryPhone->chipset_id;
+        $currentPrice = $primaryPhone->searchIndex->min_price_usd;
+        $chipsetMarketContext = [];
 
-        //$verdict = $this->generateVerdict($scoredPhones, $profile);
+        if ($chipsetId && $currentPrice) {
+            // Define the price "neighborhood" (e.g., +/- 20%)
+            $minPrice = $currentPrice * 0.8;
+            $maxPrice = $currentPrice * 1.2;
+
+            $chipsetMarketContext = DB::table('phones as p')
+                ->join('phone_search_indices as psi', 'p.id', '=', 'psi.phone_id')
+                ->join('chipsets as c', 'c.id', '=', 'p.chipset_id')
+                ->select(
+                    'p.id',
+                    'p.name',
+                    'p.slug',
+                    'psi.min_price_usd as price',
+                    // 'psi.performance_score as score' // Assuming you store a pre-calculated score
+                )
+                ->where('p.chipset_id', $chipsetId)
+                // ->whereBetween('psi.min_price_usd', [$minPrice, $maxPrice])
+                // ->where('p.id', '!=', $primaryPhone->id) // Exclude the phone itself if you prefer
+                // // ->orderBy('psi.performance_score', 'desc')
+                // ->limit(10)
+                ->get();
+        }
         $chartData = $this->formatChartData($scoredPhones, $profile);
         return response()->json([
             'success' => true,
@@ -713,11 +739,21 @@ class PhoneApiController extends Controller
                         'total_score' => $this->calculateTotalScore($phone->scores ?? [], $profile),
                     ];
                 }),
-                // 'verdict' => $verdict,
-                // 'winner' => $verdict['overall_recommendation']['recommended_phone'],
+
                 'charts' => $chartData,
+                'market_context' => [
+                    'chipset_name' => $primaryPhone->chipset->name ?? 'Unknown SoC',
+                    'peers' => $chipsetMarketContext,
+                    // 'avg_price_for_chip' => $chipsetMarketContext->avg('price')
+                ]
             ],
+
+
+
         ]);
+        //$verdict = $this->generateVerdict($scoredPhones, $profile);
+        // 'verdict' => $verdict,
+        // 'winner' => $verdict['overall_recommendation']['recommended_phone'],
     }
 
     public function scorePhone($specs, $scorer, $profile)
@@ -1458,26 +1494,23 @@ class PhoneApiController extends Controller
         $categoryWeights = $profileConfig['weights'] ?? [];
 
         $totalWeightedScore = 0;
-        $totalActiveWeight = 0;
+        $sumOfWeightsUsed = 0; // NEW: Only track weights for categories we actually have scores for
 
         foreach ($categoryScores as $category => $scoreData) {
             $categoryScore = $scoreData['score'] ?? 0;
-
-            // Skip categories with no score
-            if ($categoryScore <= 0) {
-                continue;
-            }
-
             $categoryWeight = $categoryWeights[$category] ?? 0;
 
-            // Accumulate weighted scores directly
-            $totalWeightedScore += $categoryScore * $categoryWeight;
-            $totalActiveWeight += $categoryWeight;
+            // If the category score is 0, it might mean data is missing.
+            // Market Standard: Only count the weight if the phone actually competes in this category.
+            if ($categoryScore > 0) {
+                $totalWeightedScore += $categoryScore * $categoryWeight;
+                $sumOfWeightsUsed += $categoryWeight;
+            }
         }
 
-        // Normalize: divide by total active weight (already on 0-100 scale)
-        return $totalActiveWeight > 0
-            ? round($totalWeightedScore / $totalActiveWeight, 2)
+        // Standardize: Divide by weights of present categories, not the whole universe of possibilities.
+        return $sumOfWeightsUsed > 0
+            ? round($totalWeightedScore / $sumOfWeightsUsed, 2)
             : 0;
     }
 

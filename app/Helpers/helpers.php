@@ -65,21 +65,21 @@ function update_phone_search_index(
 
     // Extract commonly used specs
     $capacity = isset($specMap['battery']['capacity']) ? preg_replace('/[^0-9]/', '', $specMap['battery']['capacity']) : 0;
-    $selfieCam = $specMap['selfie_camera']['setup'] ?? null;
+    $selfieCam = $specMap['selfie_camera']['selfe_setup'] ?? null;
     if ($selfieCam) {
         $selfieCammp = preg_match('/\(\s*(\d+)\s*mp\s*\)/i', (string) $selfieCam, $matches)
             ? $matches[1]
             : 0;
     }
 
-    $mainCam = $specMap['main_camera']['setup'] ?? null;
+    $mainCam = $specMap['main_camera']['rear'] ?? null;
     $mainCam = getShortCamera($mainCam ?? '');
 
     $shortChipset = getShortChipset($chipset);
     $cpuString = $specMap['performance']['cpu'];
     $cpuType = cpuType($cpuString);
-    $setup = isset($specMap['main_camera']['setup']) && !empty($specMap['main_camera']['setup'])
-        ? explode(" ", $specMap['main_camera']['setup'])[0]
+    $setup = isset($specMap['main_camera']['rear']) && !empty($specMap['main_camera']['rear'])
+        ? explode(" ", $specMap['main_camera']['rear'])[0]
         : '';
     $main_camera_video = getVideoHighlight($specMap['main_camera']['video']);
     $topSpecs = build_top_specs($specMap, $os, $release_date, $mainCam, $main_camera_video, $ipRating);
@@ -184,7 +184,6 @@ function build_top_specs($specMap, $os, $date, $mainCam, $main_camera_video, $ip
         $shortUpdates = str_ireplace('updates', '', $updates);
         $shortUpdates = trim($shortUpdates);
     }
-    $glassProtection = getGlassProtectionShort($specMap['build']['build']);
 
     return [
         [
@@ -194,7 +193,7 @@ function build_top_specs($specMap, $os, $date, $mainCam, $main_camera_video, $ip
         ],
         [
             "key" => "glass_protection",
-            "text" => $glassProtection ?? "",
+            "text" => $specMap['display']['protection'] ?? "",
             "subText" => $ipRating ?? ""
         ],
         [
@@ -204,7 +203,7 @@ function build_top_specs($specMap, $os, $date, $mainCam, $main_camera_video, $ip
         ],
         [
             "key" => "front_camera",
-            "text" => $specMap['selfie_camera']['setup'] ?? "NA",
+            "text" => $specMap['selfie_camera']['selfe_setup'] ?? "NA",
             "subText" => $fornt_camera_video ?? ""
         ],
         [
@@ -1843,6 +1842,19 @@ function getBenchmark($benchmark)
 
 function estimateThrottling($chipset): ?int
 {
+    // 2026 Flagships
+    if (preg_match('/Snapdragon 8 Elite Gen 5/i', $chipset))
+        return 65; // High peak, but aggressive throttling (down to 30% in extreme loops)
+    if (preg_match('/Apple A19 Pro/i', $chipset))
+        return 89; // Best-in-class stability due to new vapor chamber design
+    if (preg_match('/Exynos 2600/i', $chipset))
+        return 82; // Massive jump! HPB tech improved thermal resistance by 30%
+    if (preg_match('/Dimensity 9500/i', $chipset))
+        return 76; // Strong multi-core but gets "toasty" in thin designs
+    if (preg_match('/Tensor G5/i', $chipset))
+        return 61; // Still struggles; aggressive throttling starts after 2 minutes
+
+    // 2024-2025 Chips (Your existing logic)
     if (preg_match('/Snapdragon 8 Gen 3/i', $chipset))
         return 85;
     if (preg_match('/Snapdragon 8 Gen 2/i', $chipset))
@@ -1851,14 +1863,10 @@ function estimateThrottling($chipset): ?int
         return 70;
     if (preg_match('/Dimensity 9300/i', $chipset))
         return 80;
-    if (preg_match('/Dimensity 9200/i', $chipset))
-        return 78;
     if (preg_match('/Tensor G[34]/i', $chipset))
         return 70;
-    if (preg_match('/Snapdragon 7 Gen/i', $chipset))
-        return 88;
 
-    return null; // Don't guess unknown chips
+    return null;
 }
 
 function estimateAICapability($chipset): ?int
@@ -2197,5 +2205,35 @@ function getSimplifiedCpuSpeed(string $cpuString): ?array
         'display' => implode(' & ', $clusters),
         'value' => number_format($highestFrequency, 2)
     ];
+}
+
+function parseAntutuScore($antutu_score): ?array
+{
+    if (empty($antutu_score)) {
+        return null;
+    }
+
+    $result = [
+        'antutu_version' => null,
+        'antutu_score' => null,
+        'geekbench_version' => null,
+        'geekbench_single' => null,
+        'geekbench_multi' => null,
+    ];
+
+    // Match AnTuTu
+    if (preg_match('/AnTuTu v\((\d+)\):\s*([\d,]+)/i', $antutu_score, $match)) {
+        $result['antutu_version'] = (int) $match[1];
+        $result['antutu_score'] = (int) str_replace(',', '', $match[2]);
+    }
+
+    // Match Geekbench
+    if (preg_match('/GeekBench v\((\d+)\):\s*(\d+)\s*\(S\)\s*-\s*(\d+)\s*\(M\)/i', $antutu_score, $match)) {
+        $result['geekbench_version'] = (int) $match[1];
+        $result['geekbench_single'] = (int) $match[2];
+        $result['geekbench_multi'] = (int) $match[3];
+    }
+
+    return $result;
 }
 

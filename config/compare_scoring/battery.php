@@ -44,7 +44,7 @@ return [
                     ['min' => 2000, 'score' => 3],
                     ['min' => 1500, 'score' => 2],
                 ],
-                'default' => 2,
+                'default' => 5,
             ]
         ],
         'charging_speed' => [
@@ -85,7 +85,7 @@ return [
                     ['min' => 10, 'score' => 3],
                     ['min' => 5, 'score' => 2],
                 ],
-                'default' => 3,
+                'default' => 4,
             ],
             'wirless' => [
                 'label' => 'Wireless Charging Speed (W)',
@@ -118,8 +118,7 @@ return [
                     ['min' => 5, 'score' => 3],     // Entry-level Qi
                 ],
 
-                'default' => 2,  // No wireless charging
-                'none_value' => 0, // Explicitly no wireless charging
+                'default' => 0,  // No wireless charging
             ],
             'reverce' => [
                 'label' => 'Reverse Wireless Charging',
@@ -138,7 +137,7 @@ return [
                     ['min' => 3, 'score' => 5],   // Weak
                     ['min' => 1, 'score' => 4],   // Bare minimum
                 ],
-                'default' => 2,
+                'default' => 0,
             ],
             'charging_time_0_to_100' => [
                 'label' => 'Charging Time (0-100%)',
@@ -160,7 +159,7 @@ return [
                     ['max' => 140, 'score' => 2],  // Slow
                     ['max' => 180, 'score' => 1],  // Very slow
                 ],
-                'default' => 0,
+                'default' => 3,
             ],
             'charging_time_0_to_50' => [
                 'label' => 'Charging Time (0-50%)',
@@ -182,7 +181,7 @@ return [
                     ['max' => 70, 'score' => 2],  // Slow
                     ['max' => 90, 'score' => 1],  // Very slow
                 ],
-                'default' => 0,
+                'default' => 3,
             ],
         ],
         'battery_technology' => [
@@ -197,7 +196,7 @@ return [
                     'graphene' => 10,          // Graphene (rare, cutting-edge)
                     'silicon-carbon' => 10,    // Silicon-carbon (OnePlus, Xiaomi)
                 ],
-                'default' => 8,
+                'default' => 7,
             ],
             'charging_technology' => [
                 'label' => 'Charging Technology',
@@ -268,6 +267,7 @@ return [
                     'usb charging' => 2,
                     'no fast charging' => 1,
                 ],
+                'default' => 5,
             ],
         ],
     ],

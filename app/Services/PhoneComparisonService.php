@@ -19,9 +19,63 @@ class PhoneComparisonService
     public function comparePhones($phones): array
     {
         $results = [];
-        
+
         foreach ($phones as $phone) {
-           
+            $specs = $phone->compare_specs['key'] ?? [];
+            $scores = [
+                'overall' => 0,
+                'categories' => []
+            ];
+
+            // This is the "Anchor" that prevents scores from inflating
+            $totalPossibleWeight = 100;
+            $accumulatedWeightedScore = 0;
+
+            foreach ($this->weights as $categoryKey => $categoryConfig) {
+                // 1. Get the sub-specs for this category (e.g., 'capacity', 'wired')
+                $categoryData = $specs[$categoryKey] ?? [];
+
+                // 2. Calculate category score (Should return 0-10)
+                // If data is missing inside this method, it should return the 'default_score'
+                $categoryScore = $this->calculateCategoryScore(
+                    $categoryData,
+                    $categoryConfig
+                );
+
+                // 3. Weight Calculation (Score * Weight)
+                $weightedContribution = $categoryScore * $categoryConfig['weight'];
+                $accumulatedWeightedScore += $weightedContribution;
+
+                // 4. Store details (without adding to final visible response if not needed)
+                $scores['categories'][$categoryKey] = [
+                    'score' => $categoryScore,
+                    'weighted_score' => $weightedContribution,
+                    'weight' => $categoryConfig['weight']
+                ];
+            }
+
+            /**
+             * FINAL CALCULATION
+             * If $accumulatedWeightedScore is 650 (from 3 high values)
+             * and we divide by 100, we get 6.5 (Correct)
+             * If we only divided by found weight (e.g. 70), we would get 9.2 (Too high)
+             */
+            $scores['overall'] = $accumulatedWeightedScore / $totalPossibleWeight;
+
+            $results[$phone->id] = [
+                'phone' => $phone,
+                'scores' => $scores
+            ];
+        }
+
+        return $results; // Removed comparative insights as requested
+    }
+    public function comparePhones_1($phones): array
+    {
+        $results = [];
+
+        foreach ($phones as $phone) {
+
             $specs = $phone->compare_specs['key'];
             $scores = [
                 'overall' => 0,
@@ -61,10 +115,11 @@ class PhoneComparisonService
     {
         $totalScore = 0;
         $totalWeight = 0;
-
+        // We use the sum of all weights defined in the config, not just the ones found
+        $totalPossibleWeight = array_sum(array_column($config['specs'], 'weight'));
         foreach ($config['specs'] as $specKey => $specConfig) {
             $value = $specs[$specKey] ?? null;
-            
+
             if ($value === null) {
                 continue; // Skip missing specs
             }
@@ -73,8 +128,7 @@ class PhoneComparisonService
             $totalScore += $score * $specConfig['weight'];
             $totalWeight += $specConfig['weight'];
         }
-
-        return $totalWeight > 0 ? ($totalScore / $totalWeight) * 100 : 0;
+        return $totalPossibleWeight > 0 ? ($totalScore / $totalPossibleWeight) * 100 : 0;
     }
 
     /**
@@ -82,40 +136,44 @@ class PhoneComparisonService
      */
     protected function calculateSpecScore($value, array $config, string $specKey, $allPhones): float
     {
+        if ($value === null) {
+            // Return default_score if defined (e.g., 0 for wireless), otherwise 0
+            return $config['default'] ?? 0;
+        }
         switch ($config['type']) {
             case 'numeric_higher':
                 return $this->numericHigherScore($value, $specKey, $allPhones);
-            
+
             case 'optimal_range':
                 return $this->optimalRangeScore($value, $config['optimal']);
-            
+
             case 'ranking':
                 return $this->rankingScore($value, $config['values']);
-            
+
             case 'boolean':
                 return $this->booleanScore($value);
-            
+
             case 'benchmark':
                 return $this->benchmarkScore($value);
-            
+
             case 'version_comparison':
                 return $this->versionScore($value, $specKey, $allPhones);
-            
+
             case 'camera_scoring':
                 return $this->cameraScore($value);
-            
+
             case 'video_scoring':
                 return $this->videoScore($value);
-            
+
             case 'wifi_scoring':
                 return $this->wifiScore($value);
-            
+
             case 'usb_scoring':
                 return $this->usbScore($value);
-            
+
             case 'update_scoring':
                 return $this->updateScore($value);
-            
+
             default:
                 return 0.5; // Neutral score for unknown types
         }
@@ -127,7 +185,7 @@ class PhoneComparisonService
     protected function numericHigherScore($value, string $specKey, $allPhones): float
     {
         $numericValue = $this->extractNumericValue($value);
-        
+
         if ($numericValue === null) {
             return 0;
         }
@@ -138,14 +196,14 @@ class PhoneComparisonService
             $specs = $phone->compare_specs['key'];
             $categoryKey = $this->getCategoryForSpec($specKey);
             $phoneValue = $specs[$categoryKey][$specKey] ?? null;
-            
+
             if ($phoneValue !== null) {
                 $allValues[] = $this->extractNumericValue($phoneValue);
             }
         }
 
         $allValues = array_filter($allValues);
-        
+
         if (empty($allValues)) {
             return 0;
         }
@@ -167,7 +225,7 @@ class PhoneComparisonService
     protected function optimalRangeScore($value, array $range): float
     {
         $numericValue = $this->extractNumericValue($value);
-        
+
         if ($numericValue === null) {
             return 0;
         }
@@ -231,7 +289,7 @@ class PhoneComparisonService
     protected function benchmarkScore($chipset): float
     {
         $chipset = strtolower(trim($chipset));
-        
+
         // Check if we have benchmark data
         if (isset($this->benchmarkScores[$chipset])) {
             $score = $this->benchmarkScores[$chipset];
@@ -250,7 +308,7 @@ class PhoneComparisonService
     {
         // Snapdragon series
         if (preg_match('/snapdragon\s*(\d+)/i', $chipset, $matches)) {
-            $number = (int)$matches[1];
+            $number = (int) $matches[1];
             if ($number >= 8) {
                 return 0.9 + ($number - 800) / 1000; // 8xx series
             } elseif ($number >= 7) {
@@ -262,13 +320,13 @@ class PhoneComparisonService
 
         // Apple A-series
         if (preg_match('/a(\d+)/i', $chipset, $matches)) {
-            $number = (int)$matches[1];
+            $number = (int) $matches[1];
             return min(1.0, 0.6 + ($number - 12) / 10);
         }
 
         // MediaTek Dimensity
         if (preg_match('/dimensity\s*(\d+)/i', $chipset, $matches)) {
-            $number = (int)$matches[1];
+            $number = (int) $matches[1];
             if ($number >= 9000) {
                 return 0.9;
             } elseif ($number >= 8000) {
@@ -301,19 +359,19 @@ class PhoneComparisonService
         foreach ($cameraSetup as $camera) {
             $mp = $this->extractNumericValue($camera['megapixels'] ?? '0');
             $aperture = $this->extractNumericValue($camera['aperture'] ?? '2.0');
-            
+
             // Higher MP is better (up to a point)
             $mpScore = min(1.0, $mp / 200);
-            
+
             // Lower aperture is better (wider)
             $apertureScore = max(0, 1.0 - (($aperture - 1.4) / 1.4));
-            
+
             // Check for special features
             $hasOIS = isset($camera['features']) && stripos($camera['features'], 'ois') !== false;
             $hasLaser = isset($camera['features']) && stripos($camera['features'], 'laser') !== false;
-            
+
             $cameraScore = ($mpScore * 0.4) + ($apertureScore * 0.4) + ($hasOIS ? 0.15 : 0) + ($hasLaser ? 0.05 : 0);
-            
+
             $score += $cameraScore;
             $count++;
         }
@@ -331,14 +389,14 @@ class PhoneComparisonService
         }
 
         $score = 0;
-        
+
         // Check for 8K
         if (stripos($videoSpec, '8k') !== false) {
             $score = 1.0;
         } elseif (stripos($videoSpec, '4k') !== false) {
             // Check frame rate
             if (preg_match('/(\d+)fps/i', $videoSpec, $matches)) {
-                $fps = (int)$matches[1];
+                $fps = (int) $matches[1];
                 if ($fps >= 120) {
                     $score = 0.95;
                 } elseif ($fps >= 60) {
@@ -361,10 +419,14 @@ class PhoneComparisonService
      */
     protected function wifiScore($wifi): float
     {
-        if (stripos($wifi, '7') !== false) return 1.0;
-        if (stripos($wifi, '6e') !== false) return 0.9;
-        if (stripos($wifi, '6') !== false) return 0.8;
-        if (stripos($wifi, '5') !== false) return 0.6;
+        if (stripos($wifi, '7') !== false)
+            return 1.0;
+        if (stripos($wifi, '6e') !== false)
+            return 0.9;
+        if (stripos($wifi, '6') !== false)
+            return 0.8;
+        if (stripos($wifi, '5') !== false)
+            return 0.6;
         return 0.4;
     }
 
@@ -373,11 +435,16 @@ class PhoneComparisonService
      */
     protected function usbScore($usb): float
     {
-        if (stripos($usb, '4') !== false) return 1.0;
-        if (stripos($usb, '3.2') !== false) return 0.9;
-        if (stripos($usb, '3.1') !== false) return 0.8;
-        if (stripos($usb, '3.0') !== false) return 0.7;
-        if (stripos($usb, '2.0') !== false) return 0.4;
+        if (stripos($usb, '4') !== false)
+            return 1.0;
+        if (stripos($usb, '3.2') !== false)
+            return 0.9;
+        if (stripos($usb, '3.1') !== false)
+            return 0.8;
+        if (stripos($usb, '3.0') !== false)
+            return 0.7;
+        if (stripos($usb, '2.0') !== false)
+            return 0.4;
         return 0.5;
     }
 
@@ -394,8 +461,8 @@ class PhoneComparisonService
         preg_match('/(\d+)\s*years?.*os/i', $updatePolicy, $osMatches);
         preg_match('/(\d+)\s*years?.*security/i', $updatePolicy, $securityMatches);
 
-        $osYears = isset($osMatches[1]) ? (int)$osMatches[1] : 0;
-        $securityYears = isset($securityMatches[1]) ? (int)$securityMatches[1] : 0;
+        $osYears = isset($osMatches[1]) ? (int) $osMatches[1] : 0;
+        $securityYears = isset($securityMatches[1]) ? (int) $securityMatches[1] : 0;
 
         // Weight OS updates more than security
         $score = ($osYears / 7) * 0.6 + ($securityYears / 7) * 0.4;
@@ -409,7 +476,7 @@ class PhoneComparisonService
     protected function versionScore($value, string $specKey, $allPhones): float
     {
         $version = $this->extractVersion($value);
-        
+
         if ($version === null) {
             return 0;
         }
@@ -420,7 +487,7 @@ class PhoneComparisonService
             $specs = $phone->compare_specs['key'];
             $categoryKey = $this->getCategoryForSpec($specKey);
             $phoneValue = $specs[$categoryKey][$specKey] ?? null;
-            
+
             if ($phoneValue !== null) {
                 $v = $this->extractVersion($phoneValue);
                 if ($v !== null) {
@@ -452,7 +519,7 @@ class PhoneComparisonService
 
         foreach ($config['specs'] as $specKey => $specConfig) {
             $value = $specs[$specKey] ?? null;
-            
+
             $specScores[$specKey] = [
                 'value' => $value,
                 'score' => $value !== null ? $this->calculateSpecScore($value, $specConfig, $specKey, []) * 100 : null,
@@ -511,12 +578,12 @@ class PhoneComparisonService
     protected function extractNumericValue($value): ?float
     {
         if (is_numeric($value)) {
-            return (float)$value;
+            return (float) $value;
         }
 
         if (is_string($value)) {
             preg_match('/(\d+\.?\d*)/', $value, $matches);
-            return isset($matches[1]) ? (float)$matches[1] : null;
+            return isset($matches[1]) ? (float) $matches[1] : null;
         }
 
         return null;
@@ -528,12 +595,12 @@ class PhoneComparisonService
     protected function extractVersion($value): ?float
     {
         if (is_numeric($value)) {
-            return (float)$value;
+            return (float) $value;
         }
 
         if (is_string($value)) {
             preg_match('/(\d+\.?\d*)/', $value, $matches);
-            return isset($matches[1]) ? (float)$matches[1] : null;
+            return isset($matches[1]) ? (float) $matches[1] : null;
         }
 
         return null;

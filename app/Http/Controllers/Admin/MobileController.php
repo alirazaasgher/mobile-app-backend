@@ -82,7 +82,7 @@ class MobileController extends Controller
                 'expandable' => true,
                 'max_visible' => 6,
                 'items' => [
-                    ['key' => 'setup', 'label' => 'Setup', 'type' => 'text', 'placeholder' => 'Triple (50 MP + 10 MP + 12 MP)'],
+                    ['key' => 'rear', 'label' => 'Setup', 'type' => 'text', 'placeholder' => 'Triple (50 MP + 10 MP + 12 MP)'],
                     ['key' => 'main_sensor', 'label' => 'Main Sensor', 'type' => 'text', 'placeholder' => '50 MP, f/1.8, (wide), OIS, PDAF'],
                     ['key' => 'other_sensors', 'label' => 'Other Sensors', 'type' => 'textarea', 'placeholder' => '10 MP (telephoto 3x), 12 MP (ultrawide 120°)'],
                     ['key' => 'features', 'label' => 'Features', 'type' => 'text', 'placeholder' => 'LED flash, HDR, panorama'],
@@ -95,7 +95,7 @@ class MobileController extends Controller
                 'expandable' => true,
                 'max_visible' => 4,
                 'items' => [
-                    ['key' => 'setup', 'label' => 'Setup', 'type' => 'text', 'placeholder' => 'Single (12 MP)'],
+                    ['key' => 'front', 'label' => 'Setup', 'type' => 'text', 'placeholder' => 'Single (12 MP)'],
                     ['key' => 'sensor', 'label' => 'Sensor Details', 'type' => 'text', 'placeholder' => '12 MP, f/2.2 (wide), Dual Pixel PDAF'],
                     ['key' => 'features', 'label' => 'Features', 'type' => 'text', 'placeholder' => 'HDR, Portrait Mode, Night Selfie'],
                     ['key' => 'video', 'label' => 'Video', 'type' => 'text', 'placeholder' => '4K@60fps, 1080p@30fps'],

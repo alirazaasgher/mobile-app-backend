@@ -2,6 +2,9 @@
 
 namespace App\Services;
 
+use App\Models\RamType;
+use App\Models\StorageType;
+
 class SocCompatibilityService
 {
     private array $phoneSpecs;
@@ -25,8 +28,11 @@ class SocCompatibilityService
         $this->checkCamera();
         $this->checkVideo();
         $this->checkRamSpeed();
+        $this->checkScreenToBody();
         $this->checkAspectRatio();
         $this->checkDisplayBandwidth();
+        $this->checkUsbSpeed();
+        $this->checkStorageSpeed();
 
         $hasWarnings = collect($this->results)->contains(fn($r) => $r['status'] !== 'ok');
         $hardLimits = collect($this->results)->filter(fn($r) => $r['status'] === 'hard_limit')->count();
@@ -120,14 +126,13 @@ class SocCompatibilityService
 
     private function checkCamera(): void
     {
-
         // Phone: "50 MP (wide), 8 MP (ultrawide)"  — take highest
-        $phoneCamera = $this->phoneSpecs['setup'] ?? null;
+        $phoneCamera = $this->phoneSpecs['rear'] ?? null;
+
         // Chipset: "200MP" or "200 MP"
         $chipsetCamera = $this->chipsetSpecs['max_camera_res'] ?? null;
-
         if (!$phoneCamera || !$chipsetCamera) {
-            $this->results[] = $this->unavailable('setup', 'Camera Resolution');
+            $this->results[] = $this->unavailable('rear', 'Camera Resolution');
             return;
         }
 
@@ -135,21 +140,21 @@ class SocCompatibilityService
         $chipsetMP = $this->parseMP($chipsetCamera);
 
         if (!$phoneMP || !$chipsetMP) {
-            $this->results[] = $this->unavailable('setup', 'Camera Resolution');
+            $this->results[] = $this->unavailable('rear', 'Camera Resolution');
             return;
         }
 
         if ($phoneMP > $chipsetMP) {
             $this->results[] = [
-                'type' => 'setup',
+                'type' => 'rear',
                 'label' => 'Camera Resolution',
                 'status' => 'warning',
                 'phone_value' => "{$phoneMP}MP",
                 'soc_max' => "{$chipsetMP}MP",
-                'note' => 'Achieved via pixel binning or software tricks. Not true native resolution.',
+                'note' => "The manufacturer uses a {$phoneMP} MP sensor, but this SoC ISP natively supports up to {$chipsetMP} MP. Full-resolution captures will likely experience shutter lag or require heavy software processing.",
             ];
         } else {
-            $this->results[] = $this->ok('setup', 'Camera Resolution', "{$phoneMP}MP", "{$chipsetMP}MP");
+            $this->results[] = $this->ok('rear', 'Camera Resolution', "{$phoneMP}MP", "{$chipsetMP}MP");
         }
     }
 
@@ -159,9 +164,7 @@ class SocCompatibilityService
 
     private function checkVideo(): void
     {
-        // Phone: "4K@30fps, 1080p@30/60fps..."
         $phoneVideo = $this->phoneSpecs['video'] ?? null;
-        // Chipset: "8k @ 60fps"
         $chipsetVideo = $this->chipsetSpecs['video_playback'] ?? null;
 
         if (!$phoneVideo || !$chipsetVideo) {
@@ -169,28 +172,30 @@ class SocCompatibilityService
             return;
         }
 
-        $phoneRes = $this->parseVideoResolution($phoneVideo);
-        $chipsetRes = $this->parseVideoResolution($chipsetVideo);
+        // Extract both Res and FPS: e.g., ['res' => 4000, 'fps' => 120]
+        $phoneData = $this->parseVideoSpec($phoneVideo);
+        $socData = $this->parseVideoSpec($chipsetVideo);
 
-        if (!$phoneRes || !$chipsetRes) {
+        if (!$phoneData || !$socData) {
             $this->results[] = $this->unavailable('video', 'Video Recording');
             return;
         }
 
-        $phoneRank = $this->videoRank($phoneRes);
-        $chipsetRank = $this->videoRank($chipsetRes);
+        // Calculate "Power Score" (Res * FPS)
+        $phoneScore = $phoneData['res_value'] * $phoneData['fps'];
+        $socScore = $socData['res_value'] * $socData['fps'];
 
-        if ($phoneRank > $chipsetRank) {
+        if ($phoneScore > $socScore) {
             $this->results[] = [
                 'type' => 'video',
-                'label' => 'Video Recording',
+                'label' => 'Video Performance',
                 'status' => 'hard_limit',
-                'phone_value' => strtoupper($phoneRes),
-                'soc_max' => strtoupper($chipsetRes),
-                'note' => 'Hard limit. SOC cannot encode this resolution. Phone will cap at SOC maximum.',
+                'phone_value' => "{$phoneData['label']} @ {$phoneData['fps']}fps",
+                'soc_max' => "{$socData['label']} @ {$socData['fps']}fps",
+                'note' => "Framerate mismatch. The chipset's encoder lacks the throughput for {$phoneData['fps']}fps at this resolution. Performance will be capped at {$socData['fps']}fps.",
             ];
         } else {
-            $this->results[] = $this->ok('video', 'Video Recording', strtoupper($phoneRes), strtoupper($chipsetRes));
+            $this->results[] = $this->ok('video', 'Video Performance', "{$phoneData['label']} @ {$phoneData['fps']}fps", "{$socData['label']} @ {$socData['fps']}fps");
         }
     }
 
@@ -200,32 +205,42 @@ class SocCompatibilityService
 
     private function checkRamSpeed(): void
     {
-        // Phone: "LPDDR4X"
         $phoneRam = $this->phoneSpecs['ram_type'] ?? null;
-        // Chipset: ["LPDDR", "LPDDR3", "LPDDR4"]  — take highest supported
-        $chipsetRam = $this->chipsetSpecs['memory_type'] ?? null;
-        if (!$phoneRam || !$chipsetRam) {
-            $this->results[] = $this->unavailable('ram_speed', 'RAM Speed');
+        $chipsetIds = $this->chipsetSpecs['memory_type'] ?? null; // Assuming this is the array of IDs
+
+        if (!$phoneRam || empty($chipsetIds)) {
+            $this->results[] = $this->unavailable('ram_type', 'Memory Type');
             return;
         }
 
-        $phoneRank = $this->ramRank($phoneRam);
-        // chipset memory_type is an array — take the highest rank
-        $chipsetRams = is_array($chipsetRam) ? $chipsetRam : [$chipsetRam];
-        $chipsetRank = max(array_map(fn($r) => $this->ramRank($r), $chipsetRams));
-        $chipsetMax = $this->highestRam($chipsetRams);
+        // Get the names from DB
+        $supportedTypes = RamType::whereIn('id', $chipsetIds)->pluck('name')->toArray();
 
-        if ($phoneRank > $chipsetRank) {
+        // Use your existing ramRank to find the best supported by the SoC
+        $chipsetMaxName = '';
+        $chipsetMaxRank = -1;
+
+        foreach ($supportedTypes as $type) {
+            $rank = $this->ramRank($type);
+            if ($rank > $chipsetMaxRank) {
+                $chipsetMaxRank = $rank;
+                $chipsetMaxName = $type;
+            }
+        }
+
+        $phoneRank = $this->ramRank($phoneRam);
+
+        if ($phoneRank > $chipsetMaxRank) {
             $this->results[] = [
-                'type' => 'ram_speed',
-                'label' => 'RAM Speed',
+                'type' => 'ram_type',
+                'label' => 'Memory Type',
                 'status' => 'warning',
                 'phone_value' => strtoupper($phoneRam),
-                'soc_max' => strtoupper($chipsetMax),
-                'note' => 'Phone RAM will be downclocked to SOC maximum supported speed. Performance is limited.',
+                'soc_max' => strtoupper($chipsetMaxName),
+                'note' => "Hardware mismatch. The phone uses " . strtoupper($phoneRam) . ", but this SoC supports up to " . strtoupper($chipsetMaxName) . ". The RAM will be downclocked, reducing overall bandwidth.",
             ];
         } else {
-            $this->results[] = $this->ok('ram_speed', 'RAM Speed', strtoupper($phoneRam), strtoupper($chipsetMax));
+            $this->results[] = $this->ok('ram_type', 'Memory Type', strtoupper($phoneRam), strtoupper($chipsetMaxName));
         }
     }
 
@@ -286,6 +301,169 @@ class SocCompatibilityService
             'soc_max' => $maxGbps . " Gbps",
             'note' => $status === 'hard_limit' ? 'Exceeds native DPU bandwidth. Requires DSC (Compression) or external scalar.' : ''
         ];
+    }
+
+    private function checkScreenToBody(): void
+    {
+
+        $claimed = (float) ($this->phoneSpecs['screen_to_body_ratio'] ?? 0);
+        $estimated = $this->calculateEstimatedRatio();
+        if (!$claimed || !$estimated)
+            return;
+        $diff = $claimed - $estimated;
+        $diff = $claimed - $estimated;
+
+        if ($diff > 2.0) {
+            // SCENARIO 1: Significant Discrepancy (Warning)
+            $this->results[] = [
+                'type' => 'screen_to_body_ratio',
+                'label' => 'Screen-to-Body',
+                'status' => 'warning',
+                'phone_value' => "{$claimed}%",
+                'soc_max' => "{$estimated}%",
+                'note' => "Marketing gap detected. The brand claims {$claimed}%, but geometric calculation suggests {$estimated}%. This usually implies the manufacturer is excluding the outer frame or the 'black border' of the panel.",
+            ];
+        } else if (abs($diff) > 0.1) {
+            // SCENARIO 2: Slight Difference (Informational/Ok)
+            // We still show the estimated value so the user sees the audit was performed.
+            $this->results[] = [
+                'type' => 'screen_to_body_ratio',
+                'label' => 'Screen-to-Body',
+                'status' => 'warning',
+                'phone_value' => "{$claimed}%",
+                'soc_max' => "{$estimated}%",
+                'note' => "Estimated: {$estimated}%. Minor variations are common due to corner rounding and bezel measurements.",
+            ];
+        } else {
+            // Perfect match
+            $this->results[] = $this->ok('screen_to_body_ratio', 'Screen-to-Body', "{$claimed}%", "{$estimated}%");
+        }
+    }
+
+    private function checkUsbSpeed(): void
+    {
+
+        // Phone: "USB Type-C 2.0, OTG"
+        $phoneUsb = $this->phoneSpecs['usb'] ?? null;
+        // Chipset Native Support: e.g., "3.1" or "3.2"
+        $socUsbMax = $this->chipsetSpecs['usb_version'] ?? null;
+        if (!$phoneUsb || !$socUsbMax)
+            return;
+
+        // Extract version numbers (e.g., 2.0, 3.1, 3.2)
+        preg_match('/(\d+\.\d+)/', $phoneUsb, $phoneMatch);
+        preg_match('/(\d+\.\d+)/', $socUsbMax, $socMatch);
+
+        $phoneVer = isset($phoneMatch[1]) ? (float) $phoneMatch[1] : 2.0;
+        $socVer = isset($socMatch[1]) ? (float) $socMatch[1] : 3.0;
+
+        if ($phoneVer < $socVer) {
+            $this->results[] = [
+                'type' => 'usb',
+                'label' => 'Data Transfer',
+                'status' => 'warning',
+                'phone_value' => "USB {$phoneVer}",
+                'soc_max' => "USB {$socVer}",
+                'note' => "The SoC supports high-speed USB {$socVer}, but the manufacturer used a slower USB {$phoneVer} port. File transfers to PC will be significantly slower (capped at 480Mbps).",
+            ];
+        } else {
+            $this->results[] = $this->ok('usb', 'Data Transfer', "USB {$phoneVer}", "USB {$socVer}");
+        }
+    }
+
+    private function checkStorageSpeed(): void
+    {
+        $phoneUfs = $this->phoneSpecs['storage_type'] ?? null;
+        $socUfsIds = $this->chipsetSpecs['storage_type'] ?? null; // Array of IDs
+
+        if (!$phoneUfs || empty($socUfsIds))
+            return;
+
+        // 1. Resolve names from Database
+        $supportedTypes = StorageType::whereIn('id', $socUfsIds)->pluck('name')->toArray();
+
+        $chipsetMaxName = '';
+        $chipsetMaxRank = -1;
+
+        // 2. Find the highest rank supported by the SoC
+        foreach ($supportedTypes as $type) {
+            $rank = $this->storageRank($type);
+            if ($rank > $chipsetMaxRank) {
+                $chipsetMaxRank = $rank;
+                $chipsetMaxName = $type;
+            }
+        }
+
+        $phoneRank = $this->storageRank($phoneUfs);
+
+        // FIX: Compare phoneRank against chipsetMaxRank (Integer vs Integer)
+        if ($phoneRank > $chipsetMaxRank) {
+            $this->results[] = [
+                'type' => 'storage_type',
+                'label' => 'Storage Speed',
+                'status' => 'warning',
+                'phone_value' => strtoupper($phoneUfs),
+                'soc_max' => strtoupper($chipsetMaxName),
+                'note' => "The storage module ($phoneUfs) exceeds the chipset's native controller ($chipsetMaxName). It will downclock to match the SoC's maximum bandwidth.",
+            ];
+        } else if ($phoneRank < $chipsetMaxRank) {
+            $this->results[] = [
+                'type' => 'storage_type',
+                'label' => 'Storage Speed',
+                'status' => 'warning',
+                'phone_value' => strtoupper($phoneUfs),
+                'soc_max' => strtoupper($chipsetMaxName),
+                'note' => "Efficiency bottleneck. This SoC supports faster $chipsetMaxName storage, but the manufacturer used slower $phoneUfs memory. This will result in slower app installations and loading times.",
+            ];
+        } else {
+            // Use the actual name for the OK status
+            $this->results[] = $this->ok('storage_type', 'Storage Speed', strtoupper($phoneUfs), strtoupper($chipsetMaxName));
+        }
+    }
+
+    private function storageRank(string $ufs): int
+    {
+        $ufs = strtolower($ufs);
+        return match (true) {
+            str_contains($ufs, '4.1') => 5,
+            str_contains($ufs, '4.0') => 4,
+            str_contains($ufs, '3.1') => 3,
+            str_contains($ufs, '3.0') => 2,
+            str_contains($ufs, '2.2') => 1,
+            default => 0,
+        };
+    }
+
+    private function calculateEstimatedRatio(): ?float
+    {
+
+        $dimensions = $this->phoneSpecs['dimensions'];
+        $dimensions = strip_tags($dimensions);
+        $dimensions = str_ireplace('mm', '', $dimensions);
+        $parts = preg_split('/\s*[x×]\s*/i', trim($dimensions));
+        $length = isset($parts[0]) ? (float) $parts[0] : 0;
+        $width = isset($parts[1]) ? (float) $parts[1] : 0;
+        $diag = (float) ($this->phoneSpecs['size'] ?? 0);
+        $ratioStr = $this->phoneSpecs['aspect_ratio'] ?? '20:9';
+        if (!$length || !$width || !$diag)
+            return null;
+
+        // 1. Get Width and Height parts (e.g., 20 and 9)
+        $parts = explode(':', $ratioStr);
+        $w_part = (float) ($parts[0] ?? 20);
+        $h_part = (float) ($parts[1] ?? 9);
+
+        // 2. Use Pythagorean theorem to find the area of the screen
+        // screen_area = (diag^2 * w * h) / (w^2 + h^2)
+        $screenAreaSqIn = ($diag ** 2 * $w_part * $h_part) / ($w_part ** 2 + $h_part ** 2);
+
+        // 3. Convert square inches to square mm (1 inch = 25.4 mm)
+        $screenAreaMm = $screenAreaSqIn * (25.4 ** 2);
+
+        // 4. Calculate total front area of the phone
+        $phoneAreaMm = $length * $width;
+
+        return round(($screenAreaMm / $phoneAreaMm) * 100, 1);
     }
     // ─────────────────────────────────────────────
     // PARSERS
@@ -357,18 +535,32 @@ class SocCompatibilityService
     }
 
     // "4K@30fps, 1080p..." → "4k"   |   "8k @ 60fps" → "8k"
-    private function parseVideoResolution(string $video): ?string
+    private function parseVideoSpec(string $spec): ?array
     {
-        $video = strtolower($video);
-        if (str_contains($video, '8k'))
-            return '8k';
-        if (str_contains($video, '4k'))
-            return '4k';
-        if (str_contains($video, '1080'))
-            return '1080p';
-        if (str_contains($video, '720'))
-            return '720p';
-        return null;
+        $spec = strtolower($spec);
+
+        // Assign pixel-weight to resolutions
+        $resMap = ['8k' => 8000, '4k' => 4000, '1080' => 1080, '720' => 720];
+        $resLabel = '1080p';
+        $resValue = 1080;
+
+        foreach ($resMap as $key => $val) {
+            if (str_contains($spec, $key)) {
+                $resValue = $val;
+                $resLabel = strtoupper($key);
+                break;
+            }
+        }
+
+        // Extract FPS using Regex (finds "60" in "4K@60fps" or "60 fps")
+        preg_match('/(\d+)\s*fps/i', $spec, $matches);
+        $fps = isset($matches[1]) ? (int) $matches[1] : 30; // Default to 30 if not found
+
+        return [
+            'res_value' => $resValue,
+            'fps' => $fps,
+            'label' => $resLabel
+        ];
     }
 
     // Higher = better

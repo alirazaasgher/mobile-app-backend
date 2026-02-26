@@ -12,11 +12,8 @@ class CompareScoreService
     //$values = $this->applyInferences($values, $specConfigs);
     public function scoreCategory(string $category, array $values, string $profile = 'display'): array
     {
-
-        // Cache config lookup
+        // 1. Setup and Config
         $categoryConfig = config("compare_scoring.compare_profiles.$profile.$category", []);
-
-        // Apply inferences once
         $inferredValues = $this->applyInferences($category, $values, $categoryConfig);
 
         $sectionWeights = $categoryConfig['weights'] ?? [];
@@ -24,74 +21,74 @@ class CompareScoreService
 
         $categoryScore = 0;
         $tempScores = [];
-        $totalActiveSectionWeight = 0;
         $sectionScores = [];
 
+        // FIXED: Total potential weight for the whole category
+        $totalPotentialCategoryWeight = array_sum($sectionWeights);
+
+        // 2. Process Sections
         foreach ($sections as $sectionKey => $groupSpecs) {
             $sectionRunningScore = 0;
-            $weightSumOfPresentSpecs = 0;
 
-            // First pass: calculate weights and scores
+            // FIXED: Total potential weight for this specific section
+            $totalPotentialSectionWeight = array_sum(array_column($groupSpecs, 'weight'));
+
             foreach ($groupSpecs as $specKey => $specConfig) {
-                if (!isset($inferredValues[$specKey]) || $inferredValues[$specKey] === null) {
-                    continue;
+                $val = $inferredValues[$specKey] ?? null;
+                $specWeight = $specConfig['weight'] ?? 0;
+
+                // Handle value and get score
+                if ($val === null) {
+                    $score = $specConfig['default_score'] ?? 0;
+                } else {
+                    $numericValue = is_array($val) ? ($val['value'] ?? $val) : $val;
+                    $displayValue = is_array($val) ? ($val['display'] ?? $val) : $val;
+
+                    $score = $this->scoreSpec($numericValue, $specConfig);
+
+                    // Save for display output
+                    $tempScores[$specKey] = [
+                        'value' => $this->formatValueWithUnit($displayValue, $specConfig),
+                        'score' => $score,
+                        'weight' => $specWeight,
+                        'hidden' => $specConfig['hidden'] ?? false,
+                        '_score' => $score,
+                    ];
                 }
 
-                $val = $inferredValues[$specKey];
-                $specWeight = $specConfig['weight'];
-                $weightSumOfPresentSpecs += $specWeight;
-
-                // Optimize value extraction
-                $numericValue = is_array($val) ? ($val['value'] ?? $val) : $val;
-                $displayValue = is_array($val) ? ($val['display'] ?? $val) : $val;
-
-                $score = $this->scoreSpec($numericValue, $specConfig);
-
-                $tempScores[$specKey] = [
-                    'value' => $this->formatValueWithUnit($displayValue, $specConfig),
-                    'score' => $score,
-                    'weight' => $specWeight,
-                    'hidden' => $specConfig['hidden'] ?? false,
-                    '_score' => $score,
-                ];
+                // Weighted accumulation
+                $sectionRunningScore += ($score * $specWeight);
             }
 
-            if ($weightSumOfPresentSpecs === 0)
-                continue;
-
-            // Second pass: calculate section score (combined with normalization)
-            $invWeightSum = 1 / $weightSumOfPresentSpecs; // Calculate once
-            foreach ($groupSpecs as $specKey => $specConfig) {
-                if (isset($tempScores[$specKey])) {
-                    $sectionRunningScore += ($tempScores[$specKey]['_score'] * $specConfig['weight']) / 10;
-                }
-            }
-            $sectionRunningScore *= $invWeightSum;
+            // FIXED: Normalize Section Score (Scale 0-10)
+            // Divide by potential weight, not present weight, to penalize missing data
+            $normalizedSectionScore = ($totalPotentialSectionWeight > 0)
+                ? ($sectionRunningScore / $totalPotentialSectionWeight)
+                : 0;
 
             $sectionWeight = $sectionWeights[$sectionKey] ?? 0;
             $sectionScores[$sectionKey] = [
-                'score' => $sectionRunningScore * 100,
+                'score' => $normalizedSectionScore * 10, // Scale to 0-100 for internal consistency
                 'weight' => $sectionWeight
             ];
-            $totalActiveSectionWeight += $sectionWeight;
         }
 
-        // Normalize and finalize Category Score
-        if ($totalActiveSectionWeight > 0) {
-            $invTotalWeight = 1 / $totalActiveSectionWeight; // Calculate once
+        // 3. Final Category Calculation (OUTSIDE the sections loop)
+        if ($totalPotentialCategoryWeight > 0) {
+            $weightedSum = 0;
             foreach ($sectionScores as $sectionData) {
-                $categoryScore += $sectionData['score'] * $sectionData['weight'];
+                $weightedSum += $sectionData['score'] * $sectionData['weight'];
             }
-            $categoryScore *= $invTotalWeight;
+            $categoryScore = $weightedSum / $totalPotentialCategoryWeight;
+        } else {
+            $categoryScore = 0;
         }
-        // Build display output (only specs from original values)
+
+        // 4. Build Display Output
         $scoredSpecs = [];
         foreach ($values as $specKey => $value) {
-
-            // ❌ Skip if value is null
-            if ($value === null) {
+            if ($value === null)
                 continue;
-            }
 
             if (isset($tempScores[$specKey])) {
                 $scoredSpecs[$specKey] = $tempScores[$specKey];

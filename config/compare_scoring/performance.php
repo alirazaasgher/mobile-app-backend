@@ -2,64 +2,86 @@
 return [
     'label' => 'Performance',
     'weights' => [
-        'core_processing' => 45,  // AnTuTu + Overall Speed (The "Muscle")
+        'core_processing' => 40,  // AnTuTu + Overall Speed (The "Muscle")
         'system_fluidity' => 20,  // RAM Type + Storage Speed (The "Flow")
-        'ai_intelligence' => 20,  // NPU / AI TOPS (The "Brain")
+        'ai_intelligence' => 25,  // NPU / AI TOPS (The "Brain")
         'thermal_control' => 15,  // Throttling + Cooling (The "Endurance")
     ],
     'categories' => [
         'core_processing' => [
             'antutu_score' => [
                 'label' => 'AnTuTu Benchmark',
-                'weight' => 85,
+                'weight' => 50,
                 'ranges' => [
-                    // 2024-2025 Flagships
-                    ['min' => 2000000, 'score' => 10],  // 2M+ (Snapdragon 8 Elite, A18 Pro)
-                    ['min' => 1800000, 'score' => 10],
-                    ['min' => 1600000, 'score' => 9],   // SD 8 Gen 3, Dimensity 9300
-                    ['min' => 1400000, 'score' => 9],
-                    ['min' => 1200000, 'score' => 8],   // SD 8 Gen 2
-                    ['min' => 1000000, 'score' => 8],   // SD 8 Gen 1
+                    // 2026 Elite Flagships (The 4M+ Club)
+                    ['min' => 4000000, 'score' => 10], // Red Magic 11 Pro+, Vivo X300 Pro
+                    ['min' => 3700000, 'score' => 9.8], // Standard Snapdragon 8 Elite Gen 5
 
-                    // Mid-range to older flagship
-                    ['min' => 800000, 'score' => 7],    // SD 888, SD 7+ Gen 3
-                    ['min' => 600000, 'score' => 6],    // SD 870, Dimensity 8200
-                    ['min' => 500000, 'score' => 5],    // SD 778G, Dimensity 7200
-                    ['min' => 400000, 'score' => 5],    // Mid-range
-                    ['min' => 300000, 'score' => 4],    // Budget
-                    ['min' => 200000, 'score' => 3],    // Entry-level
+                    // 2025/2026 High-End (SD 8 Elite Gen 1 / Exynos 2600)
+                    ['min' => 3000000, 'score' => 9.2],
+                    ['min' => 2500000, 'score' => 8.8],
+
+                    // Mid-range (The new "Budget Flagships")
+                    ['min' => 2000000, 'score' => 8], // Snapdragon 8 Gen 4 era
+                    ['min' => 1500000, 'score' => 7], // Dimensity 8500 / SD 8s Gen 4
+
+                    // Mainstream Mid-range
+                    ['min' => 1000000, 'score' => 6], // Dimensity 8400
+                    ['min' => 700000, 'score' => 5],
+
+                    // Budget (Redmi 15C / Entry levels)
+                    ['min' => 500000, 'score' => 4],
+                    ['min' => 300000, 'score' => 3],
+                    ['min' => 0, 'score' => 2],
                 ],
                 'default' => 2,
+            ],
+            'geekbench_single' => [
+                'label' => 'Geekbench Single-Core',
+                'weight' => 18,
+                'ranges' => [
+                    ['min' => 4000, 'score' => 10],  // Apple A19 Pro / Overclocked SD 8 Elite G5
+                    ['min' => 3600, 'score' => 9.5], // Standard SD 8 Elite Gen 5
+                    ['min' => 3200, 'score' => 9],   // 2025 Flagships (A18 Pro)
+                    ['min' => 2800, 'score' => 8.5], // High-end Mid-range (SD 8 Gen 4)
+                    ['min' => 2200, 'score' => 7.5], // Mid-range Baseline
+                    ['min' => 1500, 'score' => 6],   // Budget Gaming
+                    ['min' => 1000, 'score' => 4],   // Entry Mid-range
+                    ['min' => 600, 'score' => 2],   // Legacy
+                    ['min' => 0, 'score' => 1],
+                ],
+                'default' => 3,
+            ],
+            'geekbench_multi' => [
+                'label' => 'Geekbench Multi-Core',
+                'weight' => 17,
+                'ranges' => [
+                    ['min' => 12000, 'score' => 10],  // SD 8 Elite Gen 5 (All-Big-Core logic)
+                    ['min' => 10500, 'score' => 9.5], // Dimensity 9500 / A19 Pro
+                    ['min' => 9000, 'score' => 9],   // SD 8 Gen 4 / A18 Pro
+                    ['min' => 7500, 'score' => 8],   // Premium Mid-range
+                    ['min' => 5500, 'score' => 7],   // Standard Mid-range
+                    ['min' => 4000, 'score' => 5.5], // Budget Gaming
+                    ['min' => 2500, 'score' => 4],   // Entry Level
+                    ['min' => 1000, 'score' => 2],   // Legacy
+                    ['min' => 0, 'score' => 1],
+                ],
+                'default' => 3,
             ],
             'cpu_speed' => [
                 'label' => 'CPU Speed',
                 'weight' => 15,
                 'scale' => [
-                    // 2026 Elite Flagships (Qualcomm Snapdragon 8 Elite Gen 5)
-                    '4.60' => 10,
-                    '4.50' => 10,
-
-                    // 2025/2026 Standard Flagships (Apple A19 Pro, Snapdragon 8 Elite Gen 1)
-                    '4.32' => 9,
-                    '4.26' => 9,  // Apple A19 Pro peak
-                    '4.21' => 9,  // Dimensity 9500 peak
-                    '4.00' => 9,
-
-                    // High-End / Premium Mid-range (2025/2026)
-                    '3.80' => 8,
-                    '3.60' => 8,
-                    '3.40' => 8,  // Snapdragon 8 Gen 3 / 8s Gen 4
-
-                    // Mid-range Baseline
-                    '3.20' => 7,
-                    '3.00' => 7,
-                    '2.80' => 6,
-                    '2.60' => 6,
-
-                    // Budget / Entry Level
+                    '4.74' => 10,  // Snapdragon 8 Elite Gen 5 "For Galaxy"
+                    '4.60' => 10,  // Snapdragon 8 Elite Gen 5 Standard
+                    '4.21' => 9.8, // Dimensity 9500 (Massive performance despite clock)
+                    '4.00' => 9.5, // Apple A19 Pro
+                    '3.80' => 9,
+                    '3.60' => 8.5, // High-end Midrange
+                    '3.20' => 7.5,
+                    '2.80' => 6.5, // Average 2026 Midrange
                     '2.40' => 5,
-                    '2.20' => 4,
-                    '2.00' => 3,
+                    '2.00' => 4,   // The new "Budget" baseline
                     '1.80' => 2,
                 ],
                 'default' => 5,
@@ -67,134 +89,91 @@ return [
 
 
         ],
-       
+
         "system_fluidity" => [
             'ram' => [
                 'label' => 'RAM',
                 'weight' => 25,
-                'unit' => [
-                    'value' => 'GB',
-                    'position' => 'after',   // before | after
-                    'space' => false           // true => add space, false => no space
-                ],
                 'ranges' => [
-                    ['min' => 24, 'score' => 10],  // Gaming phones
-                    ['min' => 18, 'score' => 10],
-                    ['min' => 16, 'score' => 9],   // High-end flagship
-                    ['min' => 12, 'score' => 9],   // Standard flagship
-                    ['min' => 10, 'score' => 8],
-                    ['min' => 8, 'score' => 8],    // Mid-range/older flagship
-                    ['min' => 6, 'score' => 6],    // Budget/entry mid-range
-                    ['min' => 4, 'score' => 4],    // Entry-level
-                    ['min' => 3, 'score' => 3],
-                    ['min' => 2, 'score' => 2],
+                    ['min' => 16, 'score' => 10], // 2026 High-end baseline
+                    ['min' => 12, 'score' => 9.5],
+                    ['min' => 8, 'score' => 8],  // Standard for most users
+                    ['min' => 6, 'score' => 6],  // Minimum for a smooth 2026 experience
+                    ['min' => 4, 'score' => 4],  // Entry-level
+                    ['min' => 0, 'score' => 2],
                 ],
-                'default' => 2,
             ],
             'ram_type' => [
                 'label' => 'RAM Type',
                 'weight' => 35,
                 'scale' => [
-                    // Latest generation (2024-2025)
-                    'lpddr5x' => 10,
-                    'lpddr5t' => 10,
-
-                    // Current generation (2021-2024)
-                    'lpddr5' => 9,
-
-                    // Previous generation (2019-2021)
-                    'lpddr4x' => 7,
-                    'lpddr4' => 6,
-
-                    // Older generation (2017-2019)
-                    'lpddr3' => 4,
-
-                    // Very old/budget (2014-2017)
-                    'lpddr2' => 2,
-
-                    // Ancient (pre-2014)
-                    'lpddr' => 1,
+                    'lpddr6' => 10,  // Just appearing in late 2026
+                    'lpddr5x' => 9.5, // 2026 Flagship Standard
+                    'lpddr5' => 8,   // Mid-range
+                    'lpddr4x' => 6,   // Budget (Redmi 15C style)
+                    'default' => 5,
                 ],
-                'default' => 5,
             ],
             'storage_type' => [
-                'label' => 'Storage Type',
+                'label' => 'Storage Speed',
                 'weight' => 40,
                 'scale' => [
-                    // NVMe (Apple uses this - fastest)
-                    'nvme' => 10,
-                    'nvme pcie 4.0' => 10,
-                    'nvme pcie 3.0' => 10,
-
-                    // UFS 4.x (Latest flagship Android - 2024-2025)
-                    'ufs 4.1' => 10,
-                    'ufs 4.0' => 10,
-
-                    // UFS 3.x (Standard flagship - 2020-2024)
-                    'ufs 3.1' => 9,
-                    'ufs 3.0' => 8,
-
-                    // UFS 2.x (Mid-range / Older flagship)
-                    'ufs 2.2' => 7,
-                    'ufs 2.1' => 6,
-                    'ufs 2.0' => 5,
-
-                    // eMMC (Budget phones)
-                    'emmc 5.1' => 4,
-                    'emmc 5.0' => 3,
-                    'emmc 4.5' => 2,
+                    'ufs 5.0' => 10,  // Future-proofing
+                    'nvme' => 10,  // Apple
+                    'ufs 4.1' => 9.5, // Xiaomi 17 Ultra
+                    'ufs 4.0' => 9,
+                    'ufs 3.1' => 8,   // Great Mid-range
+                    'ufs 2.2' => 6,   // Standard Budget
+                    'emmc 5.1' => 3,   // Slow / Avoid
                 ],
-                'default' => 3,
-            ],
+            ]
         ],
         "thermal_control" => [
             'cooling_type' => [
                 'label' => 'Cooling System',
-                'weight' => 0, // Hardware-side of thermal control
-                'scale' => [
-                    'Active Fan + Flowing Liquid' => 10,   // Elite Gaming (RedMagic 11 series)
-                    'Active Fan + Vapor Chamber' => 9.5,  // Top-tier Gaming
-                    'Vapor Chamber (Dual/Large)' => 8.5,  // Modern Flagships (S26 Ultra, iPhone 17 Pro)
-                    'Vapor Chamber (Standard)' => 7.5,  // Standard Flagships / Upper Mid-range
-                    'Graphite + Heat Pipe' => 6.0,  // Mid-range standard
-                    'Graphite Sheets' => 4.0,  // Budget/Thin devices
-                    'Standard/None' => 2.0,  // Legacy/Entry level
-                ],
-                'default' => 4.0,
-            ],
-            'cooling_type_master' => [
-                'label' => 'Cooling System',
                 'weight' => 30,
-                'hidden' => true,
                 'scale' => [
-                    'Active Fan + Flowing Liquid' => 10,   // Elite Gaming (RedMagic 11 series)
-                    'Active Fan + Vapor Chamber' => 9.5,  // Top-tier Gaming
-                    'Vapor Chamber (Dual/Large)' => 8.5,  // Modern Flagships (S26 Ultra, iPhone 17 Pro)
-                    'Vapor Chamber (Standard)' => 7.5,  // Standard Flagships / Upper Mid-range
-                    'Graphite + Heat Pipe' => 6.0,  // Mid-range standard
-                    'Graphite Sheets' => 4.0,  // Budget/Thin devices
-                    'Standard/None' => 2.0,  // Legacy/Entry level
+                    // Elite/Active Cooling (Gaming Phones)
+                    'Active Fan + Flowing Liquid' => 10,   // RedMagic 11 Pro (Aqua Core)
+                    'Active Fan + Vapor Chamber' => 9.5,   // Gaming Tier
+
+                    // 2026 Flagship Standards
+                    '3D Dual-Channel IceLoop' => 9.0,   // Xiaomi 17 Ultra (50% better conductivity)
+                    'Vapor Chamber (Stainless Steel)' => 8.5, // iPhone 17 Pro / S26 Ultra (New VC standard)
+                    'Vapor Chamber (Dual/Large)' => 8.0,
+
+                    // Mid-range & Budget
+                    'Vapor Chamber (Standard)' => 7.0,   // Upper Mid-range
+                    'Graphite + Heat Pipe' => 5.5,   // Mid-range Baseline
+                    'Graphite Sheets' => 4.0,   // Budget (Redmi 15C)
+                    'Standard/None' => 2.0,   // Entry level
                 ],
                 'default' => 4.0,
             ],
             'throttling_rate' => [
                 'label' => 'Sustained Performance (Stability)',
-                'weight' => 70,
+                'weight' => 70, // High importance for 2026 "Heat Crisis"
                 'hidden' => true,
-                'unit' => [
-                    'value' => '%',
-                    'position' => 'after',
-                    'space' => false
-                ],
                 'ranges' => [
-                    ['min' => 95, 'score' => 10],  // Perfect stability (usually with active cooling)
-                    ['min' => 85, 'score' => 9],   // Excellent (Well-optimized flagships)
-                    ['min' => 75, 'score' => 7.5], // Good (Standard high-end behavior)
-                    ['min' => 65, 'score' => 5.5], // Average (Throttles to save battery/heat)
-                    ['min' => 50, 'score' => 3],   // Poor (Heavy performance drop)
-                    ['min' => 0, 'score' => 1],   // Extreme overheating
+                    // 10/10: Active Cooling / Fans (The only way to tame 2026 chips)
+                    ['min' => 95, 'score' => 10],  // RedMagic 11 Pro (98% stability with fan)
+
+                    // 9/10: Exceptional Passive Cooling (2nm efficiency + Vapor Chambers)
+                    ['min' => 85, 'score' => 9],   // iPhone 17 Pro Max (A19 Pro @ 89% stability)
+
+                    // 8/10: High-End Optimization (Exynos HPB / Xiaomi Vapor Systems)
+                    ['min' => 75, 'score' => 8],   // Exynos 2600 (82%) / Xiaomi 17 Ultra (80%)
+
+                    // 6/10: Mid-Range / Average Flagship Throttling
+                    ['min' => 60, 'score' => 6],   // Snapdragon 8 Gen 5 (Balanced @ 62%)
+
+                    // 4/10: Poor / Extreme "Peak-Only" Flagships
+                    ['min' => 45, 'score' => 4],   // S26 Ultra (Often dips to 46-53% in loops)
+
+                    // 1/10: Performance Collapse
+                    ['min' => 0, 'score' => 1],   // Pixel 10 Pro (Tensor G5 aggressive drops < 40%)
                 ],
-                'default' => 7.5, // Assume standard 75% stability if data is missing
+                'default' => 7.5,
             ],
         ],
         "ai_intelligence" => [
@@ -207,21 +186,21 @@ return [
                     'space' => true
                 ],
                 'ranges' => [
-                    // 2026 "Ultra" Tier (Agentic AI Leaders)
-                    ['min' => 90, 'score' => 10],  // A19 Pro (140), SD 8 Elite Gen 5/6 (100+), Dimensity 9500 (100+)
+                    // 2026 Agentic Tier (Can run full LLMs locally without Cloud)
+                    ['min' => 100, 'score' => 10], // SD 8 Elite Gen 5 (100+), Dimensity 9500 (100+), A19 Pro
+                    ['min' => 85, 'score' => 9.5], // Xiaomi 17 Ultra optimized NPU
 
-                    // 2025/26 Premium Tier
-                    ['min' => 70, 'score' => 9],   // A18 Pro (75), Dimensity 9400, Tensor G5 (70+)
+                    // 2025/26 Premium Tier (Heavy Generative AI / Magic Editor)
+                    ['min' => 70, 'score' => 9],  // A18 Pro, Tensor G5 (Google's AI heavy-hitter)
+                    ['min' => 55, 'score' => 8.5], // Exynos 2600 / SD 8 Gen 4
 
-                    // High-end Baseline
-                    ['min' => 45, 'score' => 8],   // Exynos 2600 (approx 55), SD 8 Gen 3 (45), Dimensity 9300
+                    // Mid-range Baseline (2026 "Standard" for AI apps)
+                    ['min' => 40, 'score' => 7],  // Minimum for decent on-device photo expansion
+                    ['min' => 25, 'score' => 5],  // Standard Mid-range (SD 7 series)
 
-                    // Mid-range AI
-                    ['min' => 25, 'score' => 6],   // Snapdragon 7+ Gen 3, Dimensity 8400 Ultra
-
-                    // Entry AI & Legacy
-                    ['min' => 10, 'score' => 4],   // Budget 2025/26 chips
-                    ['min' => 0, 'score' => 1],    // Legacy chips (pre-2024 architecture)
+                    // Budget / Legacy (Slow AI / Cloud-dependent)
+                    ['min' => 10, 'score' => 3],  // Entry-level 2026 chips
+                    ['min' => 0, 'score' => 1],  // Old chips that freeze during AI tasks
                 ],
                 'default' => 4,
             ],

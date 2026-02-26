@@ -971,7 +971,7 @@ class PhoneService
     protected function scorePerformance(array $s, string $profile)
     {
 
-        $antutu_score = $benchmark['antutu'] ?? null;
+        $antutu_score = parseAntutuScore($s['performance']['benchmark'] ?? null);
         $chipset = getShortChipset($s['performance']['chipset']) ?? null;
         $cpu = getSimplifiedCpuSpeed($s['performance']['cpu'] ?? '');
         $cooling_type = $s['performance']['cooling'] ?? null;
@@ -997,10 +997,11 @@ class PhoneService
             'gpu' => $s['performance']['gpu'] ?? null,
             'storage_type' => $s['memory']['storage_type'] ?? null,
             'ram_type' => $s['memory']['ram_type'] ?? null,
-            'antutu_score' => $antutu_score,
+            'antutu_score' => $antutu_score['antutu_score'] ?? null,
+            'geekbench_single' => $antutu_score['geekbench_single'] ?? null,
+            'geekbench_multi' => $antutu_score['geekbench_multi'] ?? null,
             'card_slot' => $s['memory']['card_slot'] ?? 'NO',
             'cooling_type' => $cooling_type ?? null,
-            'cooling_type_master' => $cooling_type_master ?? null,
             'ai_capability' => $ai_capability,
             'throttling_rate' => $throttling_rate ?? null,
         ], $profile);
@@ -1012,10 +1013,10 @@ class PhoneService
         $cameraApertures = extractCameraApertures($s['main_camera']);
         $cameraOpticalZoom = extractOpticalZoom($s['main_camera']);
         $cameratabilization = extractStabilization($s['main_camera']);
-        $cameraSetup = parseCameraSetup($s['main_camera']['setup']);
+        $cameraSetup = parseCameraSetup($s['main_camera']['rear'] ?? []);
         $cameraFlash = getFlash($s['main_camera']);
         $cameraVideo = extractVideo($s['main_camera']['video'] ?? '');
-        $setup = $s['selfie_camera']['setup'] ?? ''; // e.g., "Single (50 MP)"
+        $setup = $s['selfie_camera']['front'] ?? ''; // e.g., "Single (50 MP)"
         $sensorSizeData = extractSensorSize($s['main_camera']['main_sensor'] ?? '');
         $frontAperture = extractFrontAperture($s['selfie_camera']['sensor'] ?? '');
         // Extract the first number
