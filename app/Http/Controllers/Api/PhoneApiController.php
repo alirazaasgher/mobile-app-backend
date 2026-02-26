@@ -242,7 +242,7 @@ class PhoneApiController extends Controller
         return response()->json([
             'success' => true,
             'data' => new PhoneResource(resource: $phone),
-            'compatibility' => $compatibility,
+            // 'compatibility' => $compatibility,
             'similarMobiles' => PhoneResource::collection($similarMobiles),
         ]);
     }
