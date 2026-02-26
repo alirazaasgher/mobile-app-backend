@@ -318,7 +318,7 @@ class PhoneApiController extends Controller
         ]);
 
         $filters = $validated['filters'] ?? [];
-        $perPage = min($validated['per_page'] ?? 30, 50); // Cap at 50
+        $perPage = min($validated['per_page'] ?? 40, 50); // Cap at 50
         $page = $validated['page'] ?? 1;
 
         // Only cache if no filters or very common filter combinations
