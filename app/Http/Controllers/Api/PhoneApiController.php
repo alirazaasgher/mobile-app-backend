@@ -11,13 +11,10 @@ use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Cache;
 use App\Http\Resources\PhoneResource;
-use App\Http\Resources\PhoneListResource;
-use App\Services\CompareScoreService;
 use App\Services\PhoneService;
 use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\DB;
-use PhpParser\Node\Expr\FuncCall;
-
+use Illuminate\Validation\ValidationException;
 class PhoneApiController extends Controller
 {
     protected PhoneSearchService $phoneSearchService;
@@ -614,6 +611,34 @@ class PhoneApiController extends Controller
 
     public function compare(Request $request)
     {
+        $slugs = collect($request->slugs)->map(function ($slug) {
+            // 1. Exact match
+            $exact = Phone::where('slug', $slug)->value('slug');
+            if ($exact)
+                return $exact;
+
+            // 2. Find ALL possible matches
+            $matches = Phone::where('slug', 'LIKE', "%-{$slug}")
+                ->orWhere('slug', 'LIKE', "%{$slug}%")
+                ->pluck('slug');
+
+            if ($matches->count() === 1)
+                return $matches->first();
+
+            if ($matches->count() > 1) {
+                throw ValidationException::withMessages([
+                    'slugs' => "Ambiguous slug '$slug'. Did you mean: " . $matches->implode(', ') . '?',
+                ]);
+            }
+
+            // 3. No match
+            throw ValidationException::withMessages([
+                'slugs' => "No phone found for slug '$slug'.",
+            ]);
+
+        })->toArray();
+
+        $request->merge(['slugs' => $slugs]);
         // Validate input
         $validated = $request->validate([
             'slugs' => 'required|array|min:1|max:4',
