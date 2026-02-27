@@ -132,14 +132,19 @@ class ChipsetController extends Controller
                     ['key' => 'usb_type', 'label' => 'USB Type', 'type' => 'text', 'placeholder' => 'Type C'],
                     // Display Specs
                     ['key' => 'max_display_res', 'label' => 'Max Display Resolution', 'type' => 'text', 'placeholder' => '2880 x 1800 (QHD+)'],
+                    ['key' => 'max_external_resolution ', 'label' => 'Maximum External Display Resolution', 'type' => 'text', 'placeholder' => '4K Ultra HD @ 60 Hz'],
                     ['key' => 'max_refresh_rate', 'label' => 'Max Refresh Rate', 'type' => 'text', 'placeholder' => '144Hz'],
                     ['key' => 'hdr_standards', 'label' => 'HDR Support', 'type' => 'text', 'placeholder' => 'HDR10+, Dolby Vision'],
 
                     // Camera (The ISP Power)
                     ['key' => 'isp_name', 'label' => 'ISP Model', 'type' => 'text', 'placeholder' => 'Spectra / Cognitive ISP'],
                     ['key' => 'max_camera_res', 'label' => 'Max Camera Resolution', 'type' => 'text', 'placeholder' => '1x 200MP or 3x 32MP'],
+                    ['key' => 'max_dual_camera_res', 'label' => 'Max Dual Camera', 'type' => 'text', 'placeholder' => '32+21MP'],
+                    ['key' => 'max_triple_camera_mp', 'label' => 'Max Triple Camera', 'type' => 'text', 'placeholder' => '21MP'],
                     ['key' => 'video_capture', 'label' => 'Video Capture', 'type' => 'text', 'placeholder' => '8K @ 30FPS, 4K @ 120FPS'],
                     ['key' => 'video_playback', 'label' => 'Video Playback', 'type' => 'text', 'placeholder' => '8K @ 60FPS'],
+                    ['key' => 'max_slowmo_resolution ', 'label' => 'Slow Motion', 'type' => 'text', 'placeholder' => '1080p @ 120 FPS'],
+                    ['key' => 'max_color_depth', 'label' => 'Color Depth', 'type' => 'text', 'placeholder' => '10-bit'],
 
                     // Audio & Features
                     ['key' => 'audio_features', 'label' => 'Audio Features', 'type' => 'text', 'placeholder' => 'Spatial Audio, Lossless Support'],
