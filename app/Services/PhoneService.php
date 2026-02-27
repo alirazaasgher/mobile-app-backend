@@ -1013,10 +1013,10 @@ class PhoneService
         $cameraApertures = extractCameraApertures($s['main_camera']);
         $cameraOpticalZoom = extractOpticalZoom($s['main_camera']);
         $cameratabilization = extractStabilization($s['main_camera']);
-        $cameraSetup = parseCameraSetup($s['main_camera']['rear'] ?? []);
+        $cameraSetup = parseCameraSetup($s['main_camera']['setup'] ?? []);
         $cameraFlash = getFlash($s['main_camera']);
         $cameraVideo = extractVideo($s['main_camera']['video'] ?? '');
-        $setup = $s['selfie_camera']['front'] ?? ''; // e.g., "Single (50 MP)"
+        $setup = $s['selfie_camera']['setup'] ?? ''; // e.g., "Single (50 MP)"
         $sensorSizeData = extractSensorSize($s['main_camera']['main_sensor'] ?? '');
         $frontAperture = extractFrontAperture($s['selfie_camera']['sensor'] ?? '');
         // Extract the first number
