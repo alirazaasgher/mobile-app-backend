@@ -249,7 +249,7 @@ class ChipsetController extends Controller
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'brand_id' => 'required|string',
-            'release_date' => 'required|digits:4',
+            'release_date' => 'required|date',
             'tier' => 'nullable|string'
         ]);
 
@@ -296,7 +296,7 @@ class ChipsetController extends Controller
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'brand_id' => 'required|string',
-            'release_date' => 'required|digits:4',
+            'release_date' => 'required|date',
             'tier' => 'nullable|string'
         ]);
 
