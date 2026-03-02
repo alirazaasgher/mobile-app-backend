@@ -27,7 +27,7 @@ class ChipsetController extends Controller
             'benchmarks' => [
                 'items' => [
                     // AnTuTu v11 (Latest Standard)
-                    ['key' => 'antutu_score', 'label' => 'AnTuTu v11 Score', 'type' => 'number', 'placeholder' => '3,500,000+'],
+                    ['key' => 'antutu_score', 'label' => 'AnTuTu Score', 'type' => 'number', 'placeholder' => '3,500,000+'],
 
                     // Geekbench 6/7
                     ['key' => 'geekbench_single', 'label' => 'Geekbench Single-Core', 'type' => 'number', 'placeholder' => '3,200'],
@@ -44,20 +44,30 @@ class ChipsetController extends Controller
             'cpu' => [
                 'items' => [
                     // Identification
-                    ['key' => 'cpu_name', 'label' => 'CPU Brand/Model', 'type' => 'text', 'placeholder' => 'Kryo (Snapdragon 8 Gen 3)'],
+                    ['key' => 'cpu_name', 'label' => 'CPU Brand', 'type' => 'text', 'placeholder' => 'Kryo (Snapdragon 8 Gen 3)'],
                     ['key' => 'cpu_speed', 'label' => 'CPU Speed', 'type' => 'textarea', 'placeholder' => 'Kryo (Snapdragon 8 Gen 3)'],
 
                     // Manufacturing (The "Process" part)
                     ['key' => 'process', 'label' => 'Process Node', 'type' => 'text', 'placeholder' => '4nm'],
-                    ['key' => 'manufacturing', 'label' => 'Foundry', 'type' => 'text', 'placeholder' => 'TSMC'],
-
+                    [
+                        'key' => 'manufacturing',
+                        'label' => 'Manufacturing',
+                        'type' => 'select', // single-select dropdown
+                        'options' => [
+                            'TSMC' => 'TSMC',
+                            'Samsung' => 'Samsung',
+                            'Intel' => 'Intel',
+                            'GlobalFoundries' => 'GlobalFoundries',
+                            'UMC' => 'UMC',
+                            'SMIC' => 'SMIC',
+                            'Other' => 'Other'
+                        ],
+                        'placeholder' => 'Select Manufacturer'
+                    ],
                     // Architecture
                     ['key' => 'architecture', 'label' => 'Architecture', 'type' => 'text', 'placeholder' => '64-bit'],
-                    ['key' => 'instruction_set', 'label' => 'Instruction set', 'type' => 'text', 'placeholder' => 'ARMv9.2-A'],
-
                     // Core Specs
                     ['key' => 'cores', 'label' => 'Total Cores', 'type' => 'text', 'placeholder' => '8 (Octa-core)'],
-                    ['key' => 'clusters', 'label' => 'Core Configuration', 'type' => 'text', 'placeholder' => '1+3+4 or 2+6'],
                     ['key' => 'frequency', 'label' => 'Max Frequency', 'type' => 'text', 'placeholder' => '3300 MHz'],
 
                     // Memory/Cache
@@ -71,17 +81,6 @@ class ChipsetController extends Controller
                     ['key' => 'gpu_name', 'label' => 'GPU Name', 'type' => 'text', 'placeholder' => 'Adreno 722'],
                     ['key' => 'architecture', 'label' => 'Architecture', 'type' => 'text', 'placeholder' => 'Adreno 700'],
                     ['key' => 'frequency', 'label' => 'GPU Frequency', 'type' => 'text', 'placeholder' => '1150 MHz'],
-
-                    // Processing Power
-                    ['key' => 'execution_units', 'label' => 'Pipelines/Units', 'type' => 'text', 'placeholder' => '2'],
-                    ['key' => 'shading_units', 'label' => 'Shading Units', 'type' => 'text', 'placeholder' => '256'],
-                    ['key' => 'total_shaders', 'label' => 'Total Shaders', 'type' => 'text', 'placeholder' => '512'],
-                    ['key' => 'flops', 'label' => 'Performance (FLOPS)', 'type' => 'text', 'placeholder' => '1177.6 Gigaflops'],
-
-                    // Modern Features (New for 2026)
-                    ['key' => 'ray_tracing', 'label' => 'Hardware Ray Tracing', 'type' => 'select', 'options' => ['Yes' => 'Yes', 'No' => 'No']],
-                    ['key' => 'video_codecs', 'label' => 'Video Codecs', 'type' => 'text', 'placeholder' => 'AV1, H.265, VP9'],
-
                     // Software APIs
                     ['key' => 'vulkan_version', 'label' => 'Vulkan Version', 'type' => 'text', 'placeholder' => '1.3'],
                     ['key' => 'opencl_version', 'label' => 'OpenCL Version', 'type' => 'text', 'placeholder' => '2.0'],
@@ -89,14 +88,19 @@ class ChipsetController extends Controller
                 ],
 
             ],
-            'memory' => [
+            'memory_&_storage' => [
                 'items' => [
                     ['key' => 'memory_type', 'label' => 'Memory Type', 'type' => 'multiselect', 'options' => $ram_type],
                     ['key' => 'frequency', 'label' => 'Memory Frequency', 'type' => 'text', 'placeholder' => '4200 MHz'],
-                    ['key' => 'bus', 'label' => 'Bus Width', 'type' => 'text', 'placeholder' => '2x 16 Bit'],
-                    ['key' => 'channels', 'label' => 'Memory Channels', 'type' => 'text', 'placeholder' => 'Quad-channel'],
                     ['key' => 'bandwidth', 'label' => 'Max Bandwidth', 'type' => 'text', 'placeholder' => '33.6 Gb/s'],
                     ['key' => 'max_size', 'label' => 'Max Capacity', 'type' => 'text', 'placeholder' => '16 GB'],
+                    // Storage Specs
+                    [
+                        'key' => 'storage_type',
+                        'label' => 'Storage Type',
+                        'type' => 'multiselect',
+                        'options' => $storage_type
+                    ],
                 ]
             ],
             'ai_accelerator' => [
@@ -122,20 +126,44 @@ class ChipsetController extends Controller
             ],
             'multimedia' => [
                 'items' => [
-                    // Storage Specs
-                    [
-                        'key' => 'storage_type',
-                        'label' => 'Storage Type',
-                        'type' => 'multiselect',
-                        'options' => $storage_type
-                    ],
-                    ['key' => 'usb_version', 'label' => 'USB Version', 'type' => 'text', 'placeholder' => 'USB 3.2 Gen 2x2'],
-                    ['key' => 'usb_type', 'label' => 'USB Type', 'type' => 'text', 'placeholder' => 'Type C'],
+
                     // Display Specs
-                    ['key' => 'max_display_res', 'label' => 'Max Display Resolution', 'type' => 'text', 'placeholder' => '2880 x 1800 (QHD+)'],
+                    [
+                        'key' => 'max_display_res',
+                        'label' => 'Max Display Resolution',
+                        'type' => 'select',
+                        'options' => [
+                            // 720p Tier (Budget / Entry-level)
+                            'HD' => '1280 x 720 (HD)',
+                            'HD+' => '1600 x 720 (HD+)',           // Common 20:9 budget standard
+
+                            // 1080p+ Tier (Mainstream & Ultra-Wide)
+                            'FHD' => '1920 x 1080 (FHD)',
+                            'FHD+' => '2400 x 1080 (FHD+)',        // Standard 20:9 (e.g., Redmi, base Samsung)
+                            'WFHD' => '2560 x 1080 (WFHD)',        // Standard 21:9
+                            'WFHD+' => '2900 x 1300 (WFHD+)',      // New Snapdragon 7s Gen 4 Standard
+                            'FHD+ Ex' => '2800 x 1260 (FHD+ Max)', // Used in high-end mid-range (Nothing Phone 4a)
+
+                            // 1.5K Tier (Premium Mid-range / Upper Tier)
+                            '1.5K' => '2712 x 1220 (1.5K)',        // Popularized by Xiaomi/Redmi
+                            '1.5K+' => '3000 x 1200 (1.5K+)',      // High-end foldables/tablets
+                            'Fold' => '2208 x 1768 (Foldable)',    // Inner Display Standard (Z Fold series)
+
+                            // 1440p Tier (Flagship)
+                            'QHD' => '2560 x 1440 (QHD)',
+                            'QHD+' => '3200 x 1440 (QHD+)',        // Flagship 20:9 (Galaxy S Ultra, Pixel Pro)
+                            'WQHD+' => '2960 x 1440 (WQHD+)',      // MediaTek Dimensity 8450 Max Resolution
+
+                            // 2160p Tier (Elite)
+                            '4K' => '3840 x 2160 (4K UHD)',
+                            'Custom' => 'Other / Custom'
+                        ],
+                        'placeholder' => 'Select Resolution'
+                    ],
                     ['key' => 'max_external_resolution ', 'label' => 'Maximum External Display Resolution', 'type' => 'text', 'placeholder' => '4K Ultra HD @ 60 Hz'],
                     ['key' => 'max_refresh_rate', 'label' => 'Max Refresh Rate', 'type' => 'text', 'placeholder' => '144Hz'],
                     ['key' => 'hdr_standards', 'label' => 'HDR Support', 'type' => 'text', 'placeholder' => 'HDR10+, Dolby Vision'],
+                    ['key' => 'dual_screen_support', 'label' => 'Dual Screen support', 'type' => 'select', 'options' => ['Yes' => 'Yes', 'No' => 'No']],
 
                     // Camera (The ISP Power)
                     ['key' => 'isp_name', 'label' => 'ISP Model', 'type' => 'text', 'placeholder' => 'Spectra / Cognitive ISP'],
@@ -156,13 +184,24 @@ class ChipsetController extends Controller
             'connectivity' => [
                 'items' => [
                     // Cellular / Modem
-                    ['key' => 'modem_name', 'label' => 'Modem Model', 'type' => 'text', 'placeholder' => 'Snapdragon X80'],
-                    ['key' => 'network_generation', 'label' => 'Network Generation', 'type' => 'text', 'placeholder' => '5G, 4G LTE, 3G, 2G'],
+                    ['key' => 'usb_version', 'label' => 'USB Version', 'type' => 'text', 'placeholder' => 'USB 3.2 Gen 2x2'],
+                    ['key' => 'usb_type', 'label' => 'USB Type', 'type' => 'text', 'placeholder' => 'Type C'],
                     ['key' => 'peak_speed', 'label' => 'Peak Download Speed', 'type' => 'text', 'placeholder' => '10 Gbps'],
                     ['key' => 'download_speed', 'label' => 'Max Download Speed', 'type' => 'text', 'placeholder' => '10 Gbps'],
+                    ['key' => 'peak_upload_speed', 'label' => 'Peak Upload Speed', 'type' => 'text', 'placeholder' => '3.5 Gbps'],
                     ['key' => 'upload_speed', 'label' => 'Max Upload Speed', 'type' => 'text', 'placeholder' => '3.5 Gbps'],
                     // Wi-Fi
-                    ['key' => 'wifi_standard', 'label' => 'Wi-Fi Standard', 'type' => 'text', 'placeholder' => 'Wi-Fi 7 (802.11be)'],
+                    [
+                        'key' => 'wifi_standard',
+                        'label' => 'Wi-Fi Standard',
+                        'type' => 'multiselect',
+                        'options' => [
+                            'Wi-Fi 4' => 'Wi-Fi 4 (802.11n)',
+                            'Wi-Fi 5' => 'Wi-Fi 5 (802.11ac)',
+                            'Wi-Fi 6' => 'Wi-Fi 6 (802.11ax)',
+                            'Wi-Fi 6E' => 'Wi-Fi 6E (802.11ax 6GHz)'
+                        ]
+                    ],
                     [
                         'key' => 'wifi_bands',
                         'label' => 'Wi-Fi Bands',
@@ -174,11 +213,8 @@ class ChipsetController extends Controller
                             '60GHz' => '60 GHz (WiGig)'
                         ]
                     ],
-                    ['key' => 'wifi_security', 'label' => 'Wi-Fi Security', 'type' => 'text', 'placeholder' => 'WPA3, WPA2-AES'],
-                    ['key' => 'wifi_features', 'label' => 'Wi-Fi Features', 'type' => 'text', 'placeholder' => 'MU-MIMO, 4K QAM, Multi-Link Operation (MLO)'],
                     // Bluetooth & Location
                     ['key' => 'bluetooth_version', 'label' => 'Bluetooth Version', 'type' => 'text', 'placeholder' => '5.4'],
-                    ['key' => 'satellite', 'label' => 'Satellite Connectivity', 'type' => 'text', 'placeholder' => 'Two-way Messaging support'],
                     ['key' => 'navigation', 'label' => 'Navigation', 'type' => 'text', 'placeholder' => 'GPS, GLONASS, Beidou, Galileo, QZSS, NavIC'],
                 ]
             ],
