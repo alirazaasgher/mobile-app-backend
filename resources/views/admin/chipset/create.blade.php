@@ -51,13 +51,18 @@
                 </div>
 
                 <div class="col-md-6">
-                  <label class="form-label">Announced Year</label>
-                  <input type="number" name="announced_year"
-                    class="form-control @error('announced_year') is-invalid @enderror"
-                    value="{{ old('announced_year', $chipset->announced_year ?? '') }}" placeholder="2024" min="2010"
-                    max="2030">
-                  @error('announced_year') <div class="invalid-feedback">{{ $message }}</div> @enderror
-                </div>
+                <label class="form-label">Release Date</label>
+                <input type="date"
+                    name="release_date"
+                    class="form-control @error('release_date') is-invalid @enderror"
+                    value="{{ old('release_date', isset($chipset->release_date) ? \Carbon\Carbon::parse($chipset->release_date)->format('Y-m-d') : '') }}"
+                    min="2010-01-01"
+                    max="2035-12-31">
+
+                @error('release_date')
+                    <div class="invalid-feedback">{{ $message }}</div>
+                @enderror
+            </div>
               <div class="col-md-6">
                 <label class="form-label fw-medium">Primary Image</label>
                 <input type="file" name="primary_image" class="form-control">
