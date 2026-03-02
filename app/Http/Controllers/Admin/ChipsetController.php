@@ -231,7 +231,7 @@ class ChipsetController extends Controller
     public function index()
     {
         $chipsets = Chipset::with('brand:id,name') // Only fetch id and name from brands
-            ->select('id', 'name', 'brand_id', 'created_at', 'announced_year')
+            ->select('id', 'name', 'brand_id', 'created_at', 'release_date')
             ->orderBy('created_at', 'desc')
             ->paginate(15);
         return view('admin.chipset.index', compact('chipsets'));
@@ -249,7 +249,7 @@ class ChipsetController extends Controller
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'brand_id' => 'required|string',
-            'announced_year' => 'required|digits:4',
+            'release_date' => 'required|digits:4',
             'tier' => 'nullable|string'
         ]);
 
@@ -260,7 +260,7 @@ class ChipsetController extends Controller
                 'brand_id' => $validated['brand_id'],
                 'name' => $validated['name'],
                 'slug' => Str::slug($validated['name']),
-                'announced_year' => $validated['announced_year'] ?? null,
+                'release_date' => $validated['release_date'] ?? null,
                 'tier' => $validated['tier'],
             ]);
             DB::commit();
@@ -296,7 +296,7 @@ class ChipsetController extends Controller
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'brand_id' => 'required|string',
-            'announced_year' => 'required|digits:4',
+            'release_date' => 'required|digits:4',
             'tier' => 'nullable|string'
         ]);
 
@@ -313,7 +313,7 @@ class ChipsetController extends Controller
                 'brand_id' => $validated['brand_id'],
                 'name' => $validated['name'],
                 'slug' => Str::slug($validated['name']),
-                'announced_year' => $validated['announced_year'] ?? null,
+                'release_date' => $validated['release_date'] ?? null,
                 'tier' => $validated['tier'],
             ];
 

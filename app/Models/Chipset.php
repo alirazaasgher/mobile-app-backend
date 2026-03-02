@@ -15,7 +15,7 @@ class Chipset extends Model
         'name',
         'brand_id',
         'primary_image',
-        'announced_year',
+        'release_date',
         'tier',
         'slug',
     ];
