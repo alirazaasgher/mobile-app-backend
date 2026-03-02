@@ -79,7 +79,6 @@ class ChipsetController extends Controller
                 'items' => [
                     // Core Identity
                     ['key' => 'gpu_name', 'label' => 'GPU Name', 'type' => 'text', 'placeholder' => 'Adreno 722'],
-                    ['key' => 'architecture', 'label' => 'Architecture', 'type' => 'text', 'placeholder' => 'Adreno 700'],
                     ['key' => 'frequency', 'label' => 'GPU Frequency', 'type' => 'text', 'placeholder' => '1150 MHz'],
                     // Software APIs
                     ['key' => 'vulkan_version', 'label' => 'Vulkan Version', 'type' => 'text', 'placeholder' => '1.3'],
