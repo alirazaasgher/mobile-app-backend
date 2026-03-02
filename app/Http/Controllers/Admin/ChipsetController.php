@@ -45,6 +45,7 @@ class ChipsetController extends Controller
                 'items' => [
                     // Identification
                     ['key' => 'cpu_name', 'label' => 'CPU Brand/Model', 'type' => 'text', 'placeholder' => 'Kryo (Snapdragon 8 Gen 3)'],
+                    ['key' => 'cpu_speed', 'label' => 'CPU Speed', 'type' => 'textarea', 'placeholder' => 'Kryo (Snapdragon 8 Gen 3)'],
 
                     // Manufacturing (The "Process" part)
                     ['key' => 'process', 'label' => 'Process Node', 'type' => 'text', 'placeholder' => '4nm'],
