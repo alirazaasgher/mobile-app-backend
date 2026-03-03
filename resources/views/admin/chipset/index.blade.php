@@ -141,13 +141,13 @@
         <div class="row align-items-center">
           <div class="col-md-6">
             <div class="text-muted small">
-              Showing <strong>{{ $chipsets->firstItem() }}</strong> to <strong>{{ $chipset->lastItem() }}</strong> of
-              <strong>{{ $chipset->total() }}</strong> entries
+              Showing <strong>{{ $chipsets->firstItem() }}</strong> to <strong>{{ $chipsets->lastItem() }}</strong> of
+              <strong>{{ $chipsets->total() }}</strong> entries
             </div>
           </div>
           <div class="col-md-6">
             <nav aria-label="Page navigation">
-              {{ $chipset->links('pagination::bootstrap-5') }}
+              {{ $chipsets->links('pagination::bootstrap-5') }}
             </nav>
           </div>
         </div>
