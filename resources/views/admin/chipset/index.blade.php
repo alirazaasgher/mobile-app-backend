@@ -141,7 +141,7 @@
         <div class="row align-items-center">
           <div class="col-md-6">
             <div class="text-muted small">
-              Showing <strong>{{ $mobiles->firstItem() }}</strong> to <strong>{{ $chipset->lastItem() }}</strong> of
+              Showing <strong>{{ $chipsets->firstItem() }}</strong> to <strong>{{ $chipset->lastItem() }}</strong> of
               <strong>{{ $chipset->total() }}</strong> entries
             </div>
           </div>
