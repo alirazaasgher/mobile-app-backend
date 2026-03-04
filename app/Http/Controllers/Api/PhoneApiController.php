@@ -223,9 +223,9 @@ class PhoneApiController extends Controller
                     ]);
             }
         ])->where('slug', $slug)->firstOrFail();
-        $phoneSpecs = $phone->specifications->toArray();
-        $chipsetSpecs = $phone->chipset->specifications->toArray();
-        $compatibility = (new SocCompatibilityService($phoneSpecs, $chipsetSpecs))->check();
+        //$phoneSpecs = $phone->specifications->toArray();
+        //$chipsetSpecs = $phone->chipset->specifications->toArray();
+        //$compatibility = (new SocCompatibilityService($phoneSpecs, $chipsetSpecs))->check();
         $competitorIds = $phone->competitors->pluck('id')->toArray();
         $ramOptions = $phone->searchIndex->ram_options
             ? json_decode($phone->searchIndex->ram_options, true)
@@ -245,7 +245,7 @@ class PhoneApiController extends Controller
         return response()->json([
             'success' => true,
             'data' => new PhoneResource(resource: $phone),
-            'compatibility' => $compatibility,
+            //'compatibility' => $compatibility,
             'similarMobiles' => PhoneResource::collection($similarMobiles),
         ]);
     }
