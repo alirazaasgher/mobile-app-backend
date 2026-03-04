@@ -83,7 +83,7 @@ return [
         ],
         'default' => 2,
     ],
-    'geekbench_single' => [
+    'geekbench_single_v6' => [
         'label' => 'Geekbench Single-Core',
         'weight' => 15,
         'ranges' => [
@@ -99,7 +99,7 @@ return [
         ],
         'default' => 3,
     ],
-    'geekbench_multi' => [
+    'geekbench_multi_v6' => [
         'label' => 'Geekbench Multi-Core',
         'weight' => 20,
         'ranges' => [
