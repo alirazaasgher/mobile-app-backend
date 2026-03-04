@@ -65,7 +65,7 @@ function update_phone_search_index(
 
     // Extract commonly used specs
     $capacity = isset($specMap['battery']['capacity']) ? preg_replace('/[^0-9]/', '', $specMap['battery']['capacity']) : 0;
-    $selfieCam = $specMap['selfie_camera']['selfe_setup'] ?? null;
+    $selfieCam = $specMap['selfie_camera']['setup'] ?? null;
     if ($selfieCam) {
         $selfieCammp = preg_match('/\(\s*(\d+)\s*mp\s*\)/i', (string) $selfieCam, $matches)
             ? $matches[1]
@@ -203,7 +203,7 @@ function build_top_specs($specMap, $os, $date, $mainCam, $main_camera_video, $ip
         ],
         [
             "key" => "front_camera",
-            "text" => $specMap['selfie_camera']['selfe_setup'] ?? "NA",
+            "text" => $specMap['selfie_camera']['setup'] ?? "NA",
             "subText" => $fornt_camera_video ?? ""
         ],
         [
