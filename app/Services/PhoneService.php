@@ -1074,7 +1074,7 @@ class PhoneService
         $cameraSetup = parseCameraSetup($s['main_camera']['rear'] ?? []);
         $cameraFlash = getFlash($s['main_camera']);
         $cameraVideo = extractVideo($s['main_camera']['video'] ?? '');
-        $setup = $s['selfie_camera']['front'] ?? ''; // e.g., "Single (50 MP)"
+        $setup = $s['selfie_camera']['setup'] ?? ''; // e.g., "Single (50 MP)"
         $sensorSizeData = extractSensorSize($s['main_camera']['main_sensor'] ?? '');
         $frontAperture = extractFrontAperture($s['selfie_camera']['sensor'] ?? '');
         $mainAperture = extractApertures($s['main_camera']['main_sensor'] ?? '');
