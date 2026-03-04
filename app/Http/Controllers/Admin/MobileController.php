@@ -67,9 +67,10 @@ class MobileController extends Controller
                 'expandable' => true,
                 'max_visible' => 6,
                 'items' => [
-                    ['key' => 'antutu_score', 'label' => 'AnTuTu Score', 'type' => 'number', 'placeholder' => '3,500,000+'],
-                    ['key' => 'geekbench_single', 'label' => 'Geekbench Single-Core', 'type' => 'number', 'placeholder' => '3,200'],
-                    ['key' => 'geekbench_multi', 'label' => 'Geekbench Multi-Core', 'type' => 'number', 'placeholder' => '10,500'],
+                    ['key' => 'antutu_score_v10', 'label' => 'AnTuTu Score (v10)', 'type' => 'number', 'placeholder' => '3,500,000+'],
+                    ['key' => 'antutu_score_v11', 'label' => 'AnTuTu Score (v11)', 'type' => 'number', 'placeholder' => '3,500,000+'],
+                    ['key' => 'geekbench_single_v6', 'label' => 'Geekbench Single-Core', 'type' => 'number', 'placeholder' => '3,200'],
+                    ['key' => 'geekbench_multi_v6', 'label' => 'Geekbench Multi-Core', 'type' => 'number', 'placeholder' => '10,500'],
                     ['key' => 'os', 'label' => 'Operating System', 'type' => 'text', 'placeholder' => 'Android 14, One UI 6.1'],
                     ['key' => 'chipset', 'label' => 'Chipset', 'type' => 'text', 'placeholder' => 'Qualcomm Snapdragon 8 Gen 3 (4 nm)'],
                     ['key' => 'cpu', 'label' => 'CPU', 'type' => 'text', 'placeholder' => 'Octa-core (1x3.3 GHz X4)'],

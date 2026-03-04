@@ -4,6 +4,7 @@ return [
     'antutu_score' => [
         'label' => 'AnTuTu Benchmark',
         'weight' => 40,
+        'hidden' => true,
         'ranges' => [
             // 2026 Elite Flagships (The 4M+ Club)
             ['min' => 4000000, 'score' => 10], // Red Magic 11 Pro+, Vivo X300 Pro
@@ -25,6 +26,60 @@ return [
             ['min' => 500000, 'score' => 4],
             ['min' => 300000, 'score' => 3],
             ['min' => 0, 'score' => 2],
+        ],
+        'default' => 2,
+    ],
+    'antutu_score_v10' => [
+        'label' => 'AnTuTu Benchmark',
+        'weight' => 0,
+        'ranges' => [
+            // 2026 Elite Flagships (The 4M+ Club)
+            ['min' => 4000000, 'score' => 10], // Red Magic 11 Pro+, Vivo X300 Pro
+            ['min' => 3700000, 'score' => 9.8], // Standard Snapdragon 8 Elite Gen 5
+
+            // 2025/2026 High-End (SD 8 Elite Gen 1 / Exynos 2600)
+            ['min' => 3000000, 'score' => 9.2],
+            ['min' => 2500000, 'score' => 8.8],
+
+            // Mid-range (The new "Budget Flagships")
+            ['min' => 2000000, 'score' => 8], // Snapdragon 8 Gen 4 era
+            ['min' => 1500000, 'score' => 7], // Dimensity 8500 / SD 8s Gen 4
+
+            // Mainstream Mid-range
+            ['min' => 1000000, 'score' => 6], // Dimensity 8400
+            ['min' => 700000, 'score' => 5],
+
+            // Budget (Redmi 15C / Entry levels)
+            ['min' => 500000, 'score' => 4],
+            ['min' => 300000, 'score' => 3],
+            ['min' => 0, 'score' => 2],
+        ],
+        'default' => 2,
+    ],
+    'antutu_score_v11' => [
+        'label' => 'AnTuTu Benchmark v11',
+        'weight' => 0,
+        'ranges' => [
+            // 2026 Elite Flagships (The 4M+ Club)
+            ['min' => 4000000, 'score' => 10],  // Red Magic 11 Pro+, Vivo X300 Pro (Dimensity 9500)
+            ['min' => 3700000, 'score' => 9.8], // iQOO 15, Snapdragon 8 Elite Gen 5 (Standard)
+
+            // 2025/2026 High-End (SD 8 Elite Gen 1 / Dimensity 9400+)
+            ['min' => 3000000, 'score' => 9.2], // Snapdragon 8 Elite, Dimensity 9400+
+            ['min' => 2500000, 'score' => 8.8], // Optimized SD 8 Gen 3, Dimensity 9400
+
+            // Upper Mid-range (The "Flagship Killers")
+            ['min' => 2000000, 'score' => 8.2], // Snapdragon 8s Gen 4, Dimensity 8400-Ultra
+            ['min' => 1500000, 'score' => 7.5], // Dimensity 8450, Snapdragon 8 Gen 2 leftovers
+
+            // Mainstream Mid-range
+            ['min' => 1000000, 'score' => 6.5], // Snapdragon 7 Gen 4, Snapdragon 7s Gen 4
+            ['min' => 800000, 'score' => 5.5],  // Snapdragon 6 Gen 4
+
+            // Budget / Entry levels
+            ['min' => 500000, 'score' => 4.5], // Snapdragon 6 Gen 3, Helio G100+
+            ['min' => 300000, 'score' => 3.5], // Entry-level 5G chips
+            ['min' => 0, 'score' => 2],        // Legacy / Ultra-low budget
         ],
         'default' => 2,
     ],

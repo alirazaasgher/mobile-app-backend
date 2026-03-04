@@ -966,14 +966,21 @@ class PhoneService
 
     protected function scorePerformance(array $chipsetData, array $s)
     {
+        $android_version = $s['performance']['os'];
         $benchmarks = $chipsetData['specifications']['benchmarks'] ?? [];
+        $finalAntutuV11 = $s['performance']['antutu_score_v11'] ?? null;
+        $finalAntutuV10 = $s['performance']['antutu_score_v10'] ?? $benchmarks['antutu_score'] ?? null;
+        $finalGeekMulti = $s['performance']['geekbench_multi_v6']
+            ?? $benchmarks['geekbench_multi']
+            ?? null;
+
+        $finalGeekSingle = $s['performance']['geekbench_single_v6']
+            ?? $benchmarks['geekbench_single']
+            ?? null;
         $cpuData = $chipsetData['specifications']['cpu'] ?? [];
         $gpuData = $chipsetData['specifications']['gpu'] ?? [];
         $processData = $chipsetData['specifications']['process'] ?? [];
-        //$chipsetMemoryData = parseMemory($chipsetData['specifications']['memory'] ?? '');
-        $antutu_score = $benchmarks['antutu_score'] ?? null;
-        $geekbench_single = $benchmarks['geekbench_single'] ?? null;
-        $geekbench_multi = $benchmarks['geekbench_multi'] ?? null;
+
         $cpu_speed = getSimplifiedCpuSpeed($cpuData['cpu_speed'] ?? '');
         $fabrication = isset($processData['process_node'])
             ? (int) filter_var($processData['process_node'], FILTER_SANITIZE_NUMBER_INT)
@@ -981,12 +988,15 @@ class PhoneService
         $memoryParsed = parseMemory($s['memory']['memory'] ?? '');
         return $this->compareScoreService->scoreCategory('performance', [
             // 1. THE BIG NUMBERS (High Impact / Weight)
-            'antutu_score' => $antutu_score,
-            'geekbench_multi' => $geekbench_multi,
-            'geekbench_single' => $geekbench_single,
+            'antutu_score' => $finalAntutuV11 ?? $finalAntutuV10,
+            'antutu_score_v10' => $finalAntutuV10,
+            'antutu_score_v11' => $finalAntutuV11,
+            'geekbench_multi_v6' => $finalGeekMulti,
+            'geekbench_single_v6' => $finalGeekSingle,
 
             // 2. THE ENGINE (The Core Identity)
             'chipset' => $chipsetData['name'],
+            'os' => $android_version,
             'process_node' => $fabrication,
             'cpu_speed' => $cpu_speed,
             'cores' => $cpuData['cores'] ?? null,

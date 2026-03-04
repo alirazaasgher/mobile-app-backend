@@ -2377,7 +2377,7 @@ function getHighestProtocol(string $protocols): ?array
     ];
 }
 
-function normalizeFingerprintSensor(string $input): string
+function normalizeFingerprintSensor(string $input): ?string
 {
     if (empty($input)) {
         return null;
