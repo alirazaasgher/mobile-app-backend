@@ -234,9 +234,6 @@ class ChipsetController extends Controller
             ->select('id', 'name', 'brand_id', 'created_at', 'release_date')
             ->orderBy('created_at', 'desc')
             ->paginate(15);
-        // echo "<pre>";
-        // print_r($chipsets);
-        // exit;
         return view('admin.chipset.index', compact('chipsets'));
     }
 

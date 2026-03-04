@@ -10,11 +10,81 @@ class CompareScoreService
        PUBLIC API
     --------------------------------*/
     //$values = $this->applyInferences($values, $specConfigs);
-    public function scoreCategory(string $category, array $values, string $profile = 'display'): array
+    public function scoreCategory(string $category, array $values, string $profile = 'balanced'): array
+    {
+        $categoryConfig = config("compare_scoring.compare_profiles.$profile.$category", []);
+        $totalWeight = 0;
+        $weightedScore = 0;
+        $tempScores = [];
+
+        foreach ($values as $specKey => $value) {
+
+            // Skip if spec not configured
+            if (!isset($categoryConfig[$specKey])) {
+                continue;
+            }
+
+            $specConfig = $categoryConfig[$specKey];
+
+            $weight = $specConfig['weight'] ?? 1;
+            $defaultScore = $specConfig['default_score'] ?? 0;
+
+            // Score calculation
+            if ($value === null) {
+                $score = $defaultScore;
+            } else {
+                $numericValue = is_array($value) ? ($value['value'] ?? $value) : $value;
+                $displayValue = is_array($value) ? ($value['display'] ?? $value) : $value;
+
+                $score = $this->scoreSpec($numericValue, $specConfig);
+            }
+
+            // Weighted accumulation
+            $weightedScore += ($score * $weight);
+            $totalWeight += $weight;
+
+            // Save breakdown
+            $tempScores[$specKey] = [
+                'value' => $this->formatValueWithUnit($displayValue, $specConfig),
+                'score' => round($score, 2),
+                'weight' => $weight,
+                'hidden' => $specConfig['hidden'] ?? false,
+            ];
+        }
+
+        // Avoid division by zero
+        $finalScore = $totalWeight > 0
+            ? round(($weightedScore / $totalWeight) * 10, 1) // If your scoreSpec returns 0-10
+            : 0;
+        // 4. Build Display Output
+        $scoredSpecs = [];
+        foreach ($values as $specKey => $value) {
+            if ($value === null)
+                continue;
+
+            if (isset($tempScores[$specKey])) {
+                $scoredSpecs[$specKey] = $tempScores[$specKey];
+            } else {
+                $scoredSpecs[$specKey] = [
+                    'value' => is_bool($value) ? ($value ? 'Yes' : 'No') : $value,
+                    'score' => null,
+                    'weight' => null,
+                    'hidden' => false,
+                ];
+            }
+        }
+        return [
+            'category' => $category,
+            'score' => $finalScore,
+            'breakdown' => $scoredSpecs,
+        ];
+    }
+    public function scoreCategory_1(string $category, array $values, string $profile = 'display'): array
     {
         // 1. Setup and Config
         $categoryConfig = config("compare_scoring.compare_profiles.$profile.$category", []);
-        $inferredValues = $this->applyInferences($category, $values, $categoryConfig);
+
+        //$inferredValues = $this->applyInferences($category, $values, $categoryConfig);
 
         $sectionWeights = $categoryConfig['weights'] ?? [];
         $sections = $categoryConfig['categories'] ?? [];
@@ -31,8 +101,13 @@ class CompareScoreService
             $sectionRunningScore = 0;
 
             // FIXED: Total potential weight for this specific section
-            $totalPotentialSectionWeight = array_sum(array_column($groupSpecs, 'weight'));
-
+            $totalPotentialSectionWeight = 0;
+            foreach ($groupSpecs as $specKey => $specConfig) {
+                // Only add to potential weight if the value exists in your $inferredValues
+                if (isset($inferredValues[$specKey]) && $inferredValues[$specKey] !== null) {
+                    $totalPotentialSectionWeight += ($specConfig['weight'] ?? 0);
+                }
+            }
             foreach ($groupSpecs as $specKey => $specConfig) {
                 $val = $inferredValues[$specKey] ?? null;
                 $specWeight = $specConfig['weight'] ?? 0;

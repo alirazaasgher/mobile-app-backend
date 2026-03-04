@@ -2,6 +2,9 @@
 
 namespace App\Services;
 
+use App\Models\Chipset;
+use App\Models\ChipsetSpecification;
+use App\Models\MobileScore;
 use App\Models\Phone;
 use App\Models\PhoneSearchIndex;
 use App\Models\PhoneSpecification;
@@ -521,38 +524,70 @@ class PhoneService
      *
      * Returns mergedSpecs array used for search indexing.
      */
-    public function saveSpecifications($phone, array $specs, callable $searchableTextGetter, $update = false): bool
+    public function saveSpecifications($phone, array $specs, $chipset_id, $update = false): bool
     {
-        // $scores = $this->scoreByCategory($specs, 'balanced');
+        // Load chipset once and reuse
+        $chipsetRows = Chipset::with([
+            'specifications' => function ($query) {
+                $query->select('chipset_id', 'category', 'specifications');
+            }
+        ])
+            ->where('id', $chipset_id)
+            ->select('id', 'name', 'slug')
+            ->first();
+
+        $chipsetData = $this->transformChipsetData($chipsetRows);
+
+        // Run both scorings first, then batch save
+        $performance = $this->scorePerformance($chipsetData, $specs);
+        $categoryData = $this->scoreByCategory($specs); // fixed typo "balnced"
+        // Batch all scores into one loop
+        $scores = array_merge(
+            [
+                'performance' => $performance
+            ],
+            $categoryData
+        );
+
+        foreach ($scores as $category => $data) {
+            MobileScore::updateOrCreate(
+                [
+                    'phone_id' => $phone->id,
+                    'category' => $category,
+                    'profile' => 'balanced'
+                ],
+                [
+                    'score' => $data['score'],
+                    'breakdown' => $data['breakdown'],
+                    'updated_at' => now(),
+                ]
+            );
+        }
+
+        // Save specs
         foreach ($specs as $category => $categorySpecs) {
-            // skip if all values empty
             if (!array_filter($categorySpecs)) {
-                // delete existing row if any
                 PhoneSpecification::where('phone_id', $phone->id)
                     ->where('category', $category)
                     ->delete();
                 continue;
             }
 
-            // Filter helpers (you may already have app helpers)
             $filteredSpecs = $this->filterSpecs($categorySpecs);
             $expandable = $filteredSpecs['expandable'] ?? 0;
             $max_visible = $filteredSpecs['max_visible'] ?? null;
-            unset($filteredSpecs['expandable']);
-            unset($filteredSpecs['max_visible']);
-
-            // remove UI-specific keys if present
+            unset($filteredSpecs['expandable'], $filteredSpecs['max_visible']);
 
             PhoneSpecification::updateOrCreate(
                 ['phone_id' => $phone->id, 'category' => $category],
                 [
                     'specifications' => json_encode($filteredSpecs),
-                    'searchable_text' => $searchableTextGetter($category),
                     'expandable' => $expandable,
                     'max_visible' => $max_visible
                 ]
             );
         }
+
         return true;
     }
 
@@ -839,40 +874,30 @@ class PhoneService
             ->toArray();
     }
 
-    public function scoreByCategory(array $specs, $brand, $profile): array
+    public function scoreByCategory(array $specs): array
     {
-        // $res = $this->scorePerformance($specs, $profile);
-        // echo "<pre>";
-        // print_r($res);
-        // exit;
         return [
-            'display' => $this->scoreDisplay($specs, $brand->name, $profile),
-            'performance' => $this->scorePerformance($specs, $profile),
-            'camera' => $this->scoreCamera($specs, $profile),
-            'battery' => $this->scoreBattery($specs, $profile),
-            'build' => $this->scoreBuild($specs, $profile),
-            'connectivity' => $this->scoreConnectivity($specs, $profile),
+            'camera' => $this->scoreCamera($specs),
+            'display' => $this->scoreDisplay($specs),
+            'battery' => $this->scoreBattery($specs),
+            'build' => $this->scoreBuild($specs),
+            'connectivity' => $this->scoreConnectivity($specs),
         ];
     }
 
-    protected function scoreDisplay(array $s, string $brand, string $profile)
+    protected function scoreDisplay(array $s)
     {
+
         // 1. Validate input structure
         if (!isset($s['display'])) {
-            return $this->compareScoreService->scoreCategory('display', [], $profile);
+            return $this->compareScoreService->scoreCategory('display', []);
         }
 
         $display = $s['display'];
-
-        // 2. Extract with proper null handling
-
-
-        // 3. Brightness extraction with validation
         $brightnessData = extractAllBrightness($display['brightness'] ?? '');
         $brightnessTypical = $brightnessData['typical'] ?? null;
         $brightnessHBM = $brightnessData['hbm'] ?? null;
         $brightnessPeak = $brightnessData['peak'] ?? null;
-
         // 4. Contrast ratio with safer extraction
         $contrast_ratio = null;
         if (isset($display['contrast_ratio'])) {
@@ -888,15 +913,6 @@ class PhoneService
         $chipset = getShortChipset($s['performance']['chipset']) ?? null;
         // 6. PWM logic with better defaults
         $pwmRaw = extractNumber($display['pwm_frequency'] ?? null);
-        $pwmScoreMaster = $pwmRaw;
-        if ($pwmRaw === null && $chipset) {
-            // Only estimate for confirmed high-end panels
-            if (preg_match('/Snapdragon 8 Gen [3-9]|Dimensity 9[3-9]00/i', $chipset)) {
-                $pwmScoreMaster = 1920; // High-end chips likely have good panels
-            } elseif ($isLcd) {
-                $pwmScoreMaster = 0; // LCDs are DC-dimmed
-            }
-        }
 
         // 7. Screen ratio with validation
         $screen_ratio = null;
@@ -907,35 +923,19 @@ class PhoneService
         }
 
         $colour_depth = $s['display']['color_depth'] ?? null; // "1.07 billion colors (10-bit)"
-        $colorGamut = $s['color_gamut'] ?? 'sRGB';
-        $color_depth_master = null;
-
-        if (!empty($colour_depth)) {
-            $color_depth_master = $colour_depth;
-        } elseif ($chipset && preg_match('/Snapdragon 8 Gen [3-9]|A1[89] Pro/i', $chipset)) {
-            // Only 2024+ flagships reliably have 10-bit
-            $color_depth_master = "10-bit";
-        }
-        $wide_gamuts = ['P3', 'Adobe RGB', 'Rec.2020', 'DCI-P3', 'Display P3'];
-        $has_wide_gamut = false;
-        foreach ($wide_gamuts as $gamut) {
-            if (str_contains($colorGamut, $gamut)) {
-                $has_wide_gamut = true;
-                break;
-            }
-        }
-
-        if ($color_depth_master == "10-bit" && !$has_wide_gamut) {
-            $color_depth_master = "8-bit";
-        }
-
         // 1. Clean the input
         $instantTouchRaw = $s['display']['instant_touch_sampling_rate'] ?? null;
         $instant_touch_sampling_rate = preg_replace('/\D+/', '', $instantTouchRaw) ?: null;
-
         // 9. Effective brightness calculation
-        $effectiveBrightness = $brightnessHBM ?? $brightnessPeak ?? $brightnessTypical;
-
+        if ($brightnessHBM) {
+            $effectiveBrightness = $brightnessHBM;
+        } elseif ($brightnessPeak) {
+            $effectiveBrightness = $brightnessPeak / 2.5; // Normalize Peak down to a "Usable" estimate
+        } else {
+            $effectiveBrightness = $brightnessTypical ?? 800; // Default baseline for 2026
+        }
+        preg_match('/[\d\-]+/', $display['adaptive_refresh_rate'] ?? '', $matches);
+        $adaptiveRefreshRate = $matches[0] ?? null;
         // 10. Prepare data array with all extracted values
         $displayData = [
             'size' => extractSize($display['size'] ?? null),
@@ -945,42 +945,92 @@ class PhoneService
             'screen_ratio' => $screen_ratio,
             'pixel_density' => extractPpi($display['resolution'] ?? null),
             'refresh_rate' => extractNumber($display['refresh_rate'] ?? null),
-            'adaptive_refresh_rate' => preg_replace('/\D+/', '', $display['adaptive_refresh_rate_range'] ?? '') ?: null,
-            'touch_sampling_rate' => preg_replace('/\D+/', '', $display['touch_sampling_rate'] ?? '') ?: null,
+            'adaptive_refresh_rate' => $adaptiveRefreshRate ?: null,
+            'touch_sampling_rate' => (int) filter_var($display['touch_sampling_rate'] ?? null, FILTER_SANITIZE_NUMBER_INT) ?: null,
             'instant_touch_sampling_rate' => $instant_touch_sampling_rate,
             'brightness' => $effectiveBrightness,
             'brightness_typical' => $brightnessTypical,
             'brightness_hbm' => $brightnessHBM,
             'brightness_peak' => $brightnessPeak,
             'contrast_ratio' => $contrast_ratio,
-            'contrast_score_master' => $contrast_ratio_master ?? null,
             'hdr_support' => getHdrSupport($display['features'] ?? ''),
             'pwm' => $pwmRaw,
-            'pwm_score_master' => $pwmScoreMaster ?? NULL,
-            // 'has_branded_glass' => $screenGlassType['has_branded_glass'] ?? false,
             'colour_depth' => $colour_depth ?? null,
-            'colour_depth_master' => $color_depth_master,
             'always_on_display' => isset($display['always_on_display'])
                 ? strtoupper($display['always_on_display']) === 'YES'
                 : false,
         ];
 
-        return $this->compareScoreService->scoreCategory('display', $displayData, $profile);
+        return $this->compareScoreService->scoreCategory('display', $displayData);
     }
 
-    protected function scorePerformance(array $s, string $profile)
+    protected function scorePerformance(array $chipsetData, array $s)
+    {
+        $benchmarks = $chipsetData['specifications']['benchmarks'] ?? [];
+        $cpuData = $chipsetData['specifications']['cpu'] ?? [];
+        $gpuData = $chipsetData['specifications']['gpu'] ?? [];
+        $processData = $chipsetData['specifications']['process'] ?? [];
+        //$chipsetMemoryData = parseMemory($chipsetData['specifications']['memory'] ?? '');
+        $antutu_score = $benchmarks['antutu_score'] ?? null;
+        $geekbench_single = $benchmarks['geekbench_single'] ?? null;
+        $geekbench_multi = $benchmarks['geekbench_multi'] ?? null;
+        $cpu_speed = getSimplifiedCpuSpeed($cpuData['cpu_speed'] ?? '');
+        $fabrication = isset($processData['process_node'])
+            ? (int) filter_var($processData['process_node'], FILTER_SANITIZE_NUMBER_INT)
+            : null;
+        $memoryParsed = parseMemory($s['memory']['memory'] ?? '');
+        return $this->compareScoreService->scoreCategory('performance', [
+            // 1. THE BIG NUMBERS (High Impact / Weight)
+            'antutu_score' => $antutu_score,
+            'geekbench_multi' => $geekbench_multi,
+            'geekbench_single' => $geekbench_single,
+
+            // 2. THE ENGINE (The Core Identity)
+            'chipset' => $chipsetData['name'],
+            'process_node' => $fabrication,
+            'cpu_speed' => $cpu_speed,
+            'cores' => $cpuData['cores'] ?? null,
+            'gpu' => $gpuData['gpu_name'] ?? null,
+
+            // 3. THE SUPPORT SYSTEM (Memory & Storage)
+            'ram' => $memoryParsed['ram'],
+            'ram_type' => $s['memory']['ram_type'] ?? null,
+            'storage_type' => $s['memory']['storage_type'] ?? null,
+            'storage_capacity' => $memoryParsed['storage'],
+        ]);
+    }
+
+    protected function transformChipsetData($chipsetData): array
+    {
+        $structured = [];
+
+        // Include all main chipset fields (name, id, etc.)
+        $structured = $chipsetData->except('specifications');
+
+        // Add structured specifications
+        $structured['specifications'] = [];
+
+        foreach ($chipsetData->specifications as $row) {
+            $category = $row['category'];
+            $specs = json_decode($row['specifications'], true);
+
+            if (!is_array($specs)) {
+                $specs = [];
+            }
+
+            $structured['specifications'][$category] = $specs;
+        }
+
+        return $structured;
+    }
+
+    protected function scorePerformance_1(array $s, string $profile)
     {
 
         $antutu_score = parseAntutuScore($s['performance']['benchmark'] ?? null);
         $chipset = getShortChipset($s['performance']['chipset']) ?? null;
         $cpu = getSimplifiedCpuSpeed($s['performance']['cpu'] ?? '');
         $cooling_type = $s['performance']['cooling'] ?? null;
-        $cooling_type_master = $cooling_type;
-        // Only set if missing
-        $throttling_rate = $s['performance']['throttling'] ?? null;
-        if (!$throttling_rate && $chipset) {
-            $throttling_rate = estimateThrottling($chipset);
-        }
 
         $ai_capability = $s['performance']['ai_capability'] ?? null;
 
@@ -1003,22 +1053,26 @@ class PhoneService
             'card_slot' => $s['memory']['card_slot'] ?? 'NO',
             'cooling_type' => $cooling_type ?? null,
             'ai_capability' => $ai_capability,
-            'throttling_rate' => $throttling_rate ?? null,
         ], $profile);
     }
 
-    protected function scoreCamera(array $s, string $profile)
+    protected function scoreCamera(array $s)
     {
-
         $cameraApertures = extractCameraApertures($s['main_camera']);
-        $cameraOpticalZoom = extractOpticalZoom($s['main_camera']);
+        $cameraOpticalZoom = extractOpticalZoom($s['main_camera']['other_sensors']);
         $cameratabilization = extractStabilization($s['main_camera']);
-        $cameraSetup = parseCameraSetup($s['main_camera']['setup'] ?? []);
+        $cameraSetup = parseCameraSetup($s['main_camera']['rear'] ?? []);
         $cameraFlash = getFlash($s['main_camera']);
         $cameraVideo = extractVideo($s['main_camera']['video'] ?? '');
-        $setup = $s['selfie_camera']['setup'] ?? ''; // e.g., "Single (50 MP)"
+        $setup = $s['selfie_camera']['front'] ?? ''; // e.g., "Single (50 MP)"
         $sensorSizeData = extractSensorSize($s['main_camera']['main_sensor'] ?? '');
         $frontAperture = extractFrontAperture($s['selfie_camera']['sensor'] ?? '');
+        $mainAperture = extractApertures($s['main_camera']['main_sensor'] ?? '');
+        $otherAperture = extractApertures($s['main_camera']['other_sensors'] ?? '');
+        $allApertures = array_merge(
+            $mainAperture ?? [],
+            $otherAperture ?? []
+        );
         // Extract the first number
         preg_match('/\d+/', $setup, $matches);
         $frontCameraSetup = $matches[0] ?? null;
@@ -1027,6 +1081,11 @@ class PhoneService
             // Dynamically use 'type' as key and 'mp' as value
             $key = $value['type']; // e.g., 'rear', 'front', 'wide'
             $object[$key] = $value['mp'] ?? null; // fallback to null if 'mp' is missing
+        }
+        foreach ($allApertures as $value) {
+            // Dynamically use 'type' as key and 'mp' as value
+            $key = $value['type']; // e.g., 'rear', 'front', 'wide'
+            $object[$key] = $value['aperture'] ?? null; // fallback to null if 'mp' is missing
         }
         return $this->compareScoreService->scoreCategory(
             'camera',
@@ -1043,36 +1102,47 @@ class PhoneService
                     'video_resolution' => $cameraVideo ?? null,
                     'front_video' => extractVideo($s['selfie_camera']['video'] ?? '') ?? null,
                 ]
-            ),
-            $profile
+            )
         );
     }
 
-    protected function scoreBattery(array $s, string $profile)
+    protected function scoreBattery(array $s)
     {
+        // echo "<pre>";
+        // print_r($s['battery']);
+        // exit;
 
-        $wiredChargingSpec = $s['battery']['charging_speed'] ?? '';
+        $wiredChargingSpec = $s['battery']['wired'] ?? '';
         $wirlessCharging = $s['battery']['wireless'] ?? '';
         $reverceCharging = $s['battery']['reverse'] ?? '';
+        $reverceWirless = $s['battery']['reverse_wireless'] ?? '';
+        $supportedProtocols = getHighestProtocol($s['battery']['supported_protocols'] ?? '');
         $chargingTime = extractChargingTime($wiredChargingSpec);
         $chargingTime50 = extractChargingTime50($wiredChargingSpec);
+        $chargingTechnology = strtolower($s['battery']['charging_technology'] ?? null);
         return $this->compareScoreService->scoreCategory('battery', [
             "type" => parseBatteryType($s['battery']['type']),
             'capacity' => parseBatteryCapacity($s['battery']['capacity']) ?? null,
             'wired' => parseFastChargingToWatts($wiredChargingSpec),
-            'wirless' => parseFastChargingToWatts($wirlessCharging ?? 0),
-            'reverce' => parseFastChargingToWatts($reverceCharging ?? 0),
+            'charging_technology' => $chargingTechnology,
+            'wireless' => parseFastChargingToWatts($wirlessCharging ?? 0),
+            'reverse' => parseFastChargingToWatts($reverceCharging ?? 0),
+            'reverse_wireless' => parseFastChargingToWatts($reverceWirless ?? 0),
+            'supported_protocols' => $supportedProtocols,
+            'pps_(programmable_power_supply)' => isset($s['battery']['pps'])
+                ? (int) filter_var($s['battery']['pps'], FILTER_SANITIZE_NUMBER_INT)
+                : null,
             'charging_time_0_to_100' => $chargingTime,
             'charging_time_0_to_50' => $chargingTime50,
-        ], $profile);
+        ]);
     }
 
 
-    protected function scoreBuild(array $s, string $profile)
+    protected function scoreBuild(array $s)
     {
-
+        $fingerprintSensor = normalizeFingerprintSensor($s['security']['fingerprint'] ?? "");
         $screenGlassType = extractScreenGlassType($s['display']['protection'] ?? null) ?? [];
-        $fingerprint_sensor = parseFingerprintType($s['Features']['sensors'] ?? '');
+        // $fingerprint_sensor = parseFingerprintType($s['Features']['sensors'] ?? '');
         $buildMaterials = buildMaterials($s['build']['build'] ?? '');
         $mobileDimensions = getMobileDimensions($s['build']['dimensions'] ?? []);
         $formatGlassProtection = formatGlassProtection($screenGlassType);
@@ -1086,12 +1156,12 @@ class PhoneService
             'build_material' => $buildMaterials['build_material'] ?? null,
             'back_material' => $buildMaterials['back_material'] ?? null,
             'ip_rating' => shortIPRating($s['build']['ip_rating']) ?? null,
-            'fingerprint_sensor' => $fingerprint_sensor
-        ], $profile);
+            'fingerprint_sensor' => $fingerprintSensor
+        ]);
     }
 
 
-    protected function scoreConnectivity(array $s, string $profile)
+    protected function scoreConnectivity(array $s)
     {
         $simText = strtolower(strip_tags($s['build']['sim']));
         return $this->compareScoreService->scoreCategory('connectivity', [
@@ -1105,6 +1175,6 @@ class PhoneService
                 ? (preg_match('/v([\d.]+)/i', $s['connectivity']['bluetooth'], $m) ? $m[1] : null)
                 : null,
             'usb' => formatUsbLabel($s['connectivity']['usb']),
-        ], $profile);
+        ]);
     }
 }

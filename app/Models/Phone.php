@@ -3,7 +3,6 @@
 // app/Models/Phone.php
 namespace App\Models;
 
-use App\Services\CompareScoreService;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
@@ -172,6 +171,11 @@ class Phone extends Model
     public function chipset(): BelongsTo
     {
         return $this->belongsTo(Chipset::class);
+    }
+
+    public function score(): HasMany
+    {
+        return $this->hasMany(MobileScore::class, 'phone_id', 'id');
     }
 
 

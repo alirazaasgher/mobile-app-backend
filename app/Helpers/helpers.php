@@ -1160,12 +1160,14 @@ function extractStabilization(array $camera): string
     return 'none';
 }
 
-function extractOpticalZoom(array $camera): ?int
+function extractOpticalZoom($camera): ?float
 {
-    $text = strip_tags($camera['other_sensors'] ?? '');
+    $text = strip_tags($camera ?? '');
 
-    if (preg_match('/(\d+)x\s*optical zoom/i', $text, $m)) {
-        return (int) $m[1];
+    // Match "3x" or "3-4.3x" optical zoom
+    if (preg_match('/([\d\.]+)(?:-([\d\.]+))?x\s*(?:continuous\s*)?optical zoom/i', $text, $m)) {
+        // Use max value for scoring (4.3 from "3-4.3x")
+        return isset($m[2]) ? (float) $m[2] : (float) $m[1];
     }
 
     return null;
@@ -1632,7 +1634,7 @@ function formatGlassProtection(array $data): string
     return trim($text) ?: 'N/A';
 }
 
-function formatUsbLabel(?string $usb): ?string
+function formatUsbLabel(?string $usb): ?array
 {
     if (empty($usb)) {
         return null;
@@ -1641,8 +1643,9 @@ function formatUsbLabel(?string $usb): ?string
     $type = null;
     $version = null;
     $generation = null;
+    $features = [];
 
-    // TYPE-C / TYPE-A
+    // TYPE-C / TYPE-A / TYPE-B
     if (preg_match('/Type[-\s]?([A-Z])/i', $usb, $m)) {
         $type = 'TYPE-' . strtoupper($m[1]);
     }
@@ -1657,13 +1660,40 @@ function formatUsbLabel(?string $usb): ?string
         $generation = 'GEN ' . strtoupper($m[1]);
     }
 
-    if ($type && $version) {
-        return $generation
-            ? "{$type} {$version} ({$generation})"
-            : "{$type} {$version}";
+    // Extra features
+    if (preg_match('/reversible/i', $usb))
+        $features[] = 'reversible';
+    if (preg_match('/OTG/i', $usb))
+        $features[] = 'OTG';
+    if (preg_match('/DisplayPort|DP/i', $usb))
+        $features[] = 'DisplayPort';
+    if (preg_match('/Thunderbolt/i', $usb))
+        $features[] = 'Thunderbolt';
+
+    if (!$type) {
+        return null;
     }
 
-    return null;
+    // Build display label
+    $display = $type;
+    if ($version)
+        $display .= ' ' . $version;
+    if ($generation)
+        $display .= ' (' . $generation . ')';
+    if (!empty($features))
+        $display .= ' - ' . implode(', ', $features);
+
+    // Build lookup key (for scale scoring — no features, lowercase)
+    $lookup = strtolower($type);
+    if ($version)
+        $lookup .= ' ' . $version;
+    if ($generation)
+        $lookup .= ' ' . strtolower($generation);
+
+    return [
+        'display' => $display,  // TYPE-C - reversible
+        'value' => $lookup,   // type-c  (used for scale scoring)
+    ];
 }
 
 function formatWifiValue(?string $wifi): ?string
@@ -1700,34 +1730,35 @@ function formatWifiValue(?string $wifi): ?string
     return $version;
 }
 
-function parseBatteryType(?string $type): ?string
+function parseBatteryType(?string $type): ?array
 {
     if (!$type) {
         return null;
     }
 
     $normalized = strtolower(trim($type));
+    $value = null;
 
-    // Check for specific types
+    // Order matters — most specific first
     if (preg_match('/si\/c|silicon[\s\-]?carbon/i', $normalized)) {
-        return 'silicon-carbon';
+        $value = 'silicon-carbon';
+    } elseif (preg_match('/graphene/i', $normalized)) {
+        $value = 'graphene';
+    } elseif (preg_match('/li[\s\-]?po|lithium[\s\-]?polymer/i', $normalized)) {
+        $value = 'li-po';
+    } elseif (preg_match('/li[\s\-]?ion|lithium[\s\-]?ion/i', $normalized)) {
+        $value = 'li-ion';
     }
 
-    if (preg_match('/graphene/i', $normalized)) {
-        return 'graphene';
+    if (!$value) {
+        return null;
     }
 
-    if (preg_match('/li[\s\-]?po|lithium[\s\-]?polymer/i', $normalized)) {
-        return 'li-po';
-    }
-
-    if (preg_match('/li[\s\-]?ion|lithium[\s\-]?ion/i', $normalized)) {
-        return 'li-ion';
-    }
-
-    return null;
+    return [
+        'value' => $value,   // normalized: 'silicon-carbon'
+        'display' => $type,    // original:   'Si/C Li-Ion'
+    ];
 }
-
 function parseBatteryCapacity(?string $capacity): ?int
 {
     if (!$capacity) {
@@ -1887,35 +1918,94 @@ function estimateAICapability($chipset): ?int
 function extractSensorSize($mainSensor)
 {
     if (!empty($mainSensor)) {
-        // Extract sensor size like: 1/1.4", 1/1.56", 1/1.12"
+        // Match "1/1.4"" format
         preg_match('/(\d+)\/(\d+\.?\d*)"/', $mainSensor, $matches);
 
         if (isset($matches[1]) && isset($matches[2])) {
-            $numerator = (float) $matches[1];   // 1
-            $denominator = (float) $matches[2]; // 1.4
-            $decimal = $numerator / $denominator; // For scoring
-            $fraction = $matches[0]; // "1/1.4\"" - For display
-
+            $numerator = (float) $matches[1];
+            $denominator = (float) $matches[2];
             return [
-                'value' => $decimal,      // 0.714 (for scoring)
-                'display' => $fraction,   // "1/1.4\"" (for UI)
+                'value' => $numerator / $denominator,
+                'display' => $matches[0],
             ];
         }
-    }
+        preg_match('/(\d+\.?\d+)-type/', $mainSensor, $matches);
+        if (isset($matches[1])) {
+            return [
+                'value' => (float) $matches[1],
+                'display' => $matches[1],
+            ];
+        }
+        // Match "1.0-type" format
+        preg_match('/,\s*(\d+\.\d+)\s*,/', $mainSensor, $matches);
+        if (isset($matches[1])) {
+            return [
+                'value' => (float) $matches[1],
+                'display' => $matches[1],
+            ];
+        }
 
+    }
 
     return null;
 }
 
 function extractFrontAperture($sensor)
 {
-    if (!empty($mainSensor)) {
-        // Extract: "12 MP, f/2.2, (wide)"
-        preg_match('/f\/(\d+\.?\d*)/', $sensor, $matches);
-        return $matches[0] ?? null; // Returns "f/2.2"
+    if (!empty($sensor)) {  // ← was $mainSensor
+        preg_match('/f\/(\d+\.?\d*(?:-\d+\.?\d*)?)/i', $sensor, $matches);
+        return $matches[1] ?? null; // Returns "f/2.2"
     }
 
     return null;
+}
+
+function extractApertures($sensor)
+{
+    if (empty($sensor)) {
+        return null;
+    }
+
+    $result = [];
+
+    // Clean spacing
+    $sensor = preg_replace('/[\*\s]+/', ' ', $sensor);
+
+    // Split by MP sections
+    $lines = array_filter(preg_split('/(?=\d{2,3}\s*MP)/i', $sensor));
+
+    foreach ($lines as $line) {
+
+        // Extract aperture
+        preg_match('/f\/(\d+\.?\d*(?:-\d+\.?\d*)?)/i', $line, $apMatch);
+        $aperture = $apMatch[1] ?? null;
+
+        if (!$aperture) {
+            continue;
+        }
+
+        // Detect type
+        $type = 'wide_aperture'; // default
+
+        if (stripos($line, 'periscope') !== false) {
+            $type = 'periscope_telephoto_aperture';
+        } elseif (stripos($line, 'telephoto') !== false) {
+            $type = 'telephoto_aperture';
+        } elseif (stripos($line, 'ultrawide') !== false || stripos($line, 'ultra wide') !== false) {
+            $type = 'ultrawide_aperture';
+        } elseif (stripos($line, 'macro') !== false) {
+            $type = 'macro_aperture';
+        } elseif (stripos($line, 'depth') !== false) {
+            $type = 'depth_aperture';
+        }
+
+        $result[] = [
+            'aperture' => $aperture,  // keeping your key name same
+            'type' => $type
+        ];
+    }
+
+    return $result ?: null;
 }
 
 function extractChargingTime(string $chargingSpeed): ?int
@@ -2202,7 +2292,7 @@ function getSimplifiedCpuSpeed(string $cpuString): ?array
     }
 
     return [
-        'display' => implode(' & ', $clusters),
+        'display' => implode(' + ', $clusters),
         'value' => number_format($highestFrequency, 2)
     ];
 }
@@ -2235,5 +2325,73 @@ function parseAntutuScore($antutu_score): ?array
     }
 
     return $result;
+}
+
+function getHighestProtocol(string $protocols): ?array
+{
+    if (empty($protocols)) {
+        return null;
+    }
+
+    $priority = [
+        // Power Delivery
+        'PD3.1' => 100,
+        'PD3.0' => 90,
+        'PD2.0' => 60,
+
+        // Qualcomm Quick Charge
+        'QC5.0' => 95,
+        'QC4+' => 85,
+        'QC4.0' => 80,
+        'QC3+' => 75,
+        'QC3.0' => 70,
+        'QC2.0' => 55,
+        'QC1.0' => 40,
+
+        // others
+        'AFC' => 50,
+        'FCP' => 45,
+        'SCP' => 72,
+    ];
+
+    $parts = array_map('trim', explode('/', $protocols));
+
+    $highest = null;
+    $maxScore = -1;
+
+    foreach ($parts as $part) {
+        // normalize: 'QC3+' , 'PD3.0' etc
+        $key = strtoupper(trim($part));
+
+        $score = $priority[$key] ?? -1;
+
+        if ($score > $maxScore) {
+            $maxScore = $score;
+            $highest = $part;
+        }
+    }
+
+    return [
+        "value" => $highest,
+        "display" => $protocols
+    ];
+}
+
+function normalizeFingerprintSensor(string $input): string
+{
+    if (empty($input)) {
+        return null;
+    }
+    $input = strtolower(trim($input));
+
+    // Remove noise words
+    $input = preg_replace('/\b(fingerprint|sensor|scanner|reader|recognition)\b/', '', $input);
+    $input = preg_replace('/\s+/', ' ', trim($input));
+
+    // Normalize in-screen → in-display
+    $input = str_replace('in-screen', 'in-display', $input);
+    $input = str_replace('under screen', 'under display', $input);
+
+    return $input;
 }
 

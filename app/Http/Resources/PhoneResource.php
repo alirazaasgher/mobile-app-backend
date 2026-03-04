@@ -45,6 +45,7 @@ class PhoneResource extends JsonResource
             $data['variants'] = PhoneVariantResource::collection($this->whenLoaded('variants'));
             $data['colors'] = ColorResource::collection($this->whenLoaded('colors'));
             $data['specifications'] = PhoneSpecificationResource::collection($this->whenLoaded('specifications'));
+            $data['score'] = MobileScoreResource::collection($this->whenLoaded('score'));
         }
 
         return $data;

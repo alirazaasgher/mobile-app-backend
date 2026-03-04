@@ -67,6 +67,9 @@ class MobileController extends Controller
                 'expandable' => true,
                 'max_visible' => 6,
                 'items' => [
+                    ['key' => 'antutu_score', 'label' => 'AnTuTu Score', 'type' => 'number', 'placeholder' => '3,500,000+'],
+                    ['key' => 'geekbench_single', 'label' => 'Geekbench Single-Core', 'type' => 'number', 'placeholder' => '3,200'],
+                    ['key' => 'geekbench_multi', 'label' => 'Geekbench Multi-Core', 'type' => 'number', 'placeholder' => '10,500'],
                     ['key' => 'os', 'label' => 'Operating System', 'type' => 'text', 'placeholder' => 'Android 14, One UI 6.1'],
                     ['key' => 'chipset', 'label' => 'Chipset', 'type' => 'text', 'placeholder' => 'Qualcomm Snapdragon 8 Gen 3 (4 nm)'],
                     ['key' => 'cpu', 'label' => 'CPU', 'type' => 'text', 'placeholder' => 'Octa-core (1x3.3 GHz X4)'],
@@ -74,7 +77,6 @@ class MobileController extends Controller
                     ['key' => 'instant_touch_sampling_rate', 'label' => 'Instant Touch Sampling Rate', 'type' => 'text', 'placeholder' => '480Hz'],
                     ['key' => 'cpu_architecture', 'label' => 'CPU Architecture', 'type' => 'text', 'placeholder' => '64-bit, ARMv9'],
                     ['key' => 'cooling', 'label' => 'Cooling System', 'type' => 'text', 'placeholder' => 'Vapor chamber, AI thermal control'],
-                    ['key' => 'benchmark', 'label' => 'Benchmark Scores', 'type' => 'text', 'placeholder' => 'AnTuTu: 1,250,000 / Geekbench: 2200 (S) • 7200 (M)'],
                 ]
             ],
 
@@ -95,7 +97,7 @@ class MobileController extends Controller
                 'expandable' => true,
                 'max_visible' => 4,
                 'items' => [
-                    ['key' => 'front', 'label' => 'Setup', 'type' => 'text', 'placeholder' => 'Single (12 MP)'],
+                    ['key' => 'setup', 'label' => 'Setup', 'type' => 'text', 'placeholder' => 'Single (12 MP)'],
                     ['key' => 'sensor', 'label' => 'Sensor Details', 'type' => 'text', 'placeholder' => '12 MP, f/2.2 (wide), Dual Pixel PDAF'],
                     ['key' => 'features', 'label' => 'Features', 'type' => 'text', 'placeholder' => 'HDR, Portrait Mode, Night Selfie'],
                     ['key' => 'video', 'label' => 'Video', 'type' => 'text', 'placeholder' => '4K@60fps, 1080p@30fps'],
@@ -108,9 +110,13 @@ class MobileController extends Controller
                 'items' => [
                     ['key' => 'type', 'label' => 'Type', 'type' => 'text', 'placeholder' => 'Li-Ion / Li-Po, non-removable'],
                     ['key' => 'capacity', 'label' => 'Capacity', 'type' => 'text', 'placeholder' => '5000 mAh'],
-                    ['key' => 'charging_speed', 'label' => 'Charging Speed', 'type' => 'text', 'placeholder' => '45W wired (50% in 20 min)'],
+                    ['key' => 'wired', 'label' => 'Wired Charging', 'type' => 'text', 'placeholder' => '45W wired (50% in 20 min)'],
+                    ['key' => 'charging_technology', 'label' => 'Charging Technology', 'type' => 'text', 'placeholder' => 'VOOC / SuperVOOC / Warp / TurboCharging / AdaptiveCharging'],
+                    ['key' => 'supported_protocols', 'label' => 'Supported Protocols', 'type' => 'text', 'placeholder' => 'QC3+ / QC3.0 / QC2.0 / PD3.0 / PD2.0'],
+                    ['key' => 'pps', 'label' => 'PPS', 'type' => 'text', 'placeholder' => '90W PPS'],
                     ['key' => 'wireless', 'label' => 'Wireless Charging', 'type' => 'text', 'placeholder' => '15W wireless (Qi/PMA)'],
                     ['key' => 'reverse', 'label' => 'Reverse Charging', 'type' => 'text', 'placeholder' => '4.5W reverse wireless'],
+                    ['key' => 'reverse_wireless', 'label' => 'Reverse Wireless', 'type' => 'text', 'placeholder' => '4.5W reverse wireless'],
                     ['key' => 'endurance', 'label' => 'Endurance Rating', 'type' => 'text', 'placeholder' => '120 hours (estimated)'],
                 ]
             ],
@@ -423,11 +429,7 @@ class MobileController extends Controller
                 }
             }
 
-            $this->phoneService->saveSpecifications($phone, $updatedSpecs, function ($category) use ($request) {
-                return $request->input("searchable_text-$category");
-            }, true);
-
-
+            $this->phoneService->saveSpecifications($phone, $updatedSpecs, $validated['chipset_id'] ?? null);
             update_phone_search_index($storage_type, $ram_type, $sd_card, $ram_list, $storage_list, $minRam, $minStorage, $price_list, "", $updatedSpecs, $validated, $id);
             // search index (if published)
 

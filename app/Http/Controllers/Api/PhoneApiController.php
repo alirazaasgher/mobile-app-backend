@@ -205,6 +205,9 @@ class PhoneApiController extends Controller
             'searchIndex',
             'colors',
             'colors.images',
+            'score' => function ($query) {
+                $query->select('id', 'phone_id', 'category', 'score');
+            },
             'variants' => function ($query) {
                 $query->orderBy('storage')->orderBy('pkr_price');
             },
@@ -213,16 +216,16 @@ class PhoneApiController extends Controller
                     ->with('searchIndex');
             },
 
-            // 'chipset' => function ($q) {
-            //     $q->select('id', 'name', 'slug')
-            //         ->with([
-            //             'specifications',
-            //         ]);
-            // }
+            'chipset' => function ($q) {
+                $q->select('id', 'name', 'slug')
+                    ->with([
+                        'specifications',
+                    ]);
+            }
         ])->where('slug', $slug)->firstOrFail();
-        // $phoneSpecs = $phone->specifications->toArray();
-        // $chipsetSpecs = $phone->chipset->specifications->toArray();
-        // $compatibility = (new SocCompatibilityService($phoneSpecs, $chipsetSpecs))->check();
+        $phoneSpecs = $phone->specifications->toArray();
+        $chipsetSpecs = $phone->chipset->specifications->toArray();
+        $compatibility = (new SocCompatibilityService($phoneSpecs, $chipsetSpecs))->check();
         $competitorIds = $phone->competitors->pluck('id')->toArray();
         $ramOptions = $phone->searchIndex->ram_options
             ? json_decode($phone->searchIndex->ram_options, true)
@@ -237,12 +240,12 @@ class PhoneApiController extends Controller
         $avgPrice = ($phone->searchIndex->min_price_pkr + $phone->searchIndex->max_price_pkr) / 2;
         $similarMobiles = $this->getSimilarMobiles($phone->id, $avgPrice, $ramOptions, $storageOptions, $priceRange, $competitorIds);
 
-        //dd($similarMobiles->toSql(), $similarMobiles->getBindings());
+
         // ->get(['id', 'name', 'slug', 'primary_image', 'brand_id']);
         return response()->json([
             'success' => true,
             'data' => new PhoneResource(resource: $phone),
-            // 'compatibility' => $compatibility,
+            'compatibility' => $compatibility,
             'similarMobiles' => PhoneResource::collection($similarMobiles),
         ]);
     }
@@ -664,7 +667,10 @@ class PhoneApiController extends Controller
             ->with([
                 'specifications' => function ($query) {
                     $query->select('phone_id', 'category', 'specifications');
-                }
+                },
+                'score' => function ($query) {
+                    $query->select('id', 'phone_id', 'category', 'score', 'breakdown');
+                },
             ])
             ->whereIn('slug', $slugs)
             ->get();
@@ -700,6 +706,7 @@ class PhoneApiController extends Controller
                 ->get()
                 ->keyBy('phone_id')
         ];
+
         $scoredPhones = $phones->map(function ($phone) use ($searchIndexes, $brands, $profile) {
             $phone->brand = $brands[$phone->brand_id] ?? null;
             $phone->searchIndex = $searchIndexes[$phone->id] ?? (object) [
@@ -710,16 +717,7 @@ class PhoneApiController extends Controller
                 'ram_type' => null,
                 'min_price' => null,
             ];
-
-            $s = $phone->specifications
-                ->keyBy('category')
-                ->map(
-                    static fn($spec) => $spec->specifications
-                    ? json_decode($spec->specifications, true)
-                    : []
-                )
-                ->toArray();
-            $phone->scores = $this->phoneService->scoreByCategory($s, $phone->brand, $profile);
+            $phone->scores = $phone->score->keyBy('category');
             return $phone;
         });
         // $primaryPhone = $phones->first();
@@ -1544,6 +1542,7 @@ class PhoneApiController extends Controller
      */
     private function formatChartData($phones, $profile)
     {
+
         $categories = ['display', 'performance', 'camera', 'battery', 'build', 'connectivity'];
 
         // Radar Chart Data
@@ -1552,7 +1551,7 @@ class PhoneApiController extends Controller
             $dataPoint = ['category' => ucfirst($category)];
 
             foreach ($phones as $phone) {
-                $dataPoint[$phone->brand->name . ' ' . $phone->name] = $phone->scores[$category]['score'] ?? 0;
+                $dataPoint[$phone->brand->name . ' ' . $phone->name] = $phone->scores[$category]->score ?? 0;
             }
 
             $radarData[] = $dataPoint;
