@@ -5,43 +5,27 @@ return [
         'label' => 'AnTuTu Benchmark',
         'weight' => 40,
         'hidden' => true,
-        'antutu_score' => [
-            'label' => 'AnTuTu Benchmark',
-            'weight' => 40,
-            'hidden' => true,
-            'ranges' => [
-                // --- TIER 1: ELITE 2026 FLAGSHIPS (The 4M+ Club) ---
-                // Devices: iQOO 15 Ultra, Red Magic 11 Pro+, Vivo X300 Pro
-                ['min' => 4200000, 'score' => 10],
-                ['min' => 3800000, 'score' => 9.6], // Standard SD 8 Elite Gen 5
+        'ranges' => [
+            // 2026 Elite Flagships (The 4M+ Club)
+            ['min' => 4000000, 'score' => 10], // Red Magic 11 Pro+, Vivo X300 Pro
+            ['min' => 3700000, 'score' => 9.8], // Standard Snapdragon 8 Elite Gen 5
 
-                // --- TIER 2: HIGH-END / RECENT FLAGSHIPS (2.6M - 3.5M) ---
-                // Devices: Xiaomi 17, Samsung Galaxy S26 (SD 8 Gen 5)
-                ['min' => 3200000, 'score' => 9.2],
-                ['min' => 2600000, 'score' => 8.8],
+            // 2025/2026 High-End (SD 8 Elite Gen 1 / Exynos 2600)
+            ['min' => 3000000, 'score' => 9.2],
+            ['min' => 2500000, 'score' => 8.8],
 
-                // --- TIER 3: SUB-FLAGSHIP / "VALUE KINGS" (1.9M - 2.5M) ---
-                // Devices: Dimensity 8500 Elite, Honor Power 2
-                ['min' => 2200000, 'score' => 8.2],
-                ['min' => 1900000, 'score' => 7.8],
+            // Mid-range (The new "Budget Flagships")
+            ['min' => 2000000, 'score' => 8], // Snapdragon 8 Gen 4 era
+            ['min' => 1500000, 'score' => 7], // Dimensity 8500 / SD 8s Gen 4
 
-                // --- TIER 4: UPPER MID-RANGE (1.3M - 1.8M) ---
-                // Devices: Snapdragon 7 Gen 4, POCO X7 Pro (Dimensity 8400-Ultra)
-                ['min' => 1600000, 'score' => 7.5],
-                ['min' => 1300000, 'score' => 7.0],
+            // Mainstream Mid-range
+            ['min' => 1000000, 'score' => 6], // Dimensity 8400
+            ['min' => 700000, 'score' => 5],
 
-                // --- TIER 5: MAINSTREAM MID-RANGE (800K - 1.2M) ---
-                // Devices: Galaxy A57, OnePlus Turbo 6V
-                ['min' => 1000000, 'score' => 6.2],
-                ['min' => 800000, 'score' => 5.5],
-
-                // --- TIER 6: BUDGET & ENTRY LEVEL ---
-                // Devices: Redmi 15C, iQOO Z10x
-                ['min' => 500000, 'score' => 4.5],
-                ['min' => 300000, 'score' => 3.5],
-                ['min' => 0, 'score' => 2.0],
-            ],
-            'default' => 2,
+            // Budget (Redmi 15C / Entry levels)
+            ['min' => 500000, 'score' => 4],
+            ['min' => 300000, 'score' => 3],
+            ['min' => 0, 'score' => 2],
         ],
         'default' => 2,
     ],
