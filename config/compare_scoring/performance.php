@@ -103,12 +103,14 @@ return [
         'label' => 'Geekbench Multi-Core',
         'weight' => 20,
         'ranges' => [
-            ['min' => 12000, 'score' => 10],  // SD 8 Elite Gen 5 (All-Big-Core logic)
+            ['min' => 12000, 'score' => 10],  // SD 8 Elite Gen 5
             ['min' => 10500, 'score' => 9.5], // Dimensity 9500 / A19 Pro
             ['min' => 9000, 'score' => 9],   // SD 8 Gen 4 / A18 Pro
             ['min' => 7500, 'score' => 8],   // Premium Mid-range
             ['min' => 5500, 'score' => 7],   // Standard Mid-range
-            ['min' => 4000, 'score' => 5.5], // Budget Gaming
+            ['min' => 4500, 'score' => 6],   // ← NEW: fills gap
+            ['min' => 4000, 'score' => 5.5], // Budget Gaming (4,190 lands here → 5.5)
+            ['min' => 3000, 'score' => 4.5], // ← NEW: fills gap
             ['min' => 2500, 'score' => 4],   // Entry Level
             ['min' => 1000, 'score' => 2],   // Legacy
             ['min' => 0, 'score' => 1],
