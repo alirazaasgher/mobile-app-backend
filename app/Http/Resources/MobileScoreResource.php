@@ -10,7 +10,7 @@ class MobileScoreResource extends JsonResource
         return [
             'id' => $this->id,
             'category' => $this->category,
-            'score' => $this->score,
+            'score' => (int) $this->score,
         ];
     }
 }
