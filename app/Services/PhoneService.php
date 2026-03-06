@@ -1119,7 +1119,6 @@ class PhoneService
     protected function scoreBattery(array $s)
     {
 
-
         $wiredChargingSpec = $s['battery']['wired'] ?? '';
         $wirlessCharging = $s['battery']['wireless'] ?? '';
         $reverceCharging = $s['battery']['reverse'] ?? '';
@@ -1127,7 +1126,9 @@ class PhoneService
         $supportedProtocols = getHighestProtocol($s['battery']['supported_protocols'] ?? '');
         $chargingTime = extractChargingTime($wiredChargingSpec);
         $chargingTime50 = extractChargingTime50($wiredChargingSpec);
-        $chargingTechnology = strtolower($s['battery']['charging_technology'] ?? null);
+        $chargingTechnology = isset($s['battery']['charging_technology'])
+            ? strtolower($s['battery']['charging_technology'])
+            : null;
         return $this->compareScoreService->scoreCategory('battery', [
             "type" => parseBatteryType($s['battery']['type']),
             'capacity' => parseBatteryCapacity($s['battery']['capacity']) ?? null,
