@@ -204,7 +204,8 @@ return [
             'dash charge' => 7,               // OnePlus older
 
             // Mid-range proprietary (45W-100W)
-            'super fast charging 2.0' => 9,   // Samsung 45W
+            'super fast charging 3.0' => 9,
+            'super fast charging 2.0' => 8,   // Samsung 45W
             'flexcharge' => 8,                // Vivo 80W
             'turbopower' => 7,                // Motorola 68W
             'super fast charging' => 7,       // Samsung 25W
