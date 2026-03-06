@@ -1126,9 +1126,6 @@ class PhoneService
         $reverceWirless = $s['battery']['reverse_wireless'] ?? '';
         $supportedProtocols = getHighestProtocol($s['battery']['supported_protocols'] ?? '');
         $chargingTime = extractChargingTime($wiredChargingSpec);
-        echo "<pre>";
-        print_r($chargingTime);
-        exit;
         $chargingTime50 = extractChargingTime50($wiredChargingSpec);
         $chargingTechnology = strtolower($s['battery']['charging_technology'] ?? null);
         return $this->compareScoreService->scoreCategory('battery', [
