@@ -3,7 +3,7 @@ return [
     'label' => 'Battery',
     'capacity' => [
         'label' => 'Battery Capacity (mAh)',
-        'weight' => 20,
+        'weight' => 30,
         'unit' => [
             'value' => 'mAh',
             'position' => 'after',   // before | after
@@ -39,7 +39,7 @@ return [
     ],
     'wired' => [
         'label' => 'Wired Charging Speed (W)',
-        'weight' => 15,
+        'weight' => 20,
         'unit' => [
             'value' => 'W',
             'position' => 'after',   // before | after
@@ -111,7 +111,7 @@ return [
     ],
     'reverse' => [
         'label' => 'Reverse Wireless Charging',
-        'weight' => 5,
+        'weight' => 6,
         'unit' => [
             'value' => 'W',
             'position' => 'after',   // before | after
@@ -130,7 +130,7 @@ return [
     ],
     'charging_time_0_to_100' => [
         'label' => 'Charging Time (0-100%)',
-        'weight' => 18,
+        'weight' => 0,
         'unit' => [
             'value' => 'min',
             'position' => 'after',
@@ -152,7 +152,7 @@ return [
     ],
     'charging_time_0_to_50' => [
         'label' => 'Charging Time (0-50%)',
-        'weight' => 8,
+        'weight' => 0,
         'unit' => [
             'value' => 'min',
             'position' => 'after',
@@ -187,7 +187,7 @@ return [
     ],
     'charging_technology' => [
         'label' => 'Charging Technology',
-        'weight' => 4,
+        'weight' => 10,
         'scale' => [
             // Ultra-fast proprietary (200W+)
             'hypercharge' => 10,              // Xiaomi 240W
