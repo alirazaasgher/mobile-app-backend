@@ -107,18 +107,16 @@ class MobileController extends Controller
 
             'battery' => [
                 'expandable' => true,
-                'max_visible' => 4,
+                'max_visible' => 5,
                 'items' => [
-                    ['key' => 'type', 'label' => 'Type', 'type' => 'text', 'placeholder' => 'Li-Ion / Li-Po, non-removable'],
                     ['key' => 'capacity', 'label' => 'Capacity', 'type' => 'text', 'placeholder' => '5000 mAh'],
-                    ['key' => 'wired', 'label' => 'Wired Charging', 'type' => 'text', 'placeholder' => '45W wired (50% in 20 min)'],
-                    ['key' => 'charging_technology', 'label' => 'Charging Technology', 'type' => 'text', 'placeholder' => 'VOOC / SuperVOOC / Warp / TurboCharging / AdaptiveCharging'],
-                    ['key' => 'supported_protocols', 'label' => 'Supported Protocols', 'type' => 'text', 'placeholder' => 'QC3+ / QC3.0 / QC2.0 / PD3.0 / PD2.0'],
-                    ['key' => 'pps', 'label' => 'PPS', 'type' => 'text', 'placeholder' => '90W PPS'],
-                    ['key' => 'wireless', 'label' => 'Wireless Charging', 'type' => 'text', 'placeholder' => '15W wireless (Qi/PMA)'],
-                    ['key' => 'reverse', 'label' => 'Reverse Charging', 'type' => 'text', 'placeholder' => '4.5W reverse wireless'],
-                    ['key' => 'reverse_wireless', 'label' => 'Reverse Wireless', 'type' => 'text', 'placeholder' => '4.5W reverse wireless'],
-                    ['key' => 'endurance', 'label' => 'Endurance Rating', 'type' => 'text', 'placeholder' => '120 hours (estimated)'],
+                    ['key' => 'wired', 'label' => 'Wired', 'type' => 'text', 'placeholder' => '120W (100% in 40 min)'],
+                    ['key' => 'wireless', 'label' => 'Wireless', 'type' => 'text', 'placeholder' => '50W'],
+                    // Grouping the niche standards for the 'Expanded' view
+                    ['key' => 'protocols', 'label' => 'Fast Charging Standards', 'type' => 'text', 'placeholder' => '120W UFCS, 55W PPS, 36W PD/QC'],
+                    ['key' => 'reverse', 'label' => 'Reverse Charging', 'type' => 'text', 'placeholder' => '10W Wireless / 5W Wired'],
+                    // New field for specific hardware features
+                    ['key' => 'special_features', 'label' => 'Special Features', 'type' => 'text', 'placeholder' => 'Bypass charging, Cooling system'],
                 ]
             ],
 
