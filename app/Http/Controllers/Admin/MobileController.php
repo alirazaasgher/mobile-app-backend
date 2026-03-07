@@ -113,6 +113,7 @@ class MobileController extends Controller
                     ['key' => 'capacity', 'label' => 'Capacity', 'type' => 'text', 'placeholder' => '5000 mAh'],
                     ['key' => 'wired', 'label' => 'Wired', 'type' => 'text', 'placeholder' => '120W (100% in 40 min)'],
                     ['key' => 'wireless', 'label' => 'Wireless', 'type' => 'text', 'placeholder' => '50W'],
+                    ['key' => 'charging_technology', 'label' => 'Charging Tech', 'type' => 'text', 'placeholder' => 'Super Fast Charging 3.0, VOOC, HyperCharge'],
                     // Grouping the niche standards for the 'Expanded' view
                     ['key' => 'protocols', 'label' => 'Fast Charging Standards', 'type' => 'text', 'placeholder' => '120W UFCS, 55W PPS, 36W PD/QC'],
                     ['key' => 'reverse', 'label' => 'Reverse Charging', 'type' => 'text', 'placeholder' => '10W Wireless / 5W Wired'],
