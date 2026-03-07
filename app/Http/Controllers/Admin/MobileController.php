@@ -109,6 +109,7 @@ class MobileController extends Controller
                 'expandable' => true,
                 'max_visible' => 5,
                 'items' => [
+                    ['key' => 'type', 'label' => 'Type', 'type' => 'text', 'placeholder' => 'Li-Po, non-removable'],
                     ['key' => 'capacity', 'label' => 'Capacity', 'type' => 'text', 'placeholder' => '5000 mAh'],
                     ['key' => 'wired', 'label' => 'Wired', 'type' => 'text', 'placeholder' => '120W (100% in 40 min)'],
                     ['key' => 'wireless', 'label' => 'Wireless', 'type' => 'text', 'placeholder' => '50W'],
