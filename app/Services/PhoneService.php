@@ -524,7 +524,7 @@ class PhoneService
      *
      * Returns mergedSpecs array used for search indexing.
      */
-    public function saveSpecifications($phone, array $specs, $chipset_id, $update = false): bool
+    public function saveSpecifications($phone, array $specs, $chipset_id, $deviceTier): bool
     {
         // Load chipset once and reuse
         $chipsetRows = Chipset::with([
@@ -539,30 +539,33 @@ class PhoneService
         $chipsetData = $this->transformChipsetData($chipsetRows);
 
         // Run both scorings first, then batch save
-        $performance = $this->scorePerformance($chipsetData, $specs);
-        $categoryData = $this->scoreByCategory($specs); // fixed typo "balnced"
+        //$performance = $this->scorePerformance($chipsetData, $specs);
+        $categoryData = $this->scoreByCategory($specs, $deviceTier); // fixed typo "balnced"
+        // echo "<pre>";
+        // print_r($categoryData);
+        // exit;
         // Batch all scores into one loop
-        $scores = array_merge(
-            [
-                'performance' => $performance
-            ],
-            $categoryData
-        );
+        // $scores = array_merge(
+        //     [
+        //         'performance' => $performance
+        //     ],
+        //     $categoryData
+        // );
 
-        foreach ($scores as $category => $data) {
-            MobileScore::updateOrCreate(
-                [
-                    'phone_id' => $phone->id,
-                    'category' => $category,
-                    'profile' => 'balanced'
-                ],
-                [
-                    'score' => $data['score'],
-                    'breakdown' => $data['breakdown'],
-                    'updated_at' => now(),
-                ]
-            );
-        }
+        // foreach ($scores as $category => $data) {
+        //     MobileScore::updateOrCreate(
+        //         [
+        //             'phone_id' => $phone->id,
+        //             'category' => $category,
+        //             'profile' => 'balanced'
+        //         ],
+        //         [
+        //             'score' => $data['score'],
+        //             'breakdown' => $data['breakdown'],
+        //             'updated_at' => now(),
+        //         ]
+        //     );
+        // }
 
         // Save specs
         foreach ($specs as $category => $categorySpecs) {
@@ -874,14 +877,14 @@ class PhoneService
             ->toArray();
     }
 
-    public function scoreByCategory(array $specs): array
+    public function scoreByCategory(array $specs, $deviceTier): array
     {
         return [
-            'camera' => $this->scoreCamera($specs),
-            'display' => $this->scoreDisplay($specs),
-            'battery' => $this->scoreBattery($specs),
-            'build' => $this->scoreBuild($specs),
-            'connectivity' => $this->scoreConnectivity($specs),
+            // 'camera' => $this->scoreCamera($specs),
+            // 'display' => $this->scoreDisplay($specs),
+            'battery' => $this->scoreBattery($specs, $deviceTier),
+            // 'build' => $this->scoreBuild($specs),
+            // 'connectivity' => $this->scoreConnectivity($specs),
         ];
     }
 
@@ -1116,23 +1119,24 @@ class PhoneService
         );
     }
 
-    protected function scoreBattery(array $s)
+    protected function scoreBattery(array $s, $deviceTier)
     {
 
-        $wiredChargingSpec = $s['battery']['wired'] ?? '';
-        $wirlessCharging = $s['battery']['wireless'] ?? '';
-        $reverceCharging = $s['battery']['reverse'] ?? '';
-        $reverceWirless = $s['battery']['reverse_wireless'] ?? '';
+        $wiredCharging = $specMap['battery']['wired'] ?? '';
+        $wirelessCharging = $specMap['battery']['wireless'] ?? '';
+        $reverseCharging = $specMap['battery']['reverse'] ?? '';
+        $chargingSpec = shortChargingSpec($wiredCharging, $wirelessCharging, $reverseCharging);
+
         $supportedProtocols = getHighestProtocol($s['battery']['supported_protocols'] ?? '');
-        $chargingTime = extractChargingTime($wiredChargingSpec);
-        $chargingTime50 = extractChargingTime50($wiredChargingSpec);
+        $chargingTime = extractChargingTime($wiredCharging);
+        $chargingTime50 = extractChargingTime50($wiredCharging);
         $chargingTechnology = isset($s['battery']['charging_technology'])
             ? strtolower($s['battery']['charging_technology'])
             : null;
         return $this->compareScoreService->scoreCategory('battery', [
             "type" => parseBatteryType($s['battery']['type']),
             'capacity' => parseBatteryCapacity($s['battery']['capacity']) ?? null,
-            'wired' => parseFastChargingToWatts($wiredChargingSpec),
+            'wired' => parseFastChargingToWatts($wiredCharging),
             'charging_technology' => $chargingTechnology,
             'wireless' => parseFastChargingToWatts($wirlessCharging ?? 0),
             'reverse' => parseFastChargingToWatts($reverceCharging ?? 0),
@@ -1143,7 +1147,7 @@ class PhoneService
                 : null,
             'charging_time_0_to_100' => $chargingTime,
             'charging_time_0_to_50' => $chargingTime50,
-        ]);
+        ], $deviceTier);
     }
 
 

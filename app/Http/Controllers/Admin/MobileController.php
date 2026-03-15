@@ -297,14 +297,11 @@ class MobileController extends Controller
             }
 
 
-
-            $this->phoneService->saveSpecifications($phone, $updatedSpecs, function ($category) use ($request) {
-                return $request->input("searchable_text-$category");
-            });
-
-
+            $mobilePrices = parsePrice($price_list);
+            $deviceTier = getDeviceTier($mobilePrices);
+            $this->phoneService->saveSpecifications($phone, $updatedSpecs, $validated['chipset_id'] ?? null, $deviceTier);
             // search index
-            update_phone_search_index($storage_type, $ram_type, $sd_card, $ram_list, $storage_list, $minRam, $minStorage, $price_list, "", $updatedSpecs, $validated, $phone->id);
+            update_phone_search_index($storage_type, $ram_type, $sd_card, $ram_list, $storage_list, $minRam, $minStorage, $mobilePrices, "", $updatedSpecs, $validated, $phone->id);
 
             DB::commit();
             $message = $deleted === 'draft' ? 'Phone saved as draft!' : 'Phone published successfully!';
@@ -429,9 +426,10 @@ class MobileController extends Controller
                     $updatedSpecs['memory'] = $memorySpec;
                 }
             }
-
-            $this->phoneService->saveSpecifications($phone, $updatedSpecs, $validated['chipset_id'] ?? null);
-            update_phone_search_index($storage_type, $ram_type, $sd_card, $ram_list, $storage_list, $minRam, $minStorage, $price_list, "", $updatedSpecs, $validated, $id);
+            $mobilePrices = parsePrice($price_list);
+            $deviceTier = getDeviceTier($mobilePrices);
+            $this->phoneService->saveSpecifications($phone, $updatedSpecs, $validated['chipset_id'] ?? null, $deviceTier);
+            update_phone_search_index($storage_type, $ram_type, $sd_card, $ram_list, $storage_list, $minRam, $minStorage, $mobilePrices, "", $updatedSpecs, $validated, $id);
             // search index (if published)
 
             DB::commit();

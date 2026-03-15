@@ -17,24 +17,6 @@ function update_phone_search_index(
     $validated,
     $phoneId
 ) {
-
-    // Calculate price range
-    foreach ($priceList as $price) {
-        if (isset($price['pkr']) && is_numeric($price['pkr'])) {
-            $pkrValues[] = $price['pkr'];
-        }
-        if (isset($price['usd']) && is_numeric($price['usd'])) {
-            $usdValues[] = $price['usd'];
-        }
-    }
-
-    // Get min and max
-    $minPricePKR = !empty($pkrValues) ? min($pkrValues) : 0;
-    $maxPricePKR = !empty($pkrValues) ? max($pkrValues) : 0;
-
-    $minPriceUSD = !empty($usdValues) ? min($usdValues) : 0;
-    $maxPriceUSD = !empty($usdValues) ? max($usdValues) : 0;
-
     $displayType = $specMap['display']['type'] ?? null;
     $screenSize = $specMap['display']['size'] ?? null;
     preg_match('/([\d.]+)\s*inches?/i', $screenSize, $matches);
@@ -90,10 +72,10 @@ function update_phone_search_index(
             'brand' => $validated['brand'],
             'model' => $validated['name'],
             'name' => $validated['name'],
-            'min_price_pkr' => $minPricePKR,
-            'max_price_pkr' => $maxPricePKR,
-            'min_price_usd' => $minPriceUSD,
-            'max_price_usd' => $maxPriceUSD,
+            'min_price_pkr' => $priceList['minPricePKR'],
+            'max_price_pkr' => $priceList['maxPricePKR'],
+            'min_price_usd' => $priceList['minPriceUSD'],
+            'max_price_usd' => $priceList['maxPriceUSD'],
             'ram_options' => json_encode(value: array_map('intval', $ramOptions)),
             'storage_options' => json_encode(array_map('intval', $storageOptions)),
             'min_ram' => $min_ram,
@@ -101,7 +83,6 @@ function update_phone_search_index(
             'storage_type' => $storage_type,
             'ram_type' => $ram_type,
             'sd_card' => $sd_card ?? 0,
-            // 'available_colors' => json_encode($availableColors),
             'screen_size_inches' => $sizeInInches,
             'battery_capacity_mah' => $capacity ?? 0,
             'main_camera_mp' => $setup,
@@ -217,6 +198,7 @@ function build_top_specs($specMap, $os, $date, $mainCam, $main_camera_video, $ip
 function build_specs_grid($sizeInInches, $specMap, $shortChipset, $cpuType, $mainCam, $main_camera_video)
 {
 
+
     $resolutionFull = $specMap['display']['resolution'] ?? null;
     $refreshRate = $specMap['display']['refresh_rate'] ?? null;
     // Find all occurrences like "120Hz", "165 Hz", etc.
@@ -252,10 +234,10 @@ function build_specs_grid($sizeInInches, $specMap, $shortChipset, $cpuType, $mai
 
 
     // Charging speeds short form
-    $chargingSpec = $specMap['battery']['charging_speed'] ?? '';
-    $wirlessCharging = $specMap['battery']['wireless'] ?? '';
-    $reverceCharging = $specMap['battery']['reverse'] ?? '';
-    $chargingSpec = shortChargingSpec($chargingSpec, $wirlessCharging, $reverceCharging);
+    $chargingSpec = $specMap['battery']['wired'] ?? '';
+    $wirelessCharging = $specMap['battery']['wireless'] ?? '';
+    $reverseCharging = $specMap['battery']['reverse'] ?? '';
+    $chargingSpec = shortChargingSpec($chargingSpec, $wirelessCharging, $reverseCharging);
     return [
         [
             "key" => "display",
@@ -277,9 +259,10 @@ function build_specs_grid($sizeInInches, $specMap, $shortChipset, $cpuType, $mai
             "key" => "battery",
             "value" => $specMap['battery']['capacity'] ?? "N/A",
             "subvalue" => [
-                "wired" => $chargingSpec['fastCharging'] ?? null,
-                "wireless" => $chargingSpec['convertWirlessCharging'] ?? null,
-                "reverse" => $chargingSpec['convertReverceCharging'] ?? null
+                "wired" => $chargingSpec['wiredCharging'] ?? null,
+                "wireless" => $chargingSpec['wirelessCharging'] ?? null,
+                "reverse_wireless" => $chargingSpec['reverseWireless'] ?? null,
+                "reverse_wired" => $chargingSpec['reverseWired'] ?? null
             ]
         ]
     ];
@@ -733,37 +716,39 @@ function getCameraBadges($cameraData)
 
 function shortChargingSpec($chargingSpec, $wirlessCharging, $reverceCharging)
 {
-    $fastCharging = null;
+    $wiredCharging = null;
     $convertWirlessCharging = null;
-    $convertReverceCharging = null;
-    // 1. Try Android-style (digits + W)
-    if (preg_match('/(\d+)\s*W/i', $chargingSpec, $match)) {
-        $fastCharging = "$match[1]W";
-    }
-    // 2. Try iPhone-style (PD + AVS + time)
-    elseif (preg_match('/PD\s*([\d\.]+).*?(?:\(?(\d+% in \d+ min)\)?)/i', $chargingSpec, $match)) {
-        $fastCharging = "PD{$match[1]}";
-    }
+    $reverseWireless = null;
+    $reverseWired = null;
 
+    // Fast charging
+    if (preg_match('/(\d+)\s*W/i', $chargingSpec, $match)) {
+        $wiredCharging = "{$match[1]}W";
+    } elseif (preg_match('/PD\s*([\d\.]+)/i', $chargingSpec, $match)) {
+        $wiredCharging = "PD{$match[1]}";
+    }
 
     // Wireless charging
-    if (preg_match('/(\d+(\.\d+)?)\s*W\s*(wireless)?/i', $wirlessCharging, $match)) {
-        $convertWirlessCharging = "$match[1]W";
+    if (preg_match('/(\d+(\.\d+)?)\s*W/i', $wirlessCharging, $match)) {
+        $convertWirlessCharging = "{$match[1]}W";
     } elseif (preg_match('/(PD[\d\.]+|MagSafe|Qi2)/i', $wirlessCharging, $match)) {
         $convertWirlessCharging = $match[0];
     }
 
-    // Reverse charging
-    if (preg_match('/(\d+(\.\d+)?)\s*W\s*(reverse\s*wired)?/i', $reverceCharging, $match)) {
-        $convertReverceCharging = "$match[1]W";
-    } elseif (preg_match('/(PD[\d\.]+|MagSafe|Qi2)/i', $reverceCharging, $match)) {
-        $convertReverceCharging = $match[0];
+    // Reverse charging (capture both)
+    if (preg_match('/(\d+(\.\d+)?)\s*W\s*Wireless/i', $reverceCharging, $match)) {
+        $reverseWireless = "{$match[1]}W";
+    }
+
+    if (preg_match('/(\d+(\.\d+)?)\s*W\s*Wired/i', $reverceCharging, $match)) {
+        $reverseWired = "{$match[1]}W";
     }
 
     return [
-        'fastCharging' => $fastCharging,
-        'convertWirlessCharging' => $convertWirlessCharging,
-        'convertReverceCharging' => $convertReverceCharging
+        'wiredCharging' => $wiredCharging,
+        'wirelessCharging' => $convertWirlessCharging,
+        'reverseWireless' => $reverseWireless,
+        'reverseWired' => $reverseWired
     ];
 }
 
@@ -2394,4 +2379,47 @@ function normalizeFingerprintSensor(string $input): ?string
 
     return $input;
 }
+
+function parsePrice($priceList): ?array
+{
+    foreach ($priceList as $price) {
+        if (isset($price['pkr']) && is_numeric($price['pkr'])) {
+            $pkrValues[] = $price['pkr'];
+        }
+        if (isset($price['usd']) && is_numeric($price['usd'])) {
+            $usdValues[] = $price['usd'];
+        }
+    }
+
+    // Get min and max
+    $minPricePKR = !empty($pkrValues) ? min($pkrValues) : 0;
+    $maxPricePKR = !empty($pkrValues) ? max($pkrValues) : 0;
+
+    $minPriceUSD = !empty($usdValues) ? min($usdValues) : 0;
+    $maxPriceUSD = !empty($usdValues) ? max($usdValues) : 0;
+
+    return [
+        "minPricePKR" => $minPricePKR,
+        "maxPricePKR" => $maxPricePKR,
+        "minPriceUSD" => $minPriceUSD,
+        "maxPriceUSD" => $maxPriceUSD,
+    ];
+
+}
+
+function getDeviceTier($prices)
+{
+    $usd = $prices['minPriceUSD'];
+
+    if ($usd >= 700) {
+        return 'flagship';
+    } elseif ($usd >= 300) {
+        return 'mid-range';
+    } elseif ($usd >= 150) {
+        return 'budget';
+    } else {
+        return 'entry-level';
+    }
+}
+
 

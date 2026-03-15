@@ -3,309 +3,218 @@ return [
     'label' => 'Battery',
     'capacity' => [
         'label' => 'Battery Capacity (mAh)',
-        'weight' => 30,
+        'weight' => [
+            'entry-level' => 65,
+            'budget' => 53,
+            'mid-range' => 45,
+            'flagship' => 30,
+        ],
         'unit' => [
             'value' => 'mAh',
             'position' => 'after',   // before | after
             'space' => true           // true => add space, false => no space
         ],
         'ranges' => [
-            // Ultra large (gaming phones, tablets)
-            ['min' => 7000, 'score' => 10],
-            ['min' => 6500, 'score' => 10],
-            ['min' => 6000, 'score' => 10],
+            'ranges' => [
+                // Ultra-High Capacity (Si-C Era Champions)
+                ['min' => 9000, 'score' => 10],
+                ['min' => 7500, 'score' => 10],
 
-            // Large flagship
-            ['min' => 5500, 'score' => 9],
-            ['min' => 5000, 'score' => 9],
+                // High-End Endurance (Gaming / Large Flagships)
+                ['min' => 6500, 'score' => 9],
+                ['min' => 6000, 'score' => 9],
 
-            // Standard flagship / Large mid-range
-            ['min' => 4800, 'score' => 8],
-            ['min' => 4500, 'score' => 8],
+                // Modern Standard (Standard Flagships / Mid-Range)
+                ['min' => 5500, 'score' => 8],
+                ['min' => 5000, 'score' => 8],
 
-            // Average
-            ['min' => 4000, 'score' => 7],
-            ['min' => 3500, 'score' => 6],
+                // Average (Lower Mid-Range / Compacts)
+                ['min' => 4500, 'score' => 7],
+                ['min' => 4000, 'score' => 6],
 
-            // Compact flagship / Budget
-            ['min' => 3000, 'score' => 5],
-            ['min' => 2500, 'score' => 4],
+                // Below Average (Budget / Small Compacts)
+                ['min' => 3500, 'score' => 5],
+                ['min' => 3000, 'score' => 4],
 
-            // Very small
-            ['min' => 2000, 'score' => 3],
-            ['min' => 1500, 'score' => 2],
+                // Legacy / Entry
+                ['min' => 2000, 'score' => 2],
+            ],
         ],
         'default' => 5,
     ],
     'wired' => [
         'label' => 'Wired Charging Speed (W)',
-        'weight' => 20,
+        'weight' => [
+            'entry-level' => 30, // Charging speed is secondary
+            'budget' => 35,
+            'mid-range' => 30,
+            'flagship' => 20,
+        ],
         'unit' => [
             'value' => 'W',
             'position' => 'after',   // before | after
             'space' => false           // true => add space, false => no space
         ],
         'ranges' => [
-            // Ultra-fast (Chinese brands)
-            ['min' => 240, 'score' => 10],  // Realme GT Neo 5
-            ['min' => 200, 'score' => 10],
-            ['min' => 150, 'score' => 10],  // Xiaomi 13 Ultra
-            ['min' => 120, 'score' => 9],   // OnePlus, Xiaomi
-            ['min' => 100, 'score' => 9],
+            // Elite Tier (300W+ Technology)
+            ['min' => 300, 'score' => 10],
+            ['min' => 240, 'score' => 10],
 
-            // Fast flagship
-            ['min' => 80, 'score' => 8],    // OPPO, Xiaomi
-            ['min' => 67, 'score' => 8],    // Common Chinese flagship
-            ['min' => 65, 'score' => 8],
+            // Ultra-Fast (Top Chinese Flagships)
+            ['min' => 150, 'score' => 9],
+            ['min' => 120, 'score' => 9],
+            ['min' => 100, 'score' => 8.5], // Optional decimal for granularity
 
-            // Standard flagship
-            ['min' => 45, 'score' => 7],    // Samsung flagship
-            ['min' => 40, 'score' => 7],
-            ['min' => 33, 'score' => 6],    // Common mid-range
-            ['min' => 30, 'score' => 6],
+            // Performance Mid-range / Flagship
+            ['min' => 80, 'score' => 8],
+            ['min' => 65, 'score' => 7],
 
-            // Basic fast charging
-            ['min' => 25, 'score' => 5],    // iPhone, budget
-            ['min' => 20, 'score' => 5],
-            ['min' => 18, 'score' => 4],
-            ['min' => 15, 'score' => 4],
+            // The "Mainstream" Ceiling (Samsung/Google/High-end Apple)
+            ['min' => 45, 'score' => 6],
+            ['min' => 33, 'score' => 5],
 
-            // Slow charging
-            ['min' => 10, 'score' => 3],
-            ['min' => 5, 'score' => 2],
+            // Basic Fast Charging (Base iPhone / Budget)
+            ['min' => 25, 'score' => 4],
+            ['min' => 18, 'score' => 3],
+
+            // Legacy / Slow
+            ['min' => 10, 'score' => 2],
+            ['min' => 5, 'score' => 1],
         ],
         'default' => 4,
     ],
     'wireless' => [
         'label' => 'Wireless Charging Speed (W)',
-        'weight' => 10,
+        'weight' => [
+            'entry-level' => 0,   // Not expected. 0% impact on score.
+            'budget' => 5,   // Rare bonus. Small impact.
+            'mid-range' => 10,  // Becoming standard. Moderate impact.
+            'flagship' => 20,  // Mandatory. High impact on the "Premium" feel.
+        ],
         'unit' => [
             'value' => 'W',
             'position' => 'after',   // before | after
             'space' => false           // true => add space, false => no space
         ],
         'ranges' => [
-            // Extreme / Proprietary Wireless
-            ['min' => 80, 'score' => 10],   // Xiaomi, OPPO (proprietary)
-            ['min' => 60, 'score' => 9],
+            // Extreme / Proprietary (The 2026 Speed Kings)
+            ['min' => 100, 'score' => 10],
+            ['min' => 80, 'score' => 9.5],
+            ['min' => 65, 'score' => 9],
 
-            // Very Fast Wireless
-            ['min' => 50, 'score' => 9],    // Xiaomi, OnePlus
-            ['min' => 40, 'score' => 8],    // OPPO, Vivo
+            // Fast Performance (OnePlus / Xiaomi standard)
+            ['min' => 50, 'score' => 8.5],
+            ['min' => 40, 'score' => 8],
 
-            // Fast Wireless (Flagships)
-            ['min' => 30, 'score' => 8],    // Samsung Ultra
-            ['min' => 25, 'score' => 8],    // iPhone 15 series (MagSafe), Pixel Stand 2
+            // Premium Standard (Qi2 Peak / High-end Proprietary)
+            ['min' => 30, 'score' => 7.5],
+            ['min' => 25, 'score' => 7], // High-end MagSafe/Qi2
 
-            // Standard Wireless
-            ['min' => 20, 'score' => 7],
-            ['min' => 15, 'score' => 6],    // iPhone (older MagSafe), Samsung
+            // Mainstream Wireless (Standard iPhone/Samsung/Pixel)
+            ['min' => 15, 'score' => 6], // Standard Qi2/MagSafe
+            ['min' => 12, 'score' => 5],
 
-            // Basic Qi
-            ['min' => 10, 'score' => 5],    // Qi phones
-            ['min' => 7.5, 'score' => 4],   // Older iPhones (Qi)
-            ['min' => 5, 'score' => 3],     // Entry-level Qi
+            // Basic / Legacy Qi
+            ['min' => 10, 'score' => 4],
+            ['min' => 5, 'score' => 2],
         ],
 
         'default' => 0,  // No wireless charging
     ],
     'reverse' => [
         'label' => 'Reverse Wireless Charging',
-        'weight' => 6,
-        'unit' => [
-            'value' => 'W',
-            'position' => 'after',   // before | after
-            'space' => false           // true => add space, false => no space
+        'weight' => [
+            'entry-level' => 0,
+            'budget' => 2,
+            'mid-range' => 5,
+            'flagship' => 10,
         ],
         'ranges' => [
-            ['min' => 20, 'score' => 10], // Cutting-edge (Huawei Mate 60 Pro+, etc.)
-            ['min' => 15, 'score' => 9],  // Excellent (Huawei, Xiaomi flagships)
-            ['min' => 10, 'score' => 8],  // Great (Samsung flagships)
-            ['min' => 7, 'score' => 7],   // Good (Newer flagships)
-            ['min' => 5, 'score' => 6],   // Decent (Pixel, OnePlus)
-            ['min' => 3, 'score' => 5],   // Weak
-            ['min' => 1, 'score' => 4],   // Bare minimum
+            // Extreme (Acts as a portable wireless pad for other phones)
+            ['min' => 25, 'score' => 10],
+            ['min' => 20, 'score' => 9.5],
+
+            // Excellent (Fast accessory top-ups)
+            ['min' => 15, 'score' => 9],
+            ['min' => 10, 'score' => 8],
+
+            // Standard Flagship (The "PowerShare" sweet spot)
+            ['min' => 7.5, 'score' => 7], // 2026 Premium Standard
+            ['min' => 4.5, 'score' => 6], // Common Samsung/Pixel limit
+
+            // Basic / Weak
+            ['min' => 2.5, 'score' => 4],
+            ['min' => 1, 'score' => 2],
         ],
         'default' => 0,
     ],
+    'type' => [
+        'label' => 'Battery Type',
+        'weight' => [
+            'entry-level' => 5,
+            'budget' => 5,
+            'mid-range' => 12,  // Increased weight: helps users identify "Premium" internals
+            'flagship' => 18,   // High weight: Si-C is now a key premium metric
+        ],
+        'scale' => [
+            'silicon-carbon' => 10,    // The 2026 gold standard (Xiaomi, Honor, Vivo)
+            'graphene' => 10,          // The "Speed King" tech (RedMagic, Realme)
+            'li-po' => 8,              // Solid, but no longer cutting-edge
+            'lithium polymer' => 8,
+            'li-ion' => 6,              // Usually implies a less space-efficient design
+            'lithium ion' => 6,
+        ],
+        'default' => 8, // Assume Li-Po as the safe baseline
+    ],
     'charging_time_0_to_100' => [
         'label' => 'Charging Time (0-100%)',
-        'weight' => 0,
-        'unit' => [
-            'value' => 'min',
-            'position' => 'after',
-            'space' => true
-        ],
+        'weight' => 0, // Reminder: This is often for display, as wattage covers the "score"
         'ranges' => [
-            ['max' => 15, 'score' => 10], // Ultra-fast flagship charging
-            ['max' => 20, 'score' => 9],  // Premium tier
-            ['max' => 30, 'score' => 8],  // Excellent
-            ['max' => 45, 'score' => 7],  // Very good
-            ['max' => 60, 'score' => 6],  // Good
-            ['max' => 75, 'score' => 5],  // Above average
-            ['max' => 90, 'score' => 4],  // Average
-            ['max' => 110, 'score' => 3],  // Below average
-            ['max' => 140, 'score' => 2],  // Slow
-            ['max' => 180, 'score' => 1],  // Very slow
+            // The "Hyper" Tier
+            ['max' => 12, 'score' => 10],
+            ['max' => 18, 'score' => 9.5],
+
+            // The "Flagship Killer" Tier
+            ['max' => 25, 'score' => 9],
+            ['max' => 35, 'score' => 8],
+
+            // The "Mainstream Flagship" Tier (Samsung/Apple/Google)
+            ['max' => 45, 'score' => 7],
+            ['max' => 60, 'score' => 6],
+
+            // The "Budget/Entry" Tier
+            ['max' => 80, 'score' => 4.5],
+            ['max' => 110, 'score' => 3],
+            ['max' => 140, 'score' => 2],
+            ['max' => 180, 'score' => 1],
         ],
         'default' => 3,
     ],
     'charging_time_0_to_50' => [
         'label' => 'Charging Time (0-50%)',
         'weight' => 0,
-        'unit' => [
-            'value' => 'min',
-            'position' => 'after',
-            'space' => true
-        ],
         'ranges' => [
-            ['max' => 5, 'score' => 10], // Extremely fast burst charging
-            ['max' => 8, 'score' => 9],  // Ultra fast
-            ['max' => 12, 'score' => 8],  // Excellent
-            ['max' => 18, 'score' => 7],  // Very good
-            ['max' => 25, 'score' => 6],  // Good
-            ['max' => 35, 'score' => 5],  // Above average
-            ['max' => 45, 'score' => 4],  // Average
-            ['max' => 55, 'score' => 3],  // Below average
-            ['max' => 70, 'score' => 2],  // Slow
-            ['max' => 90, 'score' => 1],  // Very slow
+            // The "Three-Minute" Revolution
+            ['max' => 4, 'score' => 10],
+            ['max' => 6, 'score' => 9.5],
+
+            // High-Speed Standard
+            ['max' => 9, 'score' => 9],
+            ['max' => 13, 'score' => 8],
+
+            // Above Average (Mid-range high speed / Premium conservative)
+            ['max' => 18, 'score' => 7.5],
+            ['max' => 24, 'score' => 7], // The "Premium West" sweet spot
+
+            // The "Coffee Break" Tier
+            ['max' => 35, 'score' => 5],
+            ['max' => 45, 'score' => 4],
+
+            // Slow
+            ['max' => 60, 'score' => 3],
+            ['max' => 80, 'score' => 2],
+            ['max' => 100, 'score' => 1],
         ],
         'default' => 3,
-    ],
-    'type' => [
-        'label' => 'Battery Type',
-        'weight' => 10,
-        'scale' => [
-            'li-po' => 9,              // Lithium Polymer (modern standard)
-            'lithium polymer' => 9,
-            'li-ion' => 8,             // Lithium Ion (older standard)
-            'lithium ion' => 8,
-            'graphene' => 10,          // Graphene (rare, cutting-edge)
-            'silicon-carbon' => 10,    // Silicon-carbon (OnePlus, Xiaomi)
-        ],
-        'default' => 7,
-    ],
-    'charging_technology' => [
-        'label' => 'Charging Technology',
-        'weight' => 10,
-        'scale' => [
-            // Ultra-fast proprietary (200W+)
-            'hypercharge' => 10,              // Xiaomi 240W
-            'supervooc' => 10,                // OPPO/OnePlus 240W+
-            '240w supervooc' => 10,           // Realme/OPPO
-            '150w supervooc' => 9,            // Realme
-
-            // High-speed proprietary (100W+)
-            '120w hypercharge' => 9,          // Xiaomi
-            '100w supervooc' => 9,            // OnePlus/OPPO
-            'warp charge 65' => 9,            // OnePlus
-            'warp charge' => 8,               // OnePlus older
-            'vooc' => 8,                      // OPPO 65W
-            'dash charge' => 7,               // OnePlus older
-
-            // Mid-range proprietary (45W-100W)
-            'super fast charging 3.0' => 9,
-            'super fast charging 2.0' => 8,   // Samsung 45W
-            'flexcharge' => 8,                // Vivo 80W
-            'turbopower' => 7,                // Motorola 68W
-            'super fast charging' => 7,       // Samsung 25W
-            'pump express plus' => 7,         // MediaTek
-            'huawei supercharge' => 8,        // Huawei 66W/100W
-
-            // Standard fast charging (15W-45W)
-            'adaptive fast charging' => 6,    // Samsung 15W
-            'pump express' => 6,              // MediaTek older
-            'mcharge' => 6,                   // Meizu
-
-            // Universal standards
-            'usb power delivery 3.1' => 9,    // USB-PD 3.1 (240W capable)
-            'usb power delivery 3.0' => 8,    // USB-PD 3.0 (100W)
-            'usb power delivery' => 8,        // USB-PD generic
-            'usb-pd 3.1' => 9,
-            'usb-pd 3.0' => 8,
-            'usb-pd' => 8,
-            'pd 3.1' => 9,
-            'pd 3.0' => 8,
-            'pd' => 8,
-
-            // Qualcomm Quick Charge
-            'quick charge 5' => 9,            // QC5 (100W+)
-            'qc5' => 9,
-            'quick charge 4+' => 8,           // QC4+ (60W)
-            'qc4+' => 8,
-            'quick charge 4' => 8,            // QC4
-            'qc4' => 8,
-            'quick charge 3+' => 7,           // QC3+ (45W)
-            'qc3+' => 7,
-            'quick charge 3.0' => 6,          // QC3
-            'qc3' => 6,
-            'quick charge 2.0' => 5,          // QC2
-            'qc2' => 5,
-            'quick charge' => 4,              // QC1
-            'qc' => 4,
-
-            // Battery Cell Technology (bonus points)
-            'dual cell' => 1,                 // Faster charging capability
-            'gan charger' => 1,               // Efficient charging
-            'graphene' => 1,                  // Future tech
-
-            // Basic/Standard
-            'standard charging' => 3,
-            'basic charging' => 2,
-            'usb charging' => 2,
-            'no fast charging' => 1,
-        ],
-        'default' => 5,
-    ],
-    'pps_(programmable_power_supply)' => [
-        'label' => 'PPS Support',
-        'weight' => 3,
-        'unit' => [
-            'value' => 'W PPS',
-            'position' => 'after',
-            'space' => false
-        ],
-        'ranges' => [
-            ['min' => 80, 'score' => 10], // Elite (Xiaomi 17 Ultra @ 90W PPS)
-            ['min' => 65, 'score' => 9],  // Premium (Laptop-grade compatibility)
-            ['min' => 45, 'score' => 8],  // Standard Flagship (Samsung S26U)
-            ['min' => 33, 'score' => 7],  // Mid-range High
-            ['min' => 25, 'score' => 6],  // Basic PPS
-            ['min' => 1, 'score' => 4],  // Proprietary only (No PPS)
-        ],
-        'default' => 0,
-    ],
-    'reverse_wireless' => [
-        'label' => 'Reverse Wireless',
-        'weight' => 3,
-        'unit' => [
-            'value' => 'W',
-            'position' => 'after',
-            'space' => false
-        ],
-        'ranges' => [
-            ['min' => 15, 'score' => 10], // Elite (Huawei/Xiaomi high-end)
-            ['min' => 10, 'score' => 9],  // Excellent
-            ['min' => 7.5, 'score' => 8], // Standard Flagship
-            ['min' => 5, 'score' => 7], // Decent (iPhone/Pixel baseline)
-            ['min' => 2, 'score' => 5], // Slow/Trickle
-        ],
-        'default' => 0,
-    ],
-    'supported_protocols' => [
-        'label' => 'Charging Protocols',
-        'weight' => 4,
-        'scale' => [
-            'PD3.1' => 10, // 2026 Gold Standard (EPR 240W)
-            'QC5.0' => 9,  // Universal & Fast
-            'PD3.0' => 8,  // PPS Standard
-            'QC4+' => 8,
-            'QC4.0' => 7,
-            'PD2.0' => 6,
-            'QC3+' => 6,
-            'QC3.0' => 5,
-            'QC2.0' => 4,
-        ],
-        'default' => 5,
     ],
 ];

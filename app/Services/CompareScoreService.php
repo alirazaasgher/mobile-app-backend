@@ -10,13 +10,12 @@ class CompareScoreService
        PUBLIC API
     --------------------------------*/
     //$values = $this->applyInferences($values, $specConfigs);
-    public function scoreCategory(string $category, array $values, string $profile = 'balanced'): array
+    public function scoreCategory(string $category, array $values, string $deviceTier): array
     {
-        $categoryConfig = config("compare_scoring.compare_profiles.$profile.$category", []);
+        $categoryConfig = config("compare_scoring.compare_profiles.balanced.$category", []);
         $totalWeight = 0;
         $weightedScore = 0;
         $tempScores = [];
-
         foreach ($values as $specKey => $value) {
 
             // Skip if spec not configured
@@ -26,7 +25,7 @@ class CompareScoreService
 
             $specConfig = $categoryConfig[$specKey];
 
-            $weight = $specConfig['weight'] ?? 1;
+            $weight = $specConfig['weight'][$deviceTier] ?? 0;
             $defaultScore = $specConfig['default_score'] ?? 0;
 
             // Score calculation

@@ -640,7 +640,6 @@ class PhoneApiController extends Controller
             ]);
 
         })->toArray();
-
         $request->merge(['slugs' => $slugs]);
         // Validate input
         $validated = $request->validate([
@@ -673,7 +672,10 @@ class PhoneApiController extends Controller
                 },
             ])
             ->whereIn('slug', $slugs)
-            ->get();
+            ->get()->sortBy(function ($phone) use ($slugs) {
+                return array_search($phone->slug, $slugs);
+            })
+            ->values();
 
         // Early return if no phones found
         if ($phones->isEmpty()) {
